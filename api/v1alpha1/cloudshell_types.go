@@ -28,18 +28,28 @@ type CloudShellSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of CloudShell. Edit cloudshell_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Configmap of the target kube-config, will replace by SA
+	ConfigmapName string `json:"configmapName,omitempty"`
+	RunAsUser     string `json:"runAsUser,omitempty"`
+	CommandAction string `json:"commandAction,omitempty"`
+	Ttl           int32  `json:"ttl,omitempty"`
 }
 
 // CloudShellStatus defines the observed state of CloudShell
 type CloudShellStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Phase     string `json:"phase"`
+	AccessURL string `json:"accessUrl"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name=User,type="string",JSONPath=".spec.runAsUser",description="User"
+//+kubebuilder:printcolumn:name=Command,type="string",JSONPath=".spec.commandAction",description="Command"
+//+kubebuilder:printcolumn:name=URL,type="string",JSONPath=".status.accessUrl",description="Access Url"
+//+kubebuilder:printcolumn:name=Phase,type="string",JSONPath=".status.phase",description="Phase"
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // CloudShell is the Schema for the cloudshells API
 type CloudShell struct {

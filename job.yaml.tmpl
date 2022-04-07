@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: default
+  name: cloudshell-7030235f5
+  labels:
+     cloudshell-jobs:
+spec:
+    activeDeadlineSeconds: 3600
+    ttlSecondsAfterFinished: 60
+    parallelism: 1
+    completions: 1
+    template:
+       spec:
+         containers:
+         - name:  web-tty
+           image: daocloud.io/daocloud/cloudshell:latest
+           ports:
+           - containerPort: 7681
+             name: tty-ui
+             protocol: TCP
+           command:
+              - bash
+              - "-c"
+              - |
+                once=""
+                index=""
+                if [ "${ONCE}" == "true" ];then once=" --once "; fi;
+                if [ -f /index.html ]; then index=" --index /index.html ";fi
+                if [ -z "${TTL}" ] || [ "${TTL}" == "0" ];then
+                    ttyd ${index} ${once} sh -c "${COMMAND}"
+                else
+                    timeout ${TTL} ttyd ${index} ${once} sh -c "${COMMAND}" || echo "exiting"
+                fi
+           env:
+           - name: KUBECONFIG
+             value: /usr/local/kubeconfig/config
+           - name: ONCE
+             value: "true"
+           volumeMounts:
+           - mountPath: /usr/local/kubeconfig/
+             name: my-kubeconfig
+         restartPolicy: Never
+         volumes:
+         - configMap:
+             defaultMode: 420
+             name: my-kubeconfig
+           name: my-kubeconfig
