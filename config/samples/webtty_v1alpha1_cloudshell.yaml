@@ -1,0 +1,10 @@
+apiVersion: cloudshell.daocloud.io/v1alpha1
+kind: CloudShell
+metadata:
+  name: cloudshell-sample
+spec:
+ configmapName: "my-kubeconfig"
+ runAsUser: "root"
+ commandAction: "bash"
+ ttl: 100
+
