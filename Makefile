@@ -87,6 +87,10 @@ ifndef ignore-not-found
   ignore-not-found = false
 endif
 
+.PHONY: generate-yaml
+generate-yaml: kustomize
+	$(KUSTOMIZE) build config/crd  > cloud_shell_crd.yaml
+
 .PHONY: install
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
