@@ -1,6 +1,10 @@
 
+
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+OPERATOR_IMG ?= daocloud.io/daocloud/cloudshell-opeartor:latest
+TTY_IMG ?= daocloud.io/daocloud/cloudshell:latest
+#NOTE: job.yaml.tmpl image should align with above
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
@@ -71,12 +75,12 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
-
+	docker build -t ${OPERATOR_IMG} . -f docker/Dockerfile
+	docker build -t ${TTY_IMG} . -f docker/Dockerfile-webtty
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
-
+	docker push ${OPERATOR_IMG}
+	docker push ${TTY_IMG}
 ##@ Deployment
 
 ifndef ignore-not-found
@@ -93,7 +97,7 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${OPERATOR_IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 .PHONY: undeploy
