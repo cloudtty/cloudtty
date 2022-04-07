@@ -1,0 +1,6 @@
+apiVersion: cloudshell.daocloud.io/v1alpha1
+kind: CloudShell
+metadata:
+  name: cloudshell-sample
+spec:
+  # TODO(user): Add fields here

@@ -1,0 +1,16 @@
+domain: daocloud.io
+layout:
+- go.kubebuilder.io/v3
+projectName: cloudshell
+repo: daocloud.io/cloudshell
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: daocloud.io
+  group: cloudshell
+  kind: CloudShell
+  path: daocloud.io/cloudshell/api/v1alpha1
+  version: v1alpha1
+version: "3"
