@@ -1,4 +1,3 @@
-
 # 这是一个cloudshell的opeartor
 
 
@@ -6,17 +5,20 @@
 
 0.前置条件
  - a) 安装CRD
+        - （选择1）从YAML： ```make generate-yaml
+             然后apply 生成的yaml```
+        - （选择2）从代码：克隆代码之后 `make install`
  - b) 创建kubeconf的configmap（这样能在pod里使用kubectl）
-    - `kubectl create configmap my-kubeconfig --from-file=/root/.kube/config`
-    - 然后修改endpoint的地址，从IP改为servicename, 如`server: https://kubernetes.default.svc.cluster.local:443`
+    - （第一步）`kubectl create configmap my-kubeconfig --from-file=/root/.kube/config`
+    - （第二步）然后编辑这个configmap, 修改endpoint的地址，从IP改为servicename, 如`server: https://kubernetes.default.svc.cluster.local:443`
 
 
 1.用户创建cloudshell的CR
 - 范例在 `config/samples/webtty_v1alpha1_cloudshell.yaml`
- - ` kubectl apply -f config/samples/webtty_v1alpha1_cloudshell.yaml  && kubectl get cloudshells  -w`
+ -   ` kubectl apply -f config/samples/webtty_v1alpha1_cloudshell.yaml  && kubectl get cloudshells  -w`
 
 
-- 比如开启窗口后自动打印某个容器的日志：
+- 自己写一个CR， 比如开启窗口后自动打印某个容器的日志：
     ```
     apiVersion: webtty.webtty.daocloud.io/v1alpha1
     kind: CloudShell
@@ -40,7 +42,7 @@ cloudshell-sample2   root   bash      NodeIP:30385   Ready   9s
 
 5.当job在TTL或者其他原因结束之后，一旦job变为Completed，CR的状态也会变成`Completed`
 
-5.当CRD被删除时，删除对应的job和service(通过ownerReference)
+5.当CRD被删除时，会自动删除对应的job和service(通过`ownerReference`)
 
 
 ToDo：
