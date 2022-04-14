@@ -47,10 +47,10 @@ cloudshell-sample2   root   bash      NodeIP:30385   Ready   9s
 
 ToDo：
 
-- （1）还未把CR里的user注入kube.conf（动态生成），进行权限控制
+- （1）通过RBAC生成的/var/run/secret，进行权限控制
 - （2）前端添加sz/xz的按钮, 修改https://github.com/tsl0922/ttyd/html里的前端代码，添加按钮。或者第二个页面类似iframe嵌入？`ttyd --index=new-index.html`
-- （3）代码中边界处理（如nodeport准备好）还没有处理
-- （4）要加入ingress和Gateway API的不同暴露方式的选择
+- （3）要加入ingress和Gateway API, 以及Istio的VirtualService的不同暴露方式的选择 🔥
+- （4）代码中边界处理（如nodeport准备好）还没有处理
 - （5）暂时还是ttyd运行once（一个客户端断开即退出），以方便调试
 - （6）为了安全，job应该在单独的NS跑，而不是在CR同NS
 -  (7) 需要检查pod的Running和endpoint的Ready，才能置位CRD为Ready
