@@ -1,0 +1,34 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "cloudshell.controllerManager.fullname" . }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs: ["*"]
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs: ["*"]
+- apiGroups:
+  - cloudshell.daocloud.io
+  resources:
+  - cloudshells
+  verbs: ["*"]
+- apiGroups:
+  - cloudshell.daocloud.io
+  resources:
+  - cloudshells/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cloudshell.daocloud.io
+  resources:
+  - cloudshells/status
+  verbs:
+  - get
+  - patch
+  - update

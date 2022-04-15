@@ -1,0 +1,94 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: cloudshells.cloudshell.daocloud.io
+spec:
+  group: cloudshell.daocloud.io
+  names:
+    kind: CloudShell
+    listKind: CloudShellList
+    plural: cloudshells
+    singular: cloudshell
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: User
+      jsonPath: .spec.runAsUser
+      name: User
+      type: string
+    - description: Command
+      jsonPath: .spec.commandAction
+      name: Command
+      type: string
+    - description: Access Url
+      jsonPath: .status.accessUrl
+      name: URL
+      type: string
+    - description: Phase
+      jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: CloudShell is the Schema for the cloudshells API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CloudShellSpec defines the desired state of CloudShell
+            properties:
+              commandAction:
+                type: string
+              configmapName:
+                description: Configmap of the target kube-config, will replace by
+                  SA
+                type: string
+              runAsUser:
+                type: string
+              ttl:
+                format: int32
+                type: integer
+            type: object
+          status:
+            description: CloudShellStatus defines the observed state of CloudShell
+            properties:
+              accessUrl:
+                type: string
+              phase:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                type: string
+            required:
+            - accessUrl
+            - phase
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

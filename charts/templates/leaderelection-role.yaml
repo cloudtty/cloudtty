@@ -1,0 +1,24 @@
+# permissions to do leader election.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "cloudshell.controllerManager.fullname" . }}-leader-election
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs: ["*"]
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs: ["*"]
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
