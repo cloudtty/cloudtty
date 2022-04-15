@@ -1,0 +1,85 @@
+## Default values for charts.
+## This is a YAML-formatted file.
+## Declare variables to be passed into your templates.
+
+## @param global cloudshell global config
+global:
+  ## @param global.imageRegistry Global Docker image registry
+  imageRegistry: ""
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  imagePullSecrets: []
+
+## @param installCRDs define flag whether to install CRD resources
+##
+installCRDs: true
+
+## @param controllerManager.labels
+labels: {}
+## @param controllerManager.replicaCount target replicas
+replicaCount: 1
+## @param controllerManager.podAnnotations
+podAnnotations: {}
+## @param controllerManager.podLabels
+podLabels: {}
+## @param image.registry cloudshell image registry
+## @param image.repository cloudshell image repository
+## @param image.tag cloudshell image tag (immutable tags are recommended)
+## @param image.pullPolicy cloudshell image pull policy
+## @param image.pullSecrets Specify docker-registry secret names as an array
+##
+image:
+  registry: daocloud.io
+  repository: daocloud/cloudshell-opeartor
+  tag: "latest"
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## Example:
+  ## pullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  pullSecrets: []
+## @param controllerManager.resources
+resources:
+  limits:
+    cpu: 500m
+    memory: 128Mi
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  # If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+## @param controllerManager.nodeSelector
+nodeSelector: {}
+## @param controllerManager.affinity
+affinity: {}
+## @param controllerManager.tolerations
+tolerations: {}
+## @param livenessProbe.enabled Enable livenessProbe on Kafka containers
+## @param livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+## @param livenessProbe.periodSeconds Period seconds for livenessProbe
+##
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 15
+  periodSeconds: 20
+## @param readinessProbe.enabled Enable readinessProbe on Kafka containers
+## @param readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+## @param readinessProbe.periodSeconds Period seconds for readinessProbe
+##
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 10

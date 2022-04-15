@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cloudshell.controllerManager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    control-plane: {{ include "cloudshell.controllerManager.fullname" . }}
+    {{- if .Values.labels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.labels "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      control-plane: {{ include "cloudshell.controllerManager.fullname" . }}
+      {{- if .Values.podLabels }}
+      {{- include "common.tplvalues.render" ( dict "value" .Values.podLabels "context" $ ) | nindent 4 }}
+      {{- end }}
+  template:
+    metadata:
+      {{- if .Values.podAnnotations }}
+      annotations:
+      {{- include "common.tplvalues.render" (dict "value" .Values.apiserver.podAnnotations "context" $) | nindent 8 }}
+      {{- end }}
+      labels:
+        control-plane: {{ include "cloudshell.controllerManager.fullname" . }}
+        {{- if .Values.podLabels }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.podLabels "context" $ ) | nindent 4 }}
+        {{- end }}
+    spec:
+      {{- include "cloudshell.controllerManager.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: {{ include "cloudshell.controllerManager.fullname" . }}
+          image: {{ include "cloudshell.controllerManager.image" . }}
+          command:
+          - /manager
+          - --leader-elect
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled}}
+          livenessProbe: {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
+            httpGet:
+              path: /healthz
+              port: 8081
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled}}
+          readinessProbe: {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
+            httpGet:
+              path: /readyz
+              port: 8081
+          {{- end }}
+      {{- if .Values.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "cloudshell.controllerManager.fullname" . }}
+      terminationGracePeriodSeconds: 10
