@@ -43,6 +43,8 @@ type CloudShellStatus struct {
 	AccessURL string `json:"accessUrl"`
 }
 
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name=User,type="string",JSONPath=".spec.runAsUser",description="User"
@@ -61,14 +63,11 @@ type CloudShell struct {
 }
 
 //+kubebuilder:object:root=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CloudShellList contains a list of CloudShell
 type CloudShellList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []CloudShell `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&CloudShell{}, &CloudShellList{})
 }

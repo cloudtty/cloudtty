@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	cloudshellv1alpha1 "daocloud.io/cloudshell/api/v1alpha1"
 	"daocloud.io/cloudshell/controllers"
+	cloudshellv1alpha1 "daocloud.io/cloudshell/pkg/apis/cloudshell/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

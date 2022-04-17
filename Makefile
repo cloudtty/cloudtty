@@ -1,5 +1,3 @@
-
-
 # Image URL to use all building/pushing image targets
 OPERATOR_IMG ?= daocloud.io/daocloud/cloudshell-opeartor:latest
 TTY_IMG ?= daocloud.io/daocloud/cloudshell:latest
@@ -45,8 +43,8 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-	$(CONTROLLER_GEN) crd paths="./..." output:crd:artifacts:config=charts/_crds
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths=./pkg/apis/... output:crd:artifacts:config=./config/crd/bases
+	$(CONTROLLER_GEN) crd paths=./pkg/apis/... output:crd:dir=./charts/_crds
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
@@ -108,6 +106,10 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
+.PHONY: codegen
+codegen:
+	./hack/update-codegen.sh
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen
