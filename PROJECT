@@ -2,7 +2,7 @@ domain: daocloud.io
 layout:
 - go.kubebuilder.io/v3
 projectName: cloudshell
-repo: daocloud.io/cloudshell
+repo: gitlab.daocloud.cn/ndx/webtty
 resources:
 - api:
     crdVersion: v1
@@ -11,6 +11,6 @@ resources:
   domain: daocloud.io
   group: cloudshell
   kind: CloudShell
-  path: daocloud.io/cloudshell/pkg/apis/v1alpha1
+  path: gitlab.daocloud.cn/ndx/webtty/pkg/apis/v1alpha1
   version: v1alpha1
 version: "3"

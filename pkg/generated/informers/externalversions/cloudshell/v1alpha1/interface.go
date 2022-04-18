@@ -18,7 +18,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	internalinterfaces "daocloud.io/cloudshell/pkg/generated/informers/externalversions/internalinterfaces"
+	internalinterfaces "gitlab.daocloud.cn/ndx/webtty/pkg/generated/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

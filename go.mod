@@ -1,4 +1,4 @@
-module daocloud.io/cloudshell
+module gitlab.daocloud.cn/ndx/webtty
 
 go 1.17
 

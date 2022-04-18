@@ -18,8 +18,8 @@ limitations under the License.
 package cloudshell
 
 import (
-	v1alpha1 "daocloud.io/cloudshell/pkg/generated/informers/externalversions/cloudshell/v1alpha1"
-	internalinterfaces "daocloud.io/cloudshell/pkg/generated/informers/externalversions/internalinterfaces"
+	v1alpha1 "gitlab.daocloud.cn/ndx/webtty/pkg/generated/informers/externalversions/cloudshell/v1alpha1"
+	internalinterfaces "gitlab.daocloud.cn/ndx/webtty/pkg/generated/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.
