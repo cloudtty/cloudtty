@@ -24,13 +24,10 @@ import (
 	kbatch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"time"
-	//"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	//yamlutil "k8s.io/apimachinery/pkg/util/yaml"
-	//"strings"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 
-	cloudshellv1alpha1 "daocloud.io/cloudshell/api/v1alpha1"
+	cloudshellv1alpha1 "daocloud.io/cloudshell/pkg/apis/cloudshell/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -130,7 +127,7 @@ func (r *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 					}
 				} else {
 					nodePort := svc.Spec.Ports[0].NodePort
- 					//FIXME, nodePort may be blank dueto delay filled by k8s, should `ctrl.Result{RequeueAfter: 5}, nil`
+					//FIXME, nodePort may be blank dueto delay filled by k8s, should `ctrl.Result{RequeueAfter: 5}, nil`
 					if true {
 						// FIXME, job active does not mean pod is running and service endpoint is filled
 						instance.Status.Phase = "Ready"

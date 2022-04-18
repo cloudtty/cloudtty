@@ -11,6 +11,6 @@ resources:
   domain: daocloud.io
   group: cloudshell
   kind: CloudShell
-  path: daocloud.io/cloudshell/api/v1alpha1
+  path: daocloud.io/cloudshell/pkg/apis/v1alpha1
   version: v1alpha1
 version: "3"
