@@ -21,13 +21,14 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"time"
+
 	kbatch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
 
-	cloudshellv1alpha1 "daocloud.io/cloudshell/pkg/apis/cloudshell/v1alpha1"
+	cloudshellv1alpha1 "gitlab.daocloud.cn/ndx/webtty/pkg/apis/cloudshell/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"

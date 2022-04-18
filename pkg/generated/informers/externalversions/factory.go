@@ -22,9 +22,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "daocloud.io/cloudshell/pkg/generated/clientset/versioned"
-	cloudshell "daocloud.io/cloudshell/pkg/generated/informers/externalversions/cloudshell"
-	internalinterfaces "daocloud.io/cloudshell/pkg/generated/informers/externalversions/internalinterfaces"
+	versioned "gitlab.daocloud.cn/ndx/webtty/pkg/generated/clientset/versioned"
+	cloudshell "gitlab.daocloud.cn/ndx/webtty/pkg/generated/informers/externalversions/cloudshell"
+	internalinterfaces "gitlab.daocloud.cn/ndx/webtty/pkg/generated/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

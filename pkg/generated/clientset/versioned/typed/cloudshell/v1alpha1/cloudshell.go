@@ -21,8 +21,8 @@ import (
 	"context"
 	"time"
 
-	v1alpha1 "daocloud.io/cloudshell/pkg/apis/cloudshell/v1alpha1"
-	scheme "daocloud.io/cloudshell/pkg/generated/clientset/versioned/scheme"
+	v1alpha1 "gitlab.daocloud.cn/ndx/webtty/pkg/apis/cloudshell/v1alpha1"
+	scheme "gitlab.daocloud.cn/ndx/webtty/pkg/generated/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	cloudshellv1alpha1 "daocloud.io/cloudshell/pkg/apis/cloudshell/v1alpha1"
+	cloudshellv1alpha1 "gitlab.daocloud.cn/ndx/webtty/pkg/apis/cloudshell/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

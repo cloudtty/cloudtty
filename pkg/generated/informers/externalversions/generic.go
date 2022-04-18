@@ -20,7 +20,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1alpha1 "daocloud.io/cloudshell/pkg/apis/cloudshell/v1alpha1"
+	v1alpha1 "gitlab.daocloud.cn/ndx/webtty/pkg/apis/cloudshell/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
