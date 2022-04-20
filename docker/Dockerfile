@@ -11,7 +11,7 @@ RUN go mod download
 
 # Copy the go source
 COPY main.go main.go
-COPY api/ api/
+COPY pkg/apis/ apis/
 COPY controllers/ controllers/
 COPY *.yaml.tmpl /workspace/
 # Build
