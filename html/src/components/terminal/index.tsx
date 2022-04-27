@@ -46,6 +46,10 @@ interface Props {
     tokenUrl: string;
     clientOptions: ClientOptions;
     termOptions: ITerminalOptions;
+    showRz: boolean;
+    showSz: boolean;
+    hideDownload: (v: boolean) => void;
+    hideUpload: (v: boolean) => void;
 }
 
 export class Xterm extends Component<Props> {
@@ -87,6 +91,15 @@ export class Xterm extends Component<Props> {
         window.addEventListener('beforeunload', this.onWindowUnload);
     }
 
+    componentDidUpdate() {
+        if (this.props.showRz) {
+            const { socket, textEncoder } = this;
+            socket.send(textEncoder.encode(Command.INPUT+'r'));
+            socket.send(textEncoder.encode(Command.INPUT+'z'));
+            socket.send(textEncoder.encode(Command.INPUT+'\n'));
+        }
+    }
+
     componentWillUnmount() {
         this.socket.close();
         this.terminal.dispose();
@@ -106,10 +119,39 @@ export class Xterm extends Component<Props> {
 
         return (
             <div id={id} ref={c => (this.container = c)}>
-                <ZmodemAddon ref={c => (this.zmodemAddon = c)} sender={this.sendData} control={control} />
+                <ZmodemAddon
+                    ref={c => (this.zmodemAddon = c)}
+                    sender={this.sendData}
+                    control={control}
+                    modalDownload={this.props.showSz}
+                    modalUpload={this.props.showRz}
+                    change={(v) => {this.onChange((v))}}
+                    hideDownload={(v) => {this.onHideDownload((v))}}
+                    hideUpload={(v) => {this.onHideUpload((v))}}
+                />
             </div>
         );
     }
+
+    onChange(v){
+        if (!v) return;
+        const { socket, textEncoder } = this;
+            socket.send(textEncoder.encode(Command.INPUT+'s'));
+            socket.send(textEncoder.encode(Command.INPUT+'z'));
+            socket.send(textEncoder.encode(Command.INPUT+' '));
+        for (let i in v) {
+            socket.send(textEncoder.encode(Command.INPUT+v[i]));
+        }
+        socket.send(textEncoder.encode(Command.INPUT+'\n'));
+    }
+
+    onHideDownload(v) {
+        this.props.hideDownload(v);
+    }
+
+    onHideUpload(v) {
+        this.props.hideUpload(v);
+    } 
 
     @bind
     private pause() {
@@ -131,7 +173,7 @@ export class Xterm extends Component<Props> {
         payload.set(data, 1);
         socket.send(payload);
     }
-
+    
     @bind
     private async refreshToken() {
         try {

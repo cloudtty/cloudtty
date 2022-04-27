@@ -16,3 +16,28 @@ body {
     height: calc(100% - 10px);
   }
 }
+
+.terminal-operator {
+  padding: 2px;
+  .terminal-operator__btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 15px;
+    font-size: 13px;
+    vertical-align: middle;
+    cursor: pointer;
+    border-radius: 6px;
+    outline: none;
+    border-width: 1px;
+    border-style: solid;
+    color: #FFFFFF;
+    background-color: #226BDB;
+    border-color: #226BDB;
+    height: 23px;
+  }
+  .terminal-operator__btn + .terminal-operator__btn {
+    margin-left: 5px;
+  }
+}

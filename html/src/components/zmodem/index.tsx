@@ -18,10 +18,15 @@ export interface FlowControl {
 interface Props {
     sender: (data: ArrayLike<number>) => void;
     control: FlowControl;
+    modalDownload: boolean;
+    modalUpload: boolean;
+    change: (v: string) => void;
+    hideDownload: (v: boolean) => void;
+    hideUpload: (v: boolean) => void;
 }
 
 interface State {
-    modal: boolean;
+    value: string;
 }
 
 export class ZmodemAddon extends Component<Props, State> implements ITerminalAddon {
@@ -39,15 +44,43 @@ export class ZmodemAddon extends Component<Props, State> implements ITerminalAdd
         this.zmodemInit();
     }
 
-    render(_, { modal }: State) {
+    render() {
         return (
-            <Modal show={modal}>
-                <label class="file-label">
-                    <input onChange={this.sendFile} class="file-input" type="file" multiple />
-                    <span class="file-cta">Choose files…</span>
-                </label>
-            </Modal>
+            <div>
+                <Modal show={this.props.modalUpload} onClose={() => {this.props.hideUpload(false)}}>
+                    <label class="file-label">
+                        <input onChange={this.sendFile} class="file-input" type="file" multiple />
+                        <span class="file-cta">选择文件</span>
+                    </label>
+                </Modal>
+                <Modal show={this.props.modalDownload} onClose={() => {this.props.hideDownload(false)}}>
+                    <form onSubmit={this.onSubmit}>
+                        <label class="file-label">
+                            文件路径: <input class="path-input" type="text" value={this.state.value} onInput={this.onInput}/>
+                        </label>
+                        <button class="file-button" type="submit">下载文件</button>
+                    </form>
+                </Modal>
+            </div>
         );
+    }
+
+    state = { value: '' };
+
+    onInput = ev => {
+        this.setState({ value: ev.target.value });
+    }
+  
+    onSubmit = ev => {
+        ev.preventDefault();
+  
+        this.props.change(this.state.value);
+        this.setState({ value: '' });
+        this.props.hideDownload(false);
+    }
+
+    async componentWillUnmount() {
+        this.setState({ value: '' });
     }
 
     activate(terminal: Terminal): void {
@@ -140,7 +173,7 @@ export class ZmodemAddon extends Component<Props, State> implements ITerminalAdd
         this.session.on('session_end', zmodemReset);
 
         if (this.session.type === 'send') {
-            this.setState({ modal: true });
+            this.props.hideUpload(true);
         } else {
             receiveFile();
         }
@@ -148,7 +181,7 @@ export class ZmodemAddon extends Component<Props, State> implements ITerminalAdd
 
     @bind
     private sendFile(event: Event) {
-        this.setState({ modal: false });
+        this.props.hideUpload(false);
 
         const { session, writeProgress, handleError } = this;
         const files: FileList = (event.target as HTMLInputElement).files;

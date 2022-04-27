@@ -46,16 +46,39 @@ const termOptions = {
     } as ITheme,
 } as ITerminalOptions;
 
+interface State {
+    showRz: boolean;
+    showSz: boolean;
+}
+
+const state = { showRz: false, showSz: false }
+
 export class App extends Component {
-    render() {
+    hideSz = (v: boolean) => {
+        this.setState({ showSz: v });
+    }
+    hideRz = (v: boolean) => {
+        this.setState({ showRz: v });
+    }
+    render(_, { showRz, showSz }: State) {
         return (
-            <Xterm
-                id="terminal-container"
-                wsUrl={wsUrl}
-                tokenUrl={tokenUrl}
-                clientOptions={clientOptions}
-                termOptions={termOptions}
-            />
+            <div style="width: 100%; height: 100%">
+                <div className="terminal-operator">
+                    <button className="terminal-operator__btn" onClick={() => this.hideRz(true)}>上传</button>
+                    <button className="terminal-operator__btn" onClick={() => this.hideSz(true)}>下载</button>
+                </div>
+                <Xterm
+                    id="terminal-container"
+                    wsUrl={wsUrl}
+                    tokenUrl={tokenUrl}
+                    clientOptions={clientOptions}
+                    termOptions={termOptions}
+                    showRz={showRz}
+                    showSz={showSz}
+                    hideDownload={this.hideSz}
+                    hideUpload={this.hideRz}
+                />
+            </div>
         );
     }
 }
