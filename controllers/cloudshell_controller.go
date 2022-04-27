@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"time"
 
 	kbatch "k8s.io/api/batch/v1"
@@ -257,6 +258,7 @@ func (r *CloudShellReconciler) createCloudShellJob(ctx context.Context, inst *cl
 	container := &job.Spec.Template.Spec.Containers[0]
 	container.Env = append(container.Env, corev1.EnvVar{Name: "COMMAND", Value: inst.Spec.CommandAction})
 	container.Env = append(container.Env, corev1.EnvVar{Name: "TTL", Value: fmt.Sprintf("%d", inst.Spec.Ttl)})
+	container.Env = append(container.Env, corev1.EnvVar{Name: "ONCE", Value: strconv.FormatBool(inst.Spec.Once)})
 	job.Spec.Template.Spec.Volumes[0].ConfigMap.Name = inst.Spec.ConfigmapName
 	//设置子资源的owner reference, 就可以级联删除
 	if err := ctrlutil.SetControllerReference(inst, job, r.Scheme); err != nil {
