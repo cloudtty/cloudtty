@@ -35,8 +35,6 @@ spec:
            env:
            - name: KUBECONFIG
              value: /usr/local/kubeconfig/config
-           - name: ONCE
-             value: "true"
            volumeMounts:
            - mountPath: /usr/local/kubeconfig/
              name: my-kubeconfig

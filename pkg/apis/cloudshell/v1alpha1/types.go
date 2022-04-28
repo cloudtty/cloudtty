@@ -31,6 +31,8 @@ type CloudShellSpec struct {
 	// Configmap of the target kube-config, will replace by SA
 	ConfigmapName string `json:"configmapName,omitempty"`
 	RunAsUser     string `json:"runAsUser,omitempty"`
+	// accept only one client and exit on disconnection
+	Once          bool   `json:"once,omitempty"`
 	CommandAction string `json:"commandAction,omitempty"`
 	Ttl           int32  `json:"ttl,omitempty"`
 }

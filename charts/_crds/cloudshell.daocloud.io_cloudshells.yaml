@@ -61,6 +61,9 @@ spec:
                 description: Configmap of the target kube-config, will replace by
                   SA
                 type: string
+              once:
+                description: accept only one client and exit on disconnection
+                type: boolean
               runAsUser:
                 type: string
               ttl:
