@@ -7,4 +7,4 @@ To learn more about the release, try:
   $ helm status {{ .Release.Name }}
   $ helm get all {{ .Release.Name }}
 
-Documention: https://gitlab.daocloud.cn/ndx/webtty/-/blob/main/README.md
+Documention: https://github.com/cloudtty/cloudtty/-/blob/main/README.md

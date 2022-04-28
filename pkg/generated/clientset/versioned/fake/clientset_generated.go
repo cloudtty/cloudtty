@@ -18,9 +18,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "gitlab.daocloud.cn/ndx/webtty/pkg/generated/clientset/versioned"
-	cloudshellv1alpha1 "gitlab.daocloud.cn/ndx/webtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1"
-	fakecloudshellv1alpha1 "gitlab.daocloud.cn/ndx/webtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1/fake"
+	clientset "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned"
+	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1"
+	fakecloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

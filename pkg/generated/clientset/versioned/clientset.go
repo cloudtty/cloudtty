@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	cloudshellv1alpha1 "gitlab.daocloud.cn/ndx/webtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1"
+	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
