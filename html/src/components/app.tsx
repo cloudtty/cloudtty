@@ -64,8 +64,8 @@ export class App extends Component {
         return (
             <div style="width: 100%; height: 100%">
                 <div className="terminal-operator">
-                    <button className="terminal-operator__btn" onClick={() => this.hideRz(true)}>上传</button>
-                    <button className="terminal-operator__btn" onClick={() => this.hideSz(true)}>下载</button>
+                    <button className="terminal-operator__btn" onClick={() => this.hideRz(true)}>Upload</button>
+                    <button className="terminal-operator__btn" onClick={() => this.hideSz(true)}>Download</button>
                 </div>
                 <Xterm
                     id="terminal-container"
