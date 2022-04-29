@@ -9,6 +9,11 @@ rules:
   - services
   verbs: ["*"]
 - apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs: ["get", "watch", "list"]
+- apiGroups:
   - batch
   resources:
   - jobs
