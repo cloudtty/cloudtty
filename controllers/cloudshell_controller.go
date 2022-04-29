@@ -49,6 +49,7 @@ type CloudShellReconciler struct {
 //+kubebuilder:rbac:groups=cloudshell.daocloud.io,resources=cloudshells/finalizers,verbs=update
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;
+//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -129,15 +130,37 @@ func (r *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 					}
 				} else {
 					nodePort := svc.Spec.Ports[0].NodePort
-					//FIXME, nodePort may be blank dueto delay filled by k8s, should `ctrl.Result{RequeueAfter: 5}, nil`
+					//FIXME, nodePort may be blank due to delay filled by k8s, should `ctrl.Result{RequeueAfter: 5}, nil`
 					if true {
 						// FIXME, job active does not mean pod is running and service endpoint is filled
 						instance.Status.Phase = "Ready"
-						instance.Status.AccessURL = "NodeIP:" + fmt.Sprintf("%d", nodePort)
+
+						// Fetch Node IP address
+						nodelist := corev1.NodeList{}
+						masterLabel := client.MatchingLabels{"node-role.kubernetes.io/master": ""}
+						if err := r.List(ctx, &nodelist, masterLabel); err != nil || len(nodelist.Items) == 0 {
+							log.Error(err, "unable to list k8s master nodes")
+							return ctrl.Result{}, err
+						}
+						masterIp := "NodeIP"
+						for _, addr := range nodelist.Items[0].Status.Addresses {
+							// Using External IP as first priority
+							if addr.Type == corev1.NodeExternalIP {
+								masterIp = addr.Address
+								break
+							}
+							if addr.Type == corev1.NodeInternalIP {
+								masterIp = addr.Address
+								break
+							}
+						}
+
+						instance.Status.AccessURL = masterIp + ":" + fmt.Sprintf("%d", nodePort)
 						if err := r.Status().Update(ctx, &instance); err != nil {
 							log.Error(err, "unable to update instance status")
 							return ctrl.Result{}, err
 						}
+
 						//等各种服务都ready之后，等待job的Completed, 等待每10s Requeue
 						var interval int32
 						interval = 10
