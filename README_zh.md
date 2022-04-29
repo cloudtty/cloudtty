@@ -36,7 +36,7 @@
   a) 从Helm Chart 部署(推荐)
 	```
 	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-	helm install --version 0.0.1 daocloud/cloudshell --generate-name
+	helm install --version 0.0.2 daocloud/cloudshell --generate-name
 	```
   b) 开发者（建议普通用户使用上述Helm安装）
       b.1 ) 安装CRD

@@ -21,7 +21,7 @@ The frontend UI code was originated from `ttyd` project, and the ttyd binary ins
 Step 1: Install Operator and CRD
 ```
 helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-helm install --version 0.0.1 daocloud/cloudshell --generate-name
+helm install --version 0.0.2 daocloud/cloudshell --generate-name
 ```
 
 Step 2: Create kube.conf configmap for target cluster (This step will be refined, when the target cluster is the same one this operators runs on)
@@ -36,7 +36,7 @@ kubectl create configmap my-kubeconfig --from-file=/root/.kube/config
 
 Step 3: Create a cloud-tty instance by applying CR, then monitor its status
 ```
-kubectl apply -f ./config/samples/webtty_v1alpha1_cloudshell.yaml  &&  && kubectl get cloudshell -w
+kubectl apply -f ./config/samples/webtty_v1alpha1_cloudshell.yaml  && kubectl get cloudshell -w
 ```
 
 
