@@ -1,13 +1,6 @@
-# SPECIAL THANKS
-This project is based on https://github.com/tsl0922/ttyd. Many thanks to `tsl0922` and the community.
-The frontend UI code was originated from `ttyd` project, and the ttyd binary inside the container also comes from `ttyd` project.
-
-
+# A Kubernates Cloud-Shell (Web Terminal) Operator.
 
 English | [Simplified_Chinese](https://github.com/cloudtty/cloudtty/blob/main/README_zh.md)
-
-
-# This is a Kubernates Cloud-Shell (Web Terminal) Operator.
 
 # Why cloudtty ?
 
@@ -16,8 +9,38 @@ But Kubernetes cloud native enviroment requires a way to run web-tty via `kubern
 So you can try cloudtty.
 
 
-# Usage and Developer Guide in English
+# SPECIAL THANKS
+This project is based on https://github.com/tsl0922/ttyd. Many thanks to `tsl0922` `yudai` and the community.
+The frontend UI code was originated from `ttyd` project, and the ttyd binary inside the container also comes from `ttyd` project.
 
-Coming Soon.
 
 
+
+# Usage Guide
+
+Step 1: Install Operator and CRD
+```
+helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
+helm install --version 0.0.1 daocloud/cloudshell --generate-name
+```
+
+Step 2: Create kube.conf configmap for target cluster (This step will be refined, when the target cluster is the same one this operators runs on)
+```
+kubectl create configmap my-kubeconfig --from-file=/root/.kube/config
+
+# Be careful to ensure the /root/.kube/config:
+#  1. contains the base64 encoded certs/secrets instead of local files.
+#  2. the k8s api-server endpoint is reachable(host IP or cluster IP) instead of localhost
+```
+
+
+Step 3: Create a cloud-tty instance by applying CR, then monitor its status
+```
+kubectl apply -f ./config/samples/webtty_v1alpha1_cloudshell.yaml  &&  && kubectl get cloudshell -w
+```
+
+
+
+More will be coming Soon.
+
+# Developer Guide

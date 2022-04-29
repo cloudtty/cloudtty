@@ -1,14 +1,13 @@
-# SPECIAL THANKS
-This project is based on https://github.com/tsl0922/ttyd. Many thanks to `tsl0922` and the community.
-The frontend UI code was originated from `ttyd` project, and the ttyd binary inside the container also comes from `ttyd` project.
-
-
+# 这是一个cloudshell的opeartor
 
 简体中文 | [英文](https://github.com/cloudtty/cloudtty/blob/main/README.md)
 
+# 特别鸣谢
+这个项目的很多技术实现都是基于`https://github.com/tsl0922/ttyd`, 非常感谢 `tsl0922` `yudai`和社区.
+前端UI也是从 `ttyd` 项目衍生出来的，另外镜像内所使用的`ttyd`二进制也是来源于这个项目。
 
 
-# 这是一个cloudshell的opeartor
+
 
 # 为什么需要cloudtty ?
 
@@ -27,16 +26,28 @@ The frontend UI code was originated from `ttyd` project, and the ttyd binary ins
 ### 用法：
 
 0.前置条件
- - a) 安装CRD
-        - （选择1）从YAML： ```make generate-yaml
-             然后apply 生成的yaml```
-        - （选择2）从代码：克隆代码之后 `make install`
- - b) 创建kubeconf的configmap（这样能在pod里使用kubectl）
+ -  创建kubeconf的configmap（这样能在pod里使用kubectl, 如果目标集群跟operator是同一个集群，未来会优化步骤）
     - （第一步）`kubectl create configmap my-kubeconfig --from-file=/root/.kube/config`
     - （第二步）然后编辑这个configmap, 修改endpoint的地址，从IP改为servicename, 如`server: https://kubernetes.default.svc.cluster.local:443`
 
 
-1.用户创建cloudshell的CR
+1. 运行operator和安装CRD
+
+  a) 从Helm Chart 部署(推荐)
+	```
+	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
+	helm install --version 0.0.1 daocloud/cloudshell --generate-name
+	```
+  b) 开发者（建议普通用户使用上述Helm安装）
+      b.1 ) 安装CRD
+        - （选择1）从YAML： ```make generate-yaml
+             然后apply 生成的yaml```
+        - （选择2）从代码：克隆代码之后 `make install`
+      b.2 ) 运行Operator
+        `make run`
+
+
+2.用户创建cloudshell的CR
 - 范例在 `config/samples/webtty_v1alpha1_cloudshell.yaml`
  -   ` kubectl apply -f config/samples/webtty_v1alpha1_cloudshell.yaml  && kubectl get cloudshells  -w`
 
@@ -53,7 +64,7 @@ The frontend UI code was originated from `ttyd` project, and the ttyd binary ins
     ```
 
 
-2.operator会在对应的NS下创建同名的 `job` 和`service`（nodePort）
+3.operator会在对应的NS下创建同名的 `job` 和`service`（nodePort）
 
 4.当pod运行ready之后，就将nodeport的访问点写入CR的status里,效果如下
 ```
@@ -65,7 +76,7 @@ cloudshell-sample2   root   bash      NodeIP:30385   Ready   9s
 
 5.当job在TTL或者其他原因结束之后，一旦job变为Completed，CR的状态也会变成`Completed`
 
-5.当CRD被删除时，会自动删除对应的job和service(通过`ownerReference`)
+6.当CRD被删除时，会自动删除对应的job和service(通过`ownerReference`)
 
 
 ToDo：
