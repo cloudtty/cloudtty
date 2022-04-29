@@ -1,10 +1,20 @@
-FROM docker.m.daocloud.io/golang:1.17.3
+FROM docker.m.daocloud.io/node:16.13.2 as builder
+# Build frontend code which added upload/download button
+WORKDIR /app
+COPY html/package.json /app/
+COPY html/yarn.lock /app/
+RUN yarn install
+COPY html/ /app/
+RUN yarn run build
+
+
+FROM docker.m.daocloud.io/ubuntu:20.04
+RUN apt-get update && apt-get install lrzsz curl -y
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 RUN chmod +x kubectl &&  mv kubectl /usr/local/bin/
 RUN curl -LO https://github.com/tsl0922/ttyd/releases/download/1.6.3/ttyd.x86_64 && chmod +x ttyd.x86_64 && mv ttyd.x86_64 /usr/local/bin/ttyd
 #RUN wget https://github.com/yudai/gotty/releases/download/v1.0.1/gotty_linux_amd64.tar.gz && tar -zxvf gotty_linux_amd64.tar.gz && chmod +x gotty && mv gotty /usr/bin/
-RUN apt-get update && apt-get install lrzsz -y
 RUN which ttyd
 RUN mkdir kubeconf
-COPY /frontend/dist/inline.html index.html
+COPY --from=builder /app/dist/inline.html index.html
 ENTRYPOINT ttyd
