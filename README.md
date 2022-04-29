@@ -14,10 +14,10 @@ This project is based on https://github.com/tsl0922/ttyd. Many thanks to `tsl092
 The frontend UI code was originated from `ttyd` project, and the ttyd binary inside the container also comes from `ttyd` project.
 
 
-![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/screenshot.png)
+![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/snapshot.png)
 
 
-![screenshot_gif](https://github.com/cloudtty/cloudtty/raw/main/screenshot.gif)
+![screenshot_gif](https://github.com/cloudtty/cloudtty/raw/main/snapshot.gif)
 
 
 
