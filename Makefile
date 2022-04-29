@@ -111,6 +111,10 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 codegen:
 	./hack/update-codegen.sh
 
+.PHONY: build-chart
+build-chart:
+	helm package ./charts --dependency-update --destination ./charts
+
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
