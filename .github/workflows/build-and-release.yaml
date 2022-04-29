@@ -1,0 +1,24 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Make 
+      run: |
+            make docker-build
+            make build-chart
+
+    - name: Push 
+      run: |
+            make docker-push
