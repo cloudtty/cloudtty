@@ -1,6 +1,6 @@
 # Image URL to use all building/pushing image targets
-OPERATOR_IMG ?= daocloud.io/daocloud/cloudshell-opeartor:latest
-TTY_IMG ?= daocloud.io/daocloud/cloudshell:latest
+OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-opeartor:latest
+TTY_IMG ?= ghcr.io/cloudtty/cloudshell:latest
 #NOTE: job.yaml.tmpl image should align with above
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.

@@ -30,8 +30,8 @@ podLabels: {}
 ## @param image.pullSecrets Specify docker-registry secret names as an array
 ##
 image:
-  registry: daocloud.io
-  repository: daocloud/cloudshell-opeartor
+  registry: ghcr.io
+  repository: cloudtty/cloudshell-opeartor
   tag: "latest"
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
