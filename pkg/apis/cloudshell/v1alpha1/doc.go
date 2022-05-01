@@ -18,4 +18,4 @@ limitations under the License.
 // +groupName=cloudshell.daocloud.io
 
 // Package v1alpha1 is the v1alpha1 version of the API.
-package v1alpha1 // import "gitlab.daocloud.cn/ndx/webtty/pkg/apis/cloudshell/v1alpha1"
+package v1alpha1 // import "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
