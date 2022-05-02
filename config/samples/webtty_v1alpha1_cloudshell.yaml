@@ -1,4 +1,4 @@
-apiVersion: cloudshell.daocloud.io/v1alpha1
+apiVersion: cloudshell.cloudtty.io/v1alpha1
 kind: CloudShell
 metadata:
   name: cloudshell-sample

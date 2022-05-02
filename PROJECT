@@ -1,4 +1,4 @@
-domain: daocloud.io
+domain: cloudtty.io
 layout:
 - go.kubebuilder.io/v3
 projectName: cloudshell
@@ -8,7 +8,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: daocloud.io
+  domain: cloudtty.io
   group: cloudshell
   kind: CloudShell
   path: github.com/cloudtty/cloudtty/pkg/apis/v1alpha1

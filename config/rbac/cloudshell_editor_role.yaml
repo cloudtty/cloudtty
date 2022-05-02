@@ -5,7 +5,7 @@ metadata:
   name: cloudshell-editor-role
 rules:
 - apiGroups:
-  - cloudshell.daocloud.io
+  - cloudshell.cloudtty.io
   resources:
   - cloudshells
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - cloudshell.daocloud.io
+  - cloudshell.cloudtty.io
   resources:
   - cloudshells/status
   verbs:
