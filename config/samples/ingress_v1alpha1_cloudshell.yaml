@@ -1,0 +1,13 @@
+apiVersion: cloudshell.cloudtty.io/v1alpha1
+kind: CloudShell
+metadata:
+  name: nginx-demo
+spec:
+ configmapName: "my-kubeconfig"
+ runAsUser: "root"
+ commandAction: "bash"
+ exposureMode: "Ingress"
+ ingressClassName: "nginx-demo"
+ pathPrefix: "/api/v1alpha1/"
+ ttl: 100
+ once: false
