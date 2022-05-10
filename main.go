@@ -71,7 +71,7 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "52a02cd6.daocloud.io",
+		LeaderElectionID:       "52a02cd6.cloudtty.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

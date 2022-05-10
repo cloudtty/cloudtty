@@ -5,7 +5,7 @@ metadata:
   name: cloudshell-viewer-role
 rules:
 - apiGroups:
-  - cloudshell.daocloud.io
+  - cloudshell.cloudtty.io
   resources:
   - cloudshells
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - cloudshell.daocloud.io
+  - cloudshell.cloudtty.io
   resources:
   - cloudshells/status
   verbs:

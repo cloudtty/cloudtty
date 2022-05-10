@@ -51,7 +51,7 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=cloudshell.daocloud.io, Version=v1alpha1
+	// Group=cloudshell.cloudtty.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("cloudshells"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloudshell().V1alpha1().CloudShells().Informer()}, nil
 

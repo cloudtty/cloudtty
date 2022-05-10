@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: cloudshells.cloudshell.daocloud.io
+  name: cloudshells.cloudshell.cloudtty.io
 spec:
-  group: cloudshell.daocloud.io
+  group: cloudshell.cloudtty.io
   names:
     kind: CloudShell
     listKind: CloudShellList

@@ -30,7 +30,7 @@ type CloudshellV1alpha1Interface interface {
 	CloudShellsGetter
 }
 
-// CloudshellV1alpha1Client is used to interact with features provided by the cloudshell.daocloud.io group.
+// CloudshellV1alpha1Client is used to interact with features provided by the cloudshell.cloudtty.io group.
 type CloudshellV1alpha1Client struct {
 	restClient rest.Interface
 }

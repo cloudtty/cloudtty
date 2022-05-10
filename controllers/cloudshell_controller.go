@@ -44,9 +44,9 @@ type CloudShellReconciler struct {
 	svcTemplate string
 }
 
-//+kubebuilder:rbac:groups=cloudshell.daocloud.io,resources=cloudshells,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cloudshell.daocloud.io,resources=cloudshells/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cloudshell.daocloud.io,resources=cloudshells/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cloudshell.cloudtty.io,resources=cloudshells,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cloudshell.cloudtty.io,resources=cloudshells/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cloudshell.cloudtty.io,resources=cloudshells/finalizers,verbs=update
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;
 //+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;

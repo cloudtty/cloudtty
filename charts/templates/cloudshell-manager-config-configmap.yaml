@@ -13,4 +13,4 @@ data:
       port: 9443
     leaderElection:
       leaderElect: true
-      resourceName: 52a02cd6.daocloud.io
+      resourceName: 52a02cd6.cloudtty.io

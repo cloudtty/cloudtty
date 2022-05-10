@@ -35,9 +35,9 @@ type FakeCloudShells struct {
 	ns   string
 }
 
-var cloudshellsResource = schema.GroupVersionResource{Group: "cloudshell.daocloud.io", Version: "v1alpha1", Resource: "cloudshells"}
+var cloudshellsResource = schema.GroupVersionResource{Group: "cloudshell.cloudtty.io", Version: "v1alpha1", Resource: "cloudshells"}
 
-var cloudshellsKind = schema.GroupVersionKind{Group: "cloudshell.daocloud.io", Version: "v1alpha1", Kind: "CloudShell"}
+var cloudshellsKind = schema.GroupVersionKind{Group: "cloudshell.cloudtty.io", Version: "v1alpha1", Kind: "CloudShell"}
 
 // Get takes name of the cloudShell, and returns the corresponding cloudShell object, and an error if there is any.
 func (c *FakeCloudShells) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.CloudShell, err error) {

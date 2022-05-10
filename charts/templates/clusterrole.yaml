@@ -19,18 +19,18 @@ rules:
   - jobs
   verbs: ["*"]
 - apiGroups:
-  - cloudshell.daocloud.io
+  - cloudshell.cloudtty.io
   resources:
   - cloudshells
   verbs: ["*"]
 - apiGroups:
-  - cloudshell.daocloud.io
+  - cloudshell.cloudtty.io
   resources:
   - cloudshells/finalizers
   verbs:
   - update
 - apiGroups:
-  - cloudshell.daocloud.io
+  - cloudshell.cloudtty.io
   resources:
   - cloudshells/status
   verbs:
