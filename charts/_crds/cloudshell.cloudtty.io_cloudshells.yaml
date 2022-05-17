@@ -61,9 +61,23 @@ spec:
                 description: Configmap of the target kube-config, will replace by
                   SA
                 type: string
+              exposureMode:
+                description: ExposeMode describes how to access ttyd service, either
+                  ClusterIP, NodePort, Ingress or VirtualService.
+                type: string
+              ingressClassName:
+                description: Specifies a port number range 30000-32767 when using
+                  nodeport mode, if not specified, kubernetes default random rule
+                  is used. NodePort int32 `json:"NodePort,omitempty"` Specifies a
+                  ingress controller to ingress, it must be fill when the cluster
+                  have multiple ingress contriller service.
+                type: string
               once:
                 description: accept only one client and exit on disconnection
                 type: boolean
+              pathPrefix:
+                description: PathPrefix
+                type: string
               runAsUser:
                 type: string
               ttl:

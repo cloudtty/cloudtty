@@ -20,6 +20,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ExposeMode describes how to access ttyd service, either ClusterIP, NodePort, Ingress or VirtualService.
+// +enum
+type ExposureMode string
+
+const (
+	ExposureServiceClusterIP ExposureMode = "ClusterIP"
+	ExposureServiceNodePort  ExposureMode = "NodePort"
+	ExposureIngress          ExposureMode = "Ingress"
+	// ExposureVirtualService   ExposureMode = "VirtualService"
+	PhaseCreatedJob   = "CreatedJob"
+	PhaseCreatedRoute = "CreatedRouteRule"
+	PhaseReady        = "Ready"
+	PhaseCompleted    = "Completed"
+)
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -32,9 +47,16 @@ type CloudShellSpec struct {
 	ConfigmapName string `json:"configmapName,omitempty"`
 	RunAsUser     string `json:"runAsUser,omitempty"`
 	// accept only one client and exit on disconnection
-	Once          bool   `json:"once,omitempty"`
-	CommandAction string `json:"commandAction,omitempty"`
-	Ttl           int32  `json:"ttl,omitempty"`
+	Once          bool         `json:"once,omitempty"`
+	CommandAction string       `json:"commandAction,omitempty"`
+	Ttl           int32        `json:"ttl,omitempty"`
+	ExposeMode    ExposureMode `json:"exposureMode,omitempty"`
+	// Specifies a port number range 30000-32767 when using nodeport mode, if not specified, kubernetes default random rule is used.
+	// NodePort int32 `json:"NodePort,omitempty"`
+	// IngressClassName Specifies a ingress controller to ingress, it must be fill when the cluster have multiple ingress controller service.
+	IngressClassName string `json:"ingressClassName,omitempty"`
+	// PathPrefix specified a path prefix to access url, if not, the default path is used.
+	PathPrefix string `json:"pathPrefix,omitempty"`
 }
 
 // CloudShellStatus defines the observed state of CloudShell
