@@ -24,6 +24,10 @@ spec:
       jsonPath: .spec.commandAction
       name: Command
       type: string
+    - description: Expose mode
+      jsonPath: .spec.exposeMode
+      name: Type
+      type: string
     - description: Access Url
       jsonPath: .status.accessUrl
       name: URL
@@ -64,25 +68,69 @@ spec:
               exposureMode:
                 description: ExposeMode describes how to access ttyd service, either
                   ClusterIP, NodePort, Ingress or VirtualService.
+                enum:
+                - ClusterIP
+                - NodePort
+                - Ingress
+                - VirtualService
                 type: string
-              ingressClassName:
+              ingressConfig:
                 description: Specifies a port number range 30000-32767 when using
                   nodeport mode, if not specified, kubernetes default random rule
-                  is used. NodePort int32 `json:"NodePort,omitempty"` Specifies a
-                  ingress controller to ingress, it must be fill when the cluster
-                  have multiple ingress contriller service.
-                type: string
+                  is used. NodePort int32 `json:"NodePort,omitempty"` IngressConfig
+                  specifies necessary parameters to create ingress.
+                properties:
+                  ingressClassName:
+                    description: IngressClassName specifies a ingress controller to
+                      ingress, it must be fill when the cluster have multiple ingress
+                      controller service.
+                    type: string
+                  ingressName:
+                    description: IngressName specifies a name to ingress, if it's
+                      empty, default "cloudshell-ingress".
+                    type: string
+                  namespace:
+                    description: Namespace specifies a namespace that the virtualService
+                      will be created in it. if it's empty, default the cloudshell
+                      namespace.
+                    type: string
+                type: object
               once:
                 description: accept only one client and exit on disconnection
                 type: boolean
               pathPrefix:
-                description: PathPrefix
+                description: PathPrefix specified a path prefix to access url, if
+                  not, the default path is used.
                 type: string
               runAsUser:
                 type: string
               ttl:
                 format: int32
                 type: integer
+              virtualServiceConfig:
+                description: VirtualServiceConfig specifies some of the parameters
+                  necessary to create the virtaulService.
+                properties:
+                  export_to:
+                    description: The value "." is reserved and defines an export to
+                      the same namespace that the virtual service is declared in.
+                      Similarly the value "*" is reserved and defines an export to
+                      all namespaces.
+                    type: string
+                  gateway:
+                    description: Gateway must be specified and the gateway already
+                      exists in the cluster.
+                    type: string
+                  namespace:
+                    description: Namespace specifies a namespace that the virtualService
+                      will be created in it. if it's empty, default the cloudshell
+                      namespace.
+                    type: string
+                  virtualServiceName:
+                    description: VirtualServiceName specifies a name to virtualService,
+                      if it's empty, default "cloudshell-VirtualService"
+                    type: string
+                type: object
             type: object
           status:
             description: CloudShellStatus defines the observed state of CloudShell

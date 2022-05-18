@@ -95,7 +95,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: cloudshell-ingress
+  name: {{ .Name }}
   namespace: {{ .Namespace }}
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
@@ -111,5 +111,31 @@ spec:
             name: {{ .ServiceName }}
             port:
               number: 7681
+`
+
+	VirtualServiceV1Beta1 = `
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+spec:
+  exportTo:
+  - {{ .ExportTo }}
+  gateways:
+  - {{ .Gateway }}
+  hosts:
+  - '*'
+  http:
+  - match:
+    - uri:
+        exact: {{ .Path }}
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: {{ .ServiceName }}.{{ .Namespace }}.svc.cluster.local
+        port:
+          number: 7681
 `
 )
