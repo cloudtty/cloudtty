@@ -28,7 +28,8 @@ const (
 	ExposureServiceClusterIP ExposureMode = "ClusterIP"
 	ExposureServiceNodePort  ExposureMode = "NodePort"
 	ExposureIngress          ExposureMode = "Ingress"
-	// ExposureVirtualService   ExposureMode = "VirtualService"
+	ExposureVirtualService   ExposureMode = "VirtualService"
+
 	PhaseCreatedJob   = "CreatedJob"
 	PhaseCreatedRoute = "CreatedRouteRule"
 	PhaseReady        = "Ready"
@@ -44,19 +45,52 @@ type CloudShellSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Configmap of the target kube-config, will replace by SA
+	// +required
 	ConfigmapName string `json:"configmapName,omitempty"`
 	RunAsUser     string `json:"runAsUser,omitempty"`
 	// accept only one client and exit on disconnection
-	Once          bool         `json:"once,omitempty"`
-	CommandAction string       `json:"commandAction,omitempty"`
-	Ttl           int32        `json:"ttl,omitempty"`
-	ExposeMode    ExposureMode `json:"exposureMode,omitempty"`
-	// Specifies a port number range 30000-32767 when using nodeport mode, if not specified, kubernetes default random rule is used.
+	Once          bool   `json:"once,omitempty"`
+	CommandAction string `json:"commandAction,omitempty"`
+	Ttl           int32  `json:"ttl,omitempty"`
+	// +kubebuilder:validation:Enum=ClusterIP;NodePort;Ingress;VirtualService
+	ExposeMode ExposureMode `json:"exposureMode,omitempty"`
+	// Specifies a port number range 30000-32767 when using nodeport mode,
+	// if not specified, kubernetes default random rule is used.
 	// NodePort int32 `json:"NodePort,omitempty"`
-	// IngressClassName Specifies a ingress controller to ingress, it must be fill when the cluster have multiple ingress controller service.
-	IngressClassName string `json:"ingressClassName,omitempty"`
+	// IngressConfig specifies necessary parameters to create ingress.
+	IngressConfig *IngressConfig `json:"ingressConfig,omitempty"`
+	// VirtualServiceConfig specifies some of the parameters necessary to create the virtaulService.
+	VirtualServiceConfig *VirtualServiceConfig `json:"virtualServiceConfig,omitempty"`
 	// PathPrefix specified a path prefix to access url, if not, the default path is used.
 	PathPrefix string `json:"pathPrefix,omitempty"`
+}
+
+// VirtualServiceConfig specifies some of the parameters necessary to create the virtaulService.
+type VirtualServiceConfig struct {
+	// VirtualServiceName specifies a name to virtualService, if it's
+	// empty, default "cloudshell-VirtualService"
+	VirtualServiceName string `json:"virtualServiceName,omitempty"`
+	// Namespace specifies a namespace that the virtualService will be
+	// created in it. if it's empty, default the cloudshell namespace.
+	Namespace string `json:"namespace,omitempty"`
+	// The value "." is reserved and defines an export to the same namespace that
+	// the virtual service is declared in. Similarly the value "*" is reserved and
+	// defines an export to all namespaces.
+	ExportTo string `json:"export_to,omitempty"`
+	// Gateway must be specified and the gateway already exists in the cluster.
+	Gateway string `json:"gateway,omitempty"`
+}
+
+// IngressConfig specifies some of the parameters necessary to create the ingress.
+type IngressConfig struct {
+	// IngressName specifies a name to ingress, if it's empty, default "cloudshell-ingress".
+	IngressName string `json:"ingressName,omitempty"`
+	// Namespace specifies a namespace that the virtualService will be
+	// created in it. if it's empty, default the cloudshell namespace.
+	Namespace string `json:"namespace,omitempty"`
+	// IngressClassName specifies a ingress controller to ingress,
+	// it must be fill when the cluster have multiple ingress controller service.
+	IngressClassName string `json:"ingressClassName,omitempty"`
 }
 
 // CloudShellStatus defines the observed state of CloudShell
@@ -73,6 +107,7 @@ type CloudShellStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name=User,type="string",JSONPath=".spec.runAsUser",description="User"
 //+kubebuilder:printcolumn:name=Command,type="string",JSONPath=".spec.commandAction",description="Command"
+//+kubebuilder:printcolumn:name=Type,type="string",JSONPath=".spec.ExposeMode",description="Expose mode"
 //+kubebuilder:printcolumn:name=URL,type="string",JSONPath=".status.accessUrl",description="Access Url"
 //+kubebuilder:printcolumn:name=Phase,type="string",JSONPath=".status.phase",description="Phase"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"

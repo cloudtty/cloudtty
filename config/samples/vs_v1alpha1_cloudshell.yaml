@@ -1,16 +1,17 @@
 apiVersion: cloudshell.cloudtty.io/v1alpha1
 kind: CloudShell
 metadata:
-  name: nginx-demo
+  name: vs-demo
 spec:
  configmapName: "my-kubeconfig"
  runAsUser: "root"
  commandAction: "bash"
- exposureMode: "Ingress"
+ exposureMode: "VirtualService"
  pathPrefix: "/apis/cloudtty.io/"
  ttl: 100
  once: false
- ingressConfig: 
-    ingressName: "cloudshell-ingress-demo"
+ virtualServiceConfig:
+    virtualServiceName: "cloudshell-vs-demo"
     namespace: "cloudtty-system"
-    ingressClassName: "nginx"
+    gateway: "istio-system/istio-gateway"
+    export_to: "istio-system"
