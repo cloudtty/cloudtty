@@ -33,7 +33,8 @@ const (
 	PhaseCreatedJob   = "CreatedJob"
 	PhaseCreatedRoute = "CreatedRouteRule"
 	PhaseReady        = "Ready"
-	PhaseCompleted    = "Completed"
+	PhaseCompleted    = "Complete"
+	PhaseFailed       = "Failed"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -52,6 +53,8 @@ type CloudShellSpec struct {
 	Once          bool   `json:"once,omitempty"`
 	CommandAction string `json:"commandAction,omitempty"`
 	Ttl           int32  `json:"ttl,omitempty"`
+	// Cleanup specified whether to delete cloudshell resources when corresponding job status is completed.
+	Cleanup bool `json:"cleanup,omitempty"`
 	// +kubebuilder:validation:Enum=ClusterIP;NodePort;Ingress;VirtualService
 	ExposeMode ExposureMode `json:"exposureMode,omitempty"`
 	// Specifies a port number range 30000-32767 when using nodeport mode,
@@ -107,7 +110,7 @@ type CloudShellStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name=User,type="string",JSONPath=".spec.runAsUser",description="User"
 //+kubebuilder:printcolumn:name=Command,type="string",JSONPath=".spec.commandAction",description="Command"
-//+kubebuilder:printcolumn:name=Type,type="string",JSONPath=".spec.ExposeMode",description="Expose mode"
+//+kubebuilder:printcolumn:name=Type,type="string",JSONPath=".spec.exposureMode",description="Expose mode"
 //+kubebuilder:printcolumn:name=URL,type="string",JSONPath=".status.accessUrl",description="Access Url"
 //+kubebuilder:printcolumn:name=Phase,type="string",JSONPath=".status.phase",description="Phase"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
