@@ -33,26 +33,39 @@
 
 1. 运行operator和安装CRD
 
-  a) 从Helm Chart 部署(推荐)
+  a) 直接用户: 从Helm Chart 部署(推荐)
+
 	```
 	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
 	helm install --version 0.0.2 daocloud/cloudshell --generate-name
 	```
-  b) 开发者（建议普通用户使用上述Helm安装）
+
+  b) 开发者: 编译执行 （建议普通用户使用上述Helm安装）
+
       b.1 ) 安装CRD
-        - （选择1）从YAML： ```make generate-yaml
+
+        - （选择1）从YAML： 
+	   ```make generate-yaml
              然后apply 生成的yaml```
+
         - （选择2）从代码：克隆代码之后 `make install`
+
       b.2 ) 运行Operator
         `make run`
 
 
-2.用户创建cloudshell的CR
-- 范例在 `config/samples/cloudshell_v1alpha1_cloudshell.yaml`
- -   ` kubectl apply -f config/samples/cloudshell_v1alpha1_cloudshell.yaml  && kubectl get cloudshells  -w`
+2. 创建cloudshell的CR
+
+-（选择1）使用范例
+   ```
+   kubectl apply -f config/samples/cloudshell_v1alpha1_cloudshell.yaml
+   kubectl get cloudshells  -w
+   ```
+
+更多范例，参加`config/samples/`
 
 
-- 自己写一个CR， 比如开启窗口后自动打印某个容器的日志：
+- (选择2) 自定义CR， 比如开启窗口后自动打印某个容器的日志：
 ```
 apiVersion: cloudshell.cloudtty.io/v1alpha1
 kind: CloudShell
@@ -66,9 +79,10 @@ spec:
 ```
 
 
-3.operator会在对应的NS下创建同名的 `job` 和`service`（nodePort）
+3. operator会在对应的NS下创建同名的 `job` 和`service`（nodePort）
 
-4.当pod运行ready之后，就将nodeport的访问点写入CR的status里,效果如下
+4. 当pod运行ready之后，就将nodeport的访问点写入CR的status里,效果如下
+
 ```
 kubectl get cloudshell
 NAME                 USER   COMMAND   URL            PHASE   AGE
@@ -76,9 +90,9 @@ cloudshell-sample    root   bash      NodeIP:30167   Ready   31s
 cloudshell-sample2   root   bash      NodeIP:30385   Ready   9s
 ```
 
-5.当job在TTL或者其他原因结束之后，一旦job变为Completed，CR的状态也会变成`Completed`
+5. 当job在TTL或者其他原因结束之后，一旦job变为Completed，CR的状态也会变成`Completed`
 
-6.当CRD被删除时，会自动删除对应的job和service(通过`ownerReference`)
+6. 当CRD被删除时，会自动删除对应的job和service(通过`ownerReference`)
 
 
 ToDo：
