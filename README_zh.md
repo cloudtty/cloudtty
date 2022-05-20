@@ -48,20 +48,22 @@
 
 
 2.用户创建cloudshell的CR
-- 范例在 `config/samples/webtty_v1alpha1_cloudshell.yaml`
- -   ` kubectl apply -f config/samples/webtty_v1alpha1_cloudshell.yaml  && kubectl get cloudshells  -w`
+- 范例在 `config/samples/cloudshell_v1alpha1_cloudshell.yaml`
+ -   ` kubectl apply -f config/samples/cloudshell_v1alpha1_cloudshell.yaml  && kubectl get cloudshells  -w`
 
 
 - 自己写一个CR， 比如开启窗口后自动打印某个容器的日志：
-    ```
-    apiVersion: webtty.webtty.daocloud.io/v1alpha1
-    kind: CloudShell
-    metadata:
-      name: cloudshell-sample
-    spec:
-      configmapName: "kube-config"
-      commandAction: "kubectl -n kube-system logs -f kube-apiserver-cn-stack"
-    ```
+```
+apiVersion: cloudshell.cloudtty.io/v1alpha1
+kind: CloudShell
+metadata:
+  name: cloudshell-sample
+spec:
+  configmapName: "my-kubeconfig"
+  runAsUser: "root"
+  commandAction: "kubectl -n kube-system logs -f kube-apiserver-cn-stack"
+  once: false
+```
 
 
 3.operator会在对应的NS下创建同名的 `job` 和`service`（nodePort）

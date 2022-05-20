@@ -3,4 +3,8 @@ kind: CloudShell
 metadata:
   name: cloudshell-sample
 spec:
-  # TODO(user): Add fields here
+  configmapName: "my-kubeconfig"
+  runAsUser: "root"
+  commandAction: "bash"
+  ttl: 100
+  once: false

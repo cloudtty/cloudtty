@@ -189,7 +189,7 @@ func (c *CloudShellReconciler) ensureFinalizer(cluster *cloudshellv1alpha1.Cloud
 	return nil
 }
 
-// CreateCloudShellJob clould create a job for cloudshell, the job will running a webtty server in the pod.
+// CreateCloudShellJob clould create a job for cloudshell, the job will running a cloudtty server in the pod.
 // the job template set default images registry "ghcr.io" and default command, no modification is supported currently,
 // the configmap must be existed in the cluster.
 func (r *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {

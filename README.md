@@ -42,8 +42,11 @@ kubectl create configmap my-kubeconfig --from-file=/root/.kube/config
 
 Step 3: Create a cloud-tty instance by applying CR, then monitor its status
 ```
-kubectl apply -f ./config/samples/webtty_v1alpha1_cloudshell.yaml  && kubectl get cloudshell -w
+kubectl apply -f ./config/samples/cloudshell_v1alpha1_cloudshell.yaml  && kubectl get cloudshell -w
 ```
+By default, it will create a cloud-tty pod and expose `NodePort` type service.
+
+Alternatively, `Cluster-IP`, `Ingress`, `Virtual Service`(for Istio) are all supported as `exposureMode`, please refer to `config/samples/` for more examples.
 
 
 
