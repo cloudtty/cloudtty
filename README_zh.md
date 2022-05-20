@@ -2,17 +2,17 @@
 
 简体中文 | [英文](https://github.com/cloudtty/cloudtty/blob/main/README.md)
 
-# 特别鸣谢
-这个项目的很多技术实现都是基于`https://github.com/tsl0922/ttyd`, 非常感谢 `tsl0922` `yudai`和社区.
-前端UI也是从 `ttyd` 项目衍生出来的，另外镜像内所使用的`ttyd`二进制也是来源于这个项目。
-
-
 
 
 # 为什么需要cloudtty ?
 
 像ttyd等项目已经非常成熟了，可以提供浏览器之上的终端的能力。
-但是在kubernetes的场景下，我们需要能有更云原生的能力拓展，比如ttyd在容器内运行，能够通过nodePort等方式访问，能够用CRD的方式创建多个实例。
+
+但是在kubernetes的场景下，我们需要能有更云原生的能力拓展:
+
+比如ttyd在容器内运行，能够通过nodePort\Ingress等方式访问，能够用CRD的方式创建多个实例。
+
+请使用cloudtty吧🎉
 
 # 适用场景
 
@@ -21,51 +21,87 @@
 3. 在浏览器网页上能够滚动展示容器日志的场景
 
 
+# 截图
 
 
-### 用法：
 
-0.前置条件
- -  创建kubeconf的configmap（这样能在pod里使用kubectl, 如果目标集群跟operator是同一个集群，未来会优化步骤）
-    - （第一步）`kubectl create configmap my-kubeconfig --from-file=/root/.kube/config`
-    - （第二步）然后编辑这个configmap, 修改endpoint的地址，从IP改为servicename, 如`server: https://kubernetes.default.svc.cluster.local:443`
+![screenshot_gif](https://github.com/cloudtty/cloudtty/raw/main/snapshot.gif)
 
+
+
+# 快速上手
+
+步骤1. 安装
+
+	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
+	helm install --version 0.0.2 daocloud/cloudshell --generate-name
+
+步骤2. 准备`kube.conf`,放入configmap中
+
+    注：ToDo: 当目标集群跟operator是同一个集群则不需要`kube.conf`，会尽快优化
+
+
+    - （第1步）
+	`kubectl create configmap my-kubeconfig --from-file=/root/.kube/config`, 并确保密钥/证书是base64而不是本地文件
+
+    - （第2步）
+	编辑这个configmap, 修改endpoint的地址，从IP改为servicename, 如`server: https://kubernetes.default.svc.cluster.local:443`
+
+
+步骤3. 创建CR，启动cloudtty的实例，并观察其状态
+
+	kubectl apply -f ./config/samples/cloudshell_v1alpha1_cloudshell.yaml
+
+更多范例，参见`config/samples/`
+
+步骤4. 观察CR状态，获取访问接入点，如: 
+
+	$kubectl get cloudshell -w
+
+可以看到：
+
+	NAME                 USER   COMMAND   URL                 PHASE   AGE
+	cloudshell-sample    root   bash      192.168.4.1:30167   Ready   31s
+	cloudshell-sample2   root   bash      192.168.4.1:30385   Ready   9s
+
+当CR对象变为`Ready`，并且`URL`字段出现之后，就可以通过该字段的访问方式，在浏览器打开，如下
+
+![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/snapshot.png)
+
+#### 原理
+
+1. operator会在对应的NS下创建同名的 `job` 和`service`（nodePort）
+
+2. 当pod运行ready之后，就将nodeport的访问点写入CR的status里
+
+3. 当job在TTL或者其他原因结束之后，一旦job变为Completed，CR的状态也会变成`Completed`
+
+4. 当CRD被删除时，会自动删除对应的job和service(通过`ownerReference`)
+
+
+# 特别鸣谢
+
+这个项目的很多技术实现都是基于`https://github.com/tsl0922/ttyd`, 非常感谢 `tsl0922` `yudai`和社区.
+
+前端UI也是从 `ttyd` 项目衍生出来的，另外镜像内所使用的`ttyd`二进制也是来源于这个项目。
+
+
+
+### 开发者模式
 
 1. 运行operator和安装CRD
 
-  a) 直接用户: 从Helm Chart 部署(推荐)
-
-	```
-	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-	helm install --version 0.0.2 daocloud/cloudshell --generate-name
-	```
-
-  b) 开发者: 编译执行 （建议普通用户使用上述Helm安装）
+  开发者: 编译执行 （建议普通用户使用上述Helm安装）
 
       b.1 ) 安装CRD
-
-        - （选择1）从YAML： 
-	   ```make generate-yaml
-             然后apply 生成的yaml```
-
+        - （选择1）从YAML： 	   ```make generate-yaml ;              然后apply 生成的yaml```
         - （选择2）从代码：克隆代码之后 `make install`
+      b.2 ) 运行Operator :        `make run`
 
-      b.2 ) 运行Operator
-        `make run`
+2. 创建CR 
 
+比如开启窗口后自动打印某个容器的日志：
 
-2. 创建cloudshell的CR
-
--（选择1）使用范例
-   ```
-   kubectl apply -f config/samples/cloudshell_v1alpha1_cloudshell.yaml
-   kubectl get cloudshells  -w
-   ```
-
-更多范例，参加`config/samples/`
-
-
-- (选择2) 自定义CR， 比如开启窗口后自动打印某个容器的日志：
 ```
 apiVersion: cloudshell.cloudtty.io/v1alpha1
 kind: CloudShell
@@ -77,23 +113,6 @@ spec:
   commandAction: "kubectl -n kube-system logs -f kube-apiserver-cn-stack"
   once: false
 ```
-
-
-3. operator会在对应的NS下创建同名的 `job` 和`service`（nodePort）
-
-4. 当pod运行ready之后，就将nodeport的访问点写入CR的status里,效果如下
-
-```
-kubectl get cloudshell
-NAME                 USER   COMMAND   URL            PHASE   AGE
-cloudshell-sample    root   bash      NodeIP:30167   Ready   31s
-cloudshell-sample2   root   bash      NodeIP:30385   Ready   9s
-```
-
-5. 当job在TTL或者其他原因结束之后，一旦job变为Completed，CR的状态也会变成`Completed`
-
-6. 当CRD被删除时，会自动删除对应的job和service(通过`ownerReference`)
-
 
 ToDo：
 
