@@ -35,6 +35,7 @@ spec:
       containers:
       - name:  web-tty
         image: ghcr.io/cloudtty/cloudshell:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7681
           name: tty-ui

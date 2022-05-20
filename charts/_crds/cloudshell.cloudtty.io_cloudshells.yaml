@@ -25,7 +25,7 @@ spec:
       name: Command
       type: string
     - description: Expose mode
-      jsonPath: .spec.exposeMode
+      jsonPath: .spec.exposureMode
       name: Type
       type: string
     - description: Access Url
@@ -59,6 +59,10 @@ spec:
           spec:
             description: CloudShellSpec defines the desired state of CloudShell
             properties:
+              cleanup:
+                description: Cleanup specified whether to delete cloudshell resources
+                  when corresponding job status is completed.
+                type: boolean
               commandAction:
                 type: string
               configmapName:

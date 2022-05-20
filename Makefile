@@ -76,6 +76,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 docker-build: test ## Build docker image with the manager.
 	docker build -t ${OPERATOR_IMG} . -f docker/Dockerfile
 	docker build -t ${TTY_IMG} . -f docker/Dockerfile-webtty
+
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${OPERATOR_IMG}

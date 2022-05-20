@@ -93,6 +93,10 @@ func (c *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if cloudshell.Status.Phase == cloudshellv1alpha1.PhaseCompleted {
+		if cloudshell.Spec.Cleanup {
+			return ctrl.Result{}, c.Delete(ctx, cloudshell)
+		}
+
 		log.Info("find a completed instance", "instance", cloudshell)
 		return ctrl.Result{}, nil
 	}
@@ -136,7 +140,7 @@ func (c *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			}
 
 			// update cloudshell phase to "PhaseCreatedRoute".
-			if err := c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseCreatedRoute); err != nil {
+			if err := c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseReady); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
@@ -288,7 +292,7 @@ func (c *CloudShellReconciler) CreateRouteRule(ctx context.Context, cloudshell *
 	}
 
 	cloudshell.Status.AccessURL = accessURL
-	if err := c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseReady); err != nil {
+	if err := c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseCreatedRoute); err != nil {
 		log.Error(err, "unable to update cloudshell %s status", cloudshell.Name)
 		return err
 	}
@@ -379,7 +383,7 @@ func (c *CloudShellReconciler) CreateCloudShellService(ctx context.Context, clou
 	serviceBytes, err := util.ParseTemplate(manifests.ServiceTmplV1, struct {
 		GenerateName, Namespace, Ownership, JobName, Type string
 	}{
-		GenerateName: fmt.Sprintf("cloudshell-%s", cloudshell.Name),
+		GenerateName: fmt.Sprintf("cloudshell-%s-", cloudshell.Name),
 		Namespace:    cloudshell.Namespace,
 		Ownership:    cloudshell.Name,
 		JobName:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
