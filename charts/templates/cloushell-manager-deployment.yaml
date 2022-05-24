@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "cloudshell.controllerManager.fullname" . }}
+  name: {{ include "cloudtty.controllerManager.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    control-plane: {{ include "cloudshell.controllerManager.fullname" . }}
+    control-plane: {{ include "cloudtty.controllerManager.fullname" . }}
     {{- if .Values.labels }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.labels "context" $ ) | nindent 4 }}
     {{- end }}
@@ -12,7 +12,7 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      control-plane: {{ include "cloudshell.controllerManager.fullname" . }}
+      control-plane: {{ include "cloudtty.controllerManager.fullname" . }}
       {{- if .Values.podLabels }}
       {{- include "common.tplvalues.render" ( dict "value" .Values.podLabels "context" $ ) | nindent 4 }}
       {{- end }}
@@ -23,15 +23,16 @@ spec:
       {{- include "common.tplvalues.render" (dict "value" .Values.apiserver.podAnnotations "context" $) | nindent 8 }}
       {{- end }}
       labels:
-        control-plane: {{ include "cloudshell.controllerManager.fullname" . }}
+        control-plane: {{ include "cloudtty.controllerManager.fullname" . }}
         {{- if .Values.podLabels }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.podLabels "context" $ ) | nindent 4 }}
         {{- end }}
     spec:
-      {{- include "cloudshell.controllerManager.imagePullSecrets" . | nindent 6 }}
+      {{- include "cloudtty.controllerManager.imagePullSecrets" . | nindent 6 }}
       containers:
-        - name: {{ include "cloudshell.controllerManager.fullname" . }}
-          image: {{ include "cloudshell.controllerManager.image" . }}
+        - name: {{ include "cloudtty.controllerManager.fullname" . }}
+          image: {{ include "cloudtty.controllerManager.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
           - /manager
           - --leader-elect
@@ -50,6 +51,13 @@ spec:
               path: /readyz
               port: 8081
           {{- end }}
+          volumeMounts:
+          - mountPath: /etc/cloudtty
+            name: cloudtty-job-template
+      volumes:
+        - name: cloudtty-job-template
+          configMap:
+            name: {{ include "jobTemplate.config.fullname" . }}
       {{- if .Values.affinity }}
       affinity: {{- include "common.tplvalues.render" (dict "value" .Values.affinity "context" $) | nindent 8 }}
       {{- end }}
@@ -59,5 +67,5 @@ spec:
       {{- if .Values.tolerations }}
       tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.tolerations "context" $) | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "cloudshell.controllerManager.fullname" . }}
+      serviceAccountName: {{ include "cloudtty.controllerManager.fullname" . }}
       terminationGracePeriodSeconds: 10

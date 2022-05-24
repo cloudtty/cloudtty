@@ -1,4 +1,4 @@
-# 这是一个 cloudshell 的 opeartor
+# 这是一个 cloudshell 的 operator
 
 简体中文 | [英文](https://github.com/cloudtty/cloudtty/blob/main/README.md)
 

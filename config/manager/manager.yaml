@@ -56,5 +56,12 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+        volumeMounts:
+            - mountPath: /etc/cloudtty
+              name: cloudtty-job-template
+      volumes:
+        - name: cloudtty-job-template
+          configMap:
+            name: cloudtty-job-template
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
