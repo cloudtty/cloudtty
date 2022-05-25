@@ -79,7 +79,7 @@ kind: Service
 metadata:
   labels:
     ownership: {{ .Ownership }}
-  generateName: {{ .GenerateName }}
+  name: {{ .Name }}
   namespace: {{ .Namespace }}
 spec:
   ports:
