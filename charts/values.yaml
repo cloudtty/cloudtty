@@ -2,7 +2,7 @@
 ## This is a YAML-formatted file.
 ## Declare variables to be passed into your templates.
 
-## @param global cloudshell global config
+## @param global cloudtty global config
 global:
   ## @param global.imageRegistry Global Docker image registry
   imageRegistry: ""
@@ -23,15 +23,15 @@ replicaCount: 1
 podAnnotations: {}
 ## @param controllerManager.podLabels
 podLabels: {}
-## @param image.registry cloudshell image registry
-## @param image.repository cloudshell image repository
-## @param image.tag cloudshell image tag (immutable tags are recommended)
-## @param image.pullPolicy cloudshell image pull policy
+## @param image.registry cloudtty image registry
+## @param image.repository cloudtty image repository
+## @param image.tag cloudtty image tag (immutable tags are recommended)
+## @param image.pullPolicy cloudtty image pull policy
 ## @param image.pullSecrets Specify docker-registry secret names as an array
 ##
 image:
   registry: ghcr.io
-  repository: cloudtty/cloudshell-opeartor
+  repository: cloudtty/cloudshell-operator
   tag: "latest"
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
@@ -83,3 +83,30 @@ readinessProbe:
   enabled: true
   initialDelaySeconds: 5
   periodSeconds: 10
+
+## @jobTemplate job template config
+jobTemplate:
+  ## @param jobTemplate.labels
+  labels: {}
+  ## @param image.registry cloudtty job image registry
+  ## @param image.repository cloudtty job image repository
+  ## @param image.tag cloudtty job image tag (immutable tags are recommended)
+  ## @param image.pullPolicy cloudtty job image pull policy
+  ## @param image.pullSecrets Specify docker-registry secret names as an array
+  ##
+  image:
+    registry: ghcr.io
+    repository: cloudtty/cloudshell:latest
+    tag: "latest"
+    ## Specify a imagePullPolicy
+    ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+    ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+    ##
+    pullPolicy: IfNotPresent
+    ## Optionally specify an array of imagePullSecrets.
+    ## Secrets must be manually created in the namespace.
+    ## Example:
+    ## pullSecrets:
+    ##   - myRegistryKeySecretName
+    ##
+    pullSecrets: []

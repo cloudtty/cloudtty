@@ -195,7 +195,13 @@ func (c *CloudShellReconciler) ensureFinalizer(cluster *cloudshellv1alpha1.Cloud
 func (r *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	log := log.FromContext(ctx)
 
-	jobBytes, err := util.ParseTemplate(manifests.JobTmplV1, struct {
+	jobTmpl := manifests.JobTmplV1
+	if template, err := util.LoadYamlTemplate("/etc/cloudtty/job-temp.yaml"); err == nil {
+		log.Info("load cloudtty job template from /etc/cloudtty")
+		jobTmpl = template
+	}
+
+	jobBytes, err := util.ParseTemplate(jobTmpl, struct {
 		Namespace, Name, Ownership, Command, Configmap string
 		Once                                           bool
 		Ttl                                            int32

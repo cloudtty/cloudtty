@@ -1,5 +1,5 @@
 # Image URL to use all building/pushing image targets
-OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-opeartor:latest
+OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:latest
 TTY_IMG ?= ghcr.io/cloudtty/cloudshell:latest
 #NOTE: job.yaml.tmpl image should align with above
 

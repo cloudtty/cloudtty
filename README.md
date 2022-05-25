@@ -61,7 +61,7 @@ cloudshell-sample2   root   bash     NodePort    192.168.4.1:30385   Ready   9s
 
 When the status of cloudshell changes to `Ready` and the `URL` field appears, it can be accessed by the field in the browser, as shown below
 
-![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/pkg/docs/snapshot.png)
+![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.png)
 
 # Exposure Mode
 
