@@ -96,7 +96,7 @@ jobTemplate:
   ##
   image:
     registry: ghcr.io
-    repository: cloudtty/cloudshell:latest
+    repository: cloudtty/cloudshell
     tag: "latest"
     ## Specify a imagePullPolicy
     ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'

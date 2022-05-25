@@ -387,13 +387,13 @@ func (c *CloudShellReconciler) CreateCloudShellService(ctx context.Context, clou
 	}
 
 	serviceBytes, err := util.ParseTemplate(manifests.ServiceTmplV1, struct {
-		GenerateName, Namespace, Ownership, JobName, Type string
+		Name, Namespace, Ownership, JobName, Type string
 	}{
-		GenerateName: fmt.Sprintf("cloudshell-%s-", cloudshell.Name),
-		Namespace:    cloudshell.Namespace,
-		Ownership:    cloudshell.Name,
-		JobName:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
-		Type:         string(serviceType),
+		Name:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
+		Namespace: cloudshell.Namespace,
+		Ownership: cloudshell.Name,
+		JobName:   fmt.Sprintf("cloudshell-%s", cloudshell.Name),
+		Type:      string(serviceType),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed create cloudshell job")
