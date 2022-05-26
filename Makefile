@@ -1,5 +1,8 @@
 # Image URL to use all building/pushing image targets
-OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:latest
+
+REVISION=0.0.2
+
+OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:v$(REVISION)
 TTY_IMG ?= ghcr.io/cloudtty/cloudshell:latest
 #NOTE: job.yaml.tmpl image should align with above
 
@@ -72,6 +75,9 @@ build: generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
+.PHONY: release
+release: build-chart docker-build docker-push
+
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
 	docker build -t ${OPERATOR_IMG} . -f docker/Dockerfile
@@ -114,7 +120,7 @@ codegen:
 
 .PHONY: build-chart
 build-chart:
-	helm package ./charts --dependency-update --destination ./charts
+	helm package ./charts --dependency-update --destination ./charts  --app-version $(REVISION)
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen
