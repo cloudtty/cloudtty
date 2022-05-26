@@ -25,7 +25,7 @@ So you can try cloudtty.
 Step 1: Install Operator and CRD
 ```
 helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-helm install --version 0.0.2 daocloud/cloudshell --generate-name
+helm install --version 0.1.0 daocloud/cloudtty --generate-name
 ```
 
 Step 2: Create kube.conf configmap for target cluster (This step will be refined, when the target cluster is the same one this operators runs on)
