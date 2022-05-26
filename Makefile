@@ -3,7 +3,7 @@
 REVISION=0.1.0
 
 OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:v$(REVISION)
-TTY_IMG ?= ghcr.io/cloudtty/cloudshell:latest
+TTY_IMG ?= ghcr.io/cloudtty/cloudshell:v$(REVISION)
 #NOTE: job.yaml.tmpl image should align with above
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
