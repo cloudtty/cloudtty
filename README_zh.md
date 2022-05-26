@@ -29,7 +29,7 @@ cloudtty 提供了这些功能，请使用 cloudtty 吧🎉!
 步骤1. 安装
 
 	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-	helm install --version 0.0.2 daocloud/cloudshell --generate-name
+	helm install --version 0.1.0 daocloud/cloudtty --generate-name
 
 步骤2. 准备`kube.conf`,放入 configmap 中
 

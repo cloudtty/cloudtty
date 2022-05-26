@@ -1,6 +1,6 @@
 # Image URL to use all building/pushing image targets
 
-REVISION=0.0.2
+REVISION=0.1.0
 
 OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:v$(REVISION)
 TTY_IMG ?= ghcr.io/cloudtty/cloudshell:latest
