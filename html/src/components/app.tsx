@@ -69,7 +69,7 @@ export class App extends Component {
     };
     render(_, { showRz, showSz, showMenu }: State) {
         return (
-            <div style="width: 100%; height: 100%" class="">
+            <div style="width: 100%; height: 100%">
                 <div className="terminal-operator">
                     <div className="terminal-operator--target" onClick={() => this.toggleMenu(!showMenu)}>
                         <i class="iconfont icon-wrench"></i>

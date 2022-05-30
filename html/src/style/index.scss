@@ -38,6 +38,7 @@ body {
         background: #d6dbe6;
         border-radius: 20px 0 0 20px;
         box-shadow: -4px 0 8px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
 
         &:hover {
             left: 0;
@@ -61,7 +62,7 @@ body {
             width: 100px;
             padding: 10px;
             list-style: none;
-
+            cursor: pointer;
             .iconfont {
                 margin-right: 10px;
             }
