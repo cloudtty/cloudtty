@@ -1,43 +1,77 @@
 html,
 body {
-  height: 100%;
-  min-height: 100%;
-  margin: 0;
-  overflow: hidden;
+    position: relative;
+    height: 100%;
+    min-height: 100%;
+    margin: 0;
+    overflow: hidden;
 }
 
 #terminal-container {
-  width: auto;
-  height: 100%;
-  margin: 0 auto;
-  padding: 0;
-  .terminal {
-    padding: 5px;
-    height: calc(100% - 10px);
-  }
+    width: auto;
+    height: 100%;
+    padding: 0;
+    margin: 0 auto;
+
+    .terminal {
+        height: calc(100% - 10px);
+        padding: 5px;
+    }
 }
 
 .terminal-operator {
-  padding: 2px;
-  .terminal-operator__btn {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 15px;
-    font-size: 13px;
-    vertical-align: middle;
-    cursor: pointer;
-    border-radius: 6px;
-    outline: none;
-    border-width: 1px;
-    border-style: solid;
-    color: #FFFFFF;
-    background-color: #226BDB;
-    border-color: #226BDB;
-    height: 23px;
-  }
-  .terminal-operator__btn + .terminal-operator__btn {
-    margin-left: 5px;
-  }
+    position: absolute;
+    right: 0;
+    bottom: 20%;
+    z-index: 10;
+    padding: 2px;
+
+    &--target {
+        position: relative;
+        left: 10px;
+        display: flex;
+        align-items: center;
+        width: 50px;
+        height: 36px;
+        padding: 0 12px;
+        font-size: 18px;
+        background: #d6dbe6;
+        border-radius: 20px 0 0 20px;
+        box-shadow: -4px 0 8px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+
+        &:hover {
+            left: 0;
+        }
+    }
+
+    &--menu {
+        position: absolute;
+        top: -90px;
+        z-index: 10;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        font-size: 13px;
+        background: #ffffff;
+        border-radius: 4px;
+
+        li {
+            box-sizing: border-box;
+            display: inline-flex;
+            width: 100px;
+            padding: 10px;
+            list-style: none;
+            cursor: pointer;
+            .iconfont {
+                margin-right: 10px;
+            }
+
+            &:hover {
+                background: #f1f3f6;
+            }
+        }
+    }
 }
+
+@import './font/iconfont.css';

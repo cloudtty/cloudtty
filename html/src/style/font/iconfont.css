@@ -1,0 +1,25 @@
+@font-face {
+  font-family: "iconfont"; /* Project id 3438254 */
+  src: url('iconfont.woff2?t=1653894162866') format('woff2');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-upload:before {
+  content: "\e600";
+}
+
+.icon-download:before {
+  content: "\e601";
+}
+
+.icon-wrench:before {
+  content: "\e602";
+}
+

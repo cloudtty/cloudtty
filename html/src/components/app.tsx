@@ -47,25 +47,44 @@ const termOptions = {
 } as ITerminalOptions;
 
 interface State {
+    showMenu: boolean;
     showRz: boolean;
     showSz: boolean;
 }
 
-const state = { showRz: false, showSz: false }
+const state = { showRz: false, showSz: false, showMenu: false };
 
 export class App extends Component {
+    toggleMenu = (v: boolean) => {
+        this.setState({ showMenu: v });
+    };
+
     hideSz = (v: boolean) => {
         this.setState({ showSz: v });
-    }
+        this.toggleMenu(false);
+    };
     hideRz = (v: boolean) => {
         this.setState({ showRz: v });
-    }
-    render(_, { showRz, showSz }: State) {
+        this.toggleMenu(false);
+    };
+    render(_, { showRz, showSz, showMenu }: State) {
         return (
             <div style="width: 100%; height: 100%">
                 <div className="terminal-operator">
-                    <button className="terminal-operator__btn" onClick={() => this.hideRz(true)}>Upload</button>
-                    <button className="terminal-operator__btn" onClick={() => this.hideSz(true)}>Download</button>
+                    <div className="terminal-operator--target" onClick={() => this.toggleMenu(!showMenu)}>
+                        <i class="iconfont icon-wrench"></i>
+                    </div>
+                    <ul class="terminal-operator--menu" style={{ display: showMenu ? 'block' : 'none' }}>
+                        <li onClick={() => this.hideRz(true)}>
+                            <i class="iconfont icon-upload" />
+                            上传
+                        </li>
+
+                        <li onClick={() => this.hideSz(true)}>
+                            <i class="iconfont icon-upload" />
+                            下载
+                        </li>
+                    </ul>
                 </div>
                 <Xterm
                     id="terminal-container"
