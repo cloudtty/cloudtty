@@ -106,7 +106,7 @@ spec:
   - http:
       paths:
       - path: {{ .Path }}
-        pathType: Exact
+        pathType: Prefix
         backend:
           service:
             name: {{ .ServiceName }}
@@ -130,7 +130,7 @@ spec:
   http:
   - match:
     - uri:
-        exact: {{ .Path }}
+        prefix: {{ .Path }}
     rewrite:
       uri: /
     route:
