@@ -32,7 +32,9 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
@@ -67,6 +69,8 @@ type CloudShellReconciler struct {
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;
 //+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;
 //+kubebuilder:rbac:groups="",resources=pods,verbs=list;
+//+kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create;
+//+kubebuilder:rbac:groups="rbac.authorization.k8s.io/v1",resources=clusterrolebindings,verbs=create;
 //+kubebuilder:rbac:groups="networking.k8s.io/v1",resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="networking.istio.io",resources=virtualservices,verbs=get;list;watch;create;update;patch;delete
 
@@ -122,8 +126,7 @@ func (c *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if err := c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseCreatedJob); err != nil {
 			return ctrl.Result{}, err
 		}
-		log.Info("after created job, wait to 1s")
-		return ctrl.Result{RequeueAfter: time.Duration(1) * time.Second}, nil
+		return ctrl.Result{}, nil
 	}
 
 	// if job had completed or failed, we think the job is done.
@@ -146,7 +149,7 @@ func (c *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		// check the pod of job whether is running.
 		if cloudshell.Status.Phase == cloudshellv1alpha1.PhaseCreatedRoute {
 			if ok, _ := c.isRunning(ctx, job); !ok {
-				log.Info("cloudshell %s is not ready, wait to pod running", cloudshell.Name)
+				log.Info(fmt.Sprintf("cloudshell %s is not ready, wait to pod running", cloudshell.Name))
 				return ctrl.Result{RequeueAfter: time.Duration(3) * time.Second}, nil
 			}
 
@@ -203,7 +206,7 @@ func (c *CloudShellReconciler) ensureFinalizer(cluster *cloudshellv1alpha1.Cloud
 // CreateCloudShellJob clould create a job for cloudshell, the job will running a cloudtty server in the pod.
 // the job template set default images registry "ghcr.io" and default command, no modification is supported currently,
 // the configmap must be existed in the cluster.
-func (r *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
+func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	log := log.FromContext(ctx)
 
 	jobTmpl := manifests.JobTmplV1
@@ -213,25 +216,23 @@ func (r *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 	}
 
 	jobBytes, err := util.ParseTemplate(jobTmpl, struct {
-		Namespace, Name, Ownership, Command, Configmap string
-		Once                                           bool
-		Ttl                                            int32
+		Namespace, Name, Ownership, Command string
+		Once                                bool
+		Ttl                                 int32
 	}{
 		Namespace: cloudshell.Namespace,
 		Name:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
 		Ownership: cloudshell.Name,
 		Once:      cloudshell.Spec.Once,
 		Command:   cloudshell.Spec.CommandAction,
-		Configmap: cloudshell.Spec.ConfigmapName,
 		Ttl:       cloudshell.Spec.Ttl,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed create cloudshell job")
 	}
 
-	//https://dx13.co.uk/articles/2021/01/15/kubernetes-types-using-go/
 	decoder := scheme.Codecs.UniversalDeserializer()
-	obj, groupVersionKind, err := decoder.Decode(jobBytes, nil, nil)
+	obj, _, err := decoder.Decode(jobBytes, nil, nil)
 	if err != nil {
 		log.Error(err, "Error while decoding YAML object. Err was: ")
 		return err
@@ -239,15 +240,85 @@ func (r *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 	job := obj.(*batchv1.Job)
 
 	// set reference for job, once the cloudshell is deleted, the job is also deleted.
-	if err := ctrlutil.SetControllerReference(cloudshell, job, r.Scheme); err != nil {
+	if err := ctrlutil.SetControllerReference(cloudshell, job, c.Scheme); err != nil {
 		log.Error(err, "Failed to set owner reference")
 		return err
 	}
 
-	log.Info("Print gvk", "gvk", groupVersionKind)
-	log.Info("Print job", "job", job)
+	// if configmap is blank, create serviceacoount "cloudtty-admin" for job,
+	// and binding to clusterrole "cluster-admin".
+	if len(cloudshell.Spec.ConfigmapName) == 0 {
+		serviceAccount := &corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "cloudtty-admin-",
+				Namespace:    cloudshell.Namespace,
+			},
+		}
 
-	return r.Create(ctx, job)
+		// set serivceAccount's owner, delete serviceAccount while delete cloudshell at the same time.
+		if err := ctrlutil.SetControllerReference(cloudshell, serviceAccount, c.Scheme); err != nil {
+			return err
+		}
+
+		if err := c.Client.Create(ctx, serviceAccount); err != nil {
+			return err
+		}
+
+		// must create cluster scope rolebinding.
+		cloudttyAdminRoleBinding := &rbacv1.ClusterRoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("cloudtty-admin-%s", cloudshell.Name),
+				Namespace: cloudshell.Namespace,
+			},
+			Subjects: []rbacv1.Subject{
+				{
+					Kind:      rbacv1.ServiceAccountKind,
+					Name:      serviceAccount.Name,
+					Namespace: cloudshell.Namespace,
+				},
+			},
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: rbacv1.GroupName,
+				Kind:     "ClusterRole",
+				Name:     "cluster-admin",
+			},
+		}
+
+		if err := c.Client.Create(ctx, cloudttyAdminRoleBinding); err != nil {
+			return err
+		}
+
+		// set "POD_NAMESPACE" env and set serviceaccount to job.
+		pod := job.Spec.Template.Spec.Containers[0]
+		pod.Env = append(pod.Env, corev1.EnvVar{Name: "POD_NAMESPACE", Value: "default"})
+		job.Spec.Template.Spec.Containers[0] = pod
+
+		job.Spec.Template.Spec.ServiceAccountName = serviceAccount.Name
+	} else {
+		// set volume and VolumeMounts
+		volumes := job.Spec.Template.Spec.Volumes
+		volumes = append(volumes, corev1.Volume{
+			Name: "kubeconfig",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: cloudshell.Spec.ConfigmapName,
+					},
+				},
+			},
+		})
+		job.Spec.Template.Spec.Volumes = volumes
+
+		pod := job.Spec.Template.Spec.Containers[0]
+		pod.Env = append(pod.Env, corev1.EnvVar{Name: "KUBECONFIG", Value: "/usr/local/kubeconfig/config"})
+		pod.VolumeMounts = append(pod.VolumeMounts, corev1.VolumeMount{
+			Name:      "kubeconfig",
+			MountPath: "/usr/local/kubeconfig",
+		})
+		job.Spec.Template.Spec.Containers[0] = pod
+	}
+
+	return c.Create(ctx, job)
 }
 
 // CreateRouteRule create a service resource in the same namespace of cloudshell no matter what expose model.
@@ -317,12 +388,12 @@ func (c *CloudShellReconciler) CreateRouteRule(ctx context.Context, cloudshell *
 }
 
 // GetJobForCloudshell to find job of cloudshell according to labels "ownership".
-func (r *CloudShellReconciler) GetJobForCloudshell(ctx context.Context, namespace string, owner *cloudshellv1alpha1.CloudShell) (*batchv1.Job, error) {
+func (c *CloudShellReconciler) GetJobForCloudshell(ctx context.Context, namespace string, owner *cloudshellv1alpha1.CloudShell) (*batchv1.Job, error) {
 	log := log.FromContext(ctx)
 
 	var childJobs batchv1.JobList
 	//find job in the ns, match label "ownership: parent-CR-name "
-	if err := r.List(ctx, &childJobs, client.InNamespace(namespace), client.MatchingLabels{"ownership": owner.Name}); err != nil {
+	if err := c.List(ctx, &childJobs, client.InNamespace(namespace), client.MatchingLabels{"ownership": owner.Name}); err != nil {
 		log.Error(err, "unable to list child Jobs")
 		return nil, err
 	}
@@ -360,11 +431,11 @@ func (c *CloudShellReconciler) GetMasterNodeIP(ctx context.Context) (string, err
 }
 
 // GetServiceForCloudshell to find service of cloudshell according to labels "ownership".
-func (r *CloudShellReconciler) GetServiceForCloudshell(ctx context.Context, namespace string, owner *cloudshellv1alpha1.CloudShell) (*corev1.Service, error) {
+func (c *CloudShellReconciler) GetServiceForCloudshell(ctx context.Context, namespace string, owner *cloudshellv1alpha1.CloudShell) (*corev1.Service, error) {
 	log := log.FromContext(ctx)
 
 	var childSvcs corev1.ServiceList
-	if err := r.List(ctx, &childSvcs, client.InNamespace(namespace), client.MatchingLabels{"ownership": owner.Name}); err != nil {
+	if err := c.List(ctx, &childSvcs, client.InNamespace(namespace), client.MatchingLabels{"ownership": owner.Name}); err != nil {
 		log.Error(err, "unable to list child svc")
 		return nil, err
 	}
@@ -558,6 +629,19 @@ func (c *CloudShellReconciler) UpdateCloudshellStatus(ctx context.Context, cloud
 // i.g: ingress or vitualService. if all of cloudshells was removed, it will delete the
 // ingress or vitualService.
 func (c *CloudShellReconciler) removeCloudshell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
+	// delete ClusterRoleBinding to local cluster.
+	if len(cloudshell.Spec.ConfigmapName) == 0 {
+		if err := c.Client.Delete(ctx, &rbacv1.ClusterRoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("cloudtty-admin-%s", cloudshell.Name),
+				Namespace: cloudshell.Namespace,
+			},
+		}); err != nil {
+			return err
+		}
+	}
+
+	// delete route rule.
 	switch cloudshell.Spec.ExposeMode {
 	case "", cloudshellv1alpha1.ExposureServiceClusterIP, cloudshellv1alpha1.ExposureServiceNodePort:
 		// TODO: whether to delete ownReference resource.

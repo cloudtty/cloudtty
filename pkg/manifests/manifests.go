@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
       - name:  web-tty
-        image: ghcr.io/cloudtty/cloudshell:latest
+        image: ghcr.io/cloudtty/cloudshell:v0.1.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7681
@@ -54,23 +54,13 @@ spec:
                 timeout ${TTL} ttyd ${index} ${once} sh -c "${COMMAND}" || echo "exiting"
             fi
         env:
-        - name: KUBECONFIG
-          value: /usr/local/kubeconfig/config
         - name: ONCE
           value: "{{ .Once }}"
         - name: TTL
           value: "{{ .Ttl }}"
         - name: COMMAND
           value: {{ .Command }}
-        volumeMounts:
-          - mountPath: /usr/local/kubeconfig/
-            name: kubeconfig
       restartPolicy: Never
-      volumes:
-      - configMap:
-          defaultMode: 420
-          name: {{ .Configmap }}
-        name: kubeconfig
 `
 
 	ServiceTmplV1 = `
