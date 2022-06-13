@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,6 +66,7 @@ type CloudShellReconciler struct {
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;
 //+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;
+//+kubebuilder:rbac:groups="",resources=pods,verbs=list;
 //+kubebuilder:rbac:groups="networking.k8s.io/v1",resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="networking.istio.io",resources=virtualservices,verbs=get;list;watch;create;update;patch;delete
 
@@ -110,6 +112,7 @@ func (c *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
 	if job == nil {
 		if err := c.CreateCloudShellJob(ctx, cloudshell); err != nil {
 			return ctrl.Result{}, err
@@ -123,10 +126,10 @@ func (c *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{RequeueAfter: time.Duration(1) * time.Second}, nil
 	}
 
-	//TODO: if job had completed or failed, we think the job is done.
-	if isFinished, finishedType := isJobFinished(job); isFinished {
+	// if job had completed or failed, we think the job is done.
+	if ok, jobStatus := c.isJobFinished(ctx, job); ok {
 		// update the cloudshell status.
-		if err := c.UpdateCloudshellStatus(ctx, cloudshell, string(finishedType)); err != nil {
+		if err := c.UpdateCloudshellStatus(ctx, cloudshell, string(jobStatus)); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
@@ -137,6 +140,14 @@ func (c *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if cloudshell.Status.Phase == cloudshellv1alpha1.PhaseCreatedJob {
 			if err := c.CreateRouteRule(ctx, cloudshell); err != nil {
 				return ctrl.Result{}, err
+			}
+		}
+
+		// check the pod of job whether is running.
+		if cloudshell.Status.Phase == cloudshellv1alpha1.PhaseCreatedRoute {
+			if ok, _ := c.isRunning(ctx, job); !ok {
+				log.Info("cloudshell %s is not ready, wait to pod running", cloudshell.Name)
+				return ctrl.Result{RequeueAfter: time.Duration(3) * time.Second}, nil
 			}
 
 			// update cloudshell phase to "PhaseCreatedRoute".
@@ -502,7 +513,7 @@ func (c *CloudShellReconciler) CreateVitualServiceForCloudshell(ctx context.Cont
 			ServiceName: service.Name,
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed create cloudshell job")
+			return errors.Wrap(err, "failed create cloudshell virtualservice")
 		}
 
 		scheme := runtime.NewScheme()
@@ -519,7 +530,7 @@ func (c *CloudShellReconciler) CreateVitualServiceForCloudshell(ctx context.Cont
 
 	// there is a virtualService in the cluster, add a destination to it.
 	newHttpRoute := virtualService.Spec.Http[0].DeepCopy()
-	newHttpRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Exact{Exact: SetRouteRulePath(cloudshell)}
+	newHttpRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: SetRouteRulePath(cloudshell)}
 	newHttpRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service.Name, objectKey.Namespace)
 
 	virtualService.Spec.Http = append(virtualService.Spec.Http, newHttpRoute)
@@ -581,8 +592,8 @@ func (c *CloudShellReconciler) removeCloudshell(ctx context.Context, cloudshell 
 		for i := 0; i < len(httpRoute); i++ {
 			match := httpRoute[i].Match
 			if len(match) > 0 && match[0].Uri != nil {
-				if exact, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Exact); ok &&
-					exact.Exact == cloudshell.Status.AccessURL {
+				if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok &&
+					prefix.Prefix == cloudshell.Status.AccessURL {
 
 					httpRoute = append(httpRoute[:i], httpRoute[i+1:]...)
 					break
@@ -649,9 +660,29 @@ func VsNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.Namespace
 	return types.NamespacedName{Name: vsName, Namespace: namespace}
 }
 
-// isJobFinished check whether the job is completed.
-// todo: Type JobFailed
-func isJobFinished(job *batchv1.Job) (bool, batchv1.JobConditionType) {
+// isRunning check pod of job whether running, only one of the pods is running,
+// and be considered the cloudtty server is working.
+func (c *CloudShellReconciler) isRunning(ctx context.Context, job *batchv1.Job) (bool, error) {
+	pods := &corev1.PodList{}
+	if err := wait.PollImmediate(time.Second*1, time.Second*60, func() (bool, error) {
+		if err := c.List(ctx, pods, client.InNamespace(job.Namespace), client.MatchingLabels{"job-name": job.Name}); err != nil {
+			return false, err
+		}
+		for _, p := range pods.Items {
+			if p.Status.Phase == corev1.PodRunning {
+				return true, nil
+			}
+		}
+		return false, nil
+	}); err != nil {
+		return false, errors.Errorf("no pod of job %s is running", job.Name)
+	}
+
+	return true, nil
+}
+
+// isWorking check whether the job is completed.
+func (c *CloudShellReconciler) isJobFinished(ctx context.Context, job *batchv1.Job) (bool, batchv1.JobConditionType) {
 	for _, c := range job.Status.Conditions {
 		if (c.Type == batchv1.JobComplete || c.Type == batchv1.JobFailed) && c.Status == corev1.ConditionTrue {
 			return true, c.Type
