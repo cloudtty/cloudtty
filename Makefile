@@ -120,7 +120,7 @@ codegen:
 
 .PHONY: build-chart
 build-chart:
-	helm package ./charts --dependency-update --destination ./charts  --app-version $(REVISION)
+	helm package ./charts/cloudtty --dependency-update --destination .  --app-version $(REVISION)
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen
