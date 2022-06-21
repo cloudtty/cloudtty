@@ -63,6 +63,12 @@ When the status of cloudshell changes to `Ready` and the `URL` field appears, it
 
 ![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.png)
 
+# Set kubeconfig
+
+* If the cluster is remote, `cloudtty` needs to specify `kubeconfig` to access the cluster using the kubectl command tool. you need to provide the kubeconfig stored in configmap and specify the name to cloudshell `spec.configmapName` cr. kubeconfig will be automatically mounted to the cloudtty container. ensure that the server IP address is properly connected to the cluster network.
+
+* If it is a local cluster, cloudtty will create a ServiceAccount with `cluster-admin` role permissions instead of providing kubeconfig. Inside the container, kubectl automatically detects 'CA'certificates and token. If there are a concerns with security, you can also provide your own kubeconfig to control the permissions of different users.
+
 # Exposure Mode
 
 Cloudtty provides four modes to expose cloudtty services: `ClusterIP`, `NodePort`, `Ingress`, and `VitualService` to satisfy different usage scenarios:

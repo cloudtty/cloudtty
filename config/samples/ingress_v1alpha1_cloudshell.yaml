@@ -9,7 +9,7 @@ spec:
  commandAction: "bash"
  exposureMode: "Ingress"
  pathPrefix: "/apis/cloudtty.io/"
- ttl: 100
+ ttl: 500
  once: false
  ingressConfig: 
     ingressName: "cloudshell-ingress-demo"
