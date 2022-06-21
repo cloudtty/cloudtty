@@ -61,6 +61,13 @@ cloudtty 提供了这些功能，请使用 cloudtty 吧🎉!
 
 ![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.png)
 
+
+# 设置 kubeconfig
+
+* 如果是远端集群，cloudtty 执行 kubectl 命令行工具访问集群需要指定 kubeconfig。需要用户自己提供 kubeconfig 储存在 comfigmap 中，并且在 `cloudshell` 的 cr 中 `spec.configmapName` 指定 configmap 的名称，cloudtty 会自动挂载到容器中。请确保 server 地址与集群网络连接是否顺畅。
+
+* 如果是本地集群，可以不提供 kubeconfig，cloudtty 会创建具有 `cluster-admin` 角色权限的 `serviceaccount`。在容器的内部，`kubectl` 会自动发现 `ca` 证书和 token。如果有安全上的考虑，同样也可以自己提供 kubeconfig 来控制不同用户的权限。
+
 # 访问方式
 
 Cloudtty 提供了4种模式来暴露后端的服务: `ClusterIP`, `NodePort`, `Ingress`, `VitualService`来满足不同的使用场景：
