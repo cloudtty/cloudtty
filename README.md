@@ -1,6 +1,6 @@
 # A Kubernates Cloud-Shell (Web Terminal) Operator.
 
-English | [Simplified_Chinese](https://github.com/cloudtty/cloudtty/blob/main/README_zh.md)
+English | [简体中文](https://github.com/cloudtty/cloudtty/blob/main/README_zh.md)
 
 # Why needs cloudtty ?
 
