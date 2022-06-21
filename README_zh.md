@@ -29,11 +29,11 @@ cloudtty 提供了这些功能，请使用 cloudtty 吧🎉!
 步骤1. 安装
 
 	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-	helm install --version 0.1.0 daocloud/cloudtty --generate-name
+	helm install --version 0.2.0 daocloud/cloudtty --generate-name
 
 步骤2. 创建CR，启动 cloudtty 的实例，并观察其状态
 
-	kubectl apply -f ./config/samples/cloudshell_v1alpha1_cloudshell.yaml
+	kubectl apply -f ./config/samples/local-cluster_v1alpha1_cloudshell.yaml
 
 更多范例，参见`config/samples/`
 
