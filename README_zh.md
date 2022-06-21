@@ -31,54 +31,58 @@ cloudtty 提供了这些功能，请使用 cloudtty 吧🎉!
 	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
 	helm install --version 0.1.0 daocloud/cloudtty --generate-name
 
-步骤2. 准备`kube.conf`,放入 configmap 中
-
-    注：ToDo: 当目标集群跟 operator 是同一个集群则不需要`kube.conf`，会尽快优化
-
-    - （第1步）
-	`kubectl create configmap my-kubeconfig --from-file=/root/.kube/config`, 并确保密钥/证书是 base64 而不是本地文件
-
-    - （第2步）
-	编辑这个 configmap, 修改 endpoint 的地址，从 IP 改为 servicename, 如`server: https://kubernetes.default.svc.cluster.local:443`
-
-步骤3. 创建CR，启动 cloudtty 的实例，并观察其状态
+步骤2. 创建CR，启动 cloudtty 的实例，并观察其状态
 
 	kubectl apply -f ./config/samples/cloudshell_v1alpha1_cloudshell.yaml
 
 更多范例，参见`config/samples/`
 
-步骤4. 观察 CR 状态，获取访问接入点，如: 
+步骤3. 观察 CR 状态，获取访问接入点，如: 
 
 	$kubectl get cloudshell -w
 
-可以看到：
+可以看到类似：
 
 	NAME                 USER   COMMAND  TYPE        URL                 PHASE   AGE
 	cloudshell-sample    root   bash     NodePort    192.168.4.1:30167   Ready   31s
 	cloudshell-sample2   root   bash     NodePort    192.168.4.1:30385   Ready   9s
+
 
 当 cloudshell 对象状态变为`Ready`，并且`URL`字段出现之后，就可以通过该字段的访问方式，在浏览器打开，如下:
 
 ![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.png)
 
 
-# 设置 kubeconfig
+# 使用进阶
 
-* 如果是远端集群，cloudtty 执行 kubectl 命令行工具访问集群需要指定 kubeconfig。需要用户自己提供 kubeconfig 储存在 comfigmap 中，并且在 `cloudshell` 的 cr 中 `spec.configmapName` 指定 configmap 的名称，cloudtty 会自动挂载到容器中。请确保 server 地址与集群网络连接是否顺畅。
+## 进阶1. 用cloutTTY访问其他集群
 
 * 如果是本地集群，可以不提供 kubeconfig，cloudtty 会创建具有 `cluster-admin` 角色权限的 `serviceaccount`。在容器的内部，`kubectl` 会自动发现 `ca` 证书和 token。如果有安全上的考虑，同样也可以自己提供 kubeconfig 来控制不同用户的权限。
 
-# 访问方式
+* 如果是远端集群，cloudtty 执行 kubectl 命令行工具访问集群需要指定 kubeconfig。需要用户自己提供 kubeconfig 储存在 comfigmap 中，并且在 `cloudshell` 的 cr 中 `spec.configmapName` 指定 configmap 的名称，cloudtty 会自动挂载到容器中。请确保 server 地址与集群网络连接是否顺畅。
+设置 kubeconfig 的步骤:
 
-Cloudtty 提供了4种模式来暴露后端的服务: `ClusterIP`, `NodePort`, `Ingress`, `VitualService`来满足不同的使用场景：
+ 准备`kube.conf`,放入 configmap 中
 
-* ClusterIP： 默认的模式，在集群中创建 ClusterIP 类型的 [Service](https://kubernetes.io/docs/concepts/services-networking/service/) 资源。适用于第三方集成 cloudtty 服务，用户可以选择更加灵活的方式来暴露自己的服务。
+    - （第1步）
+	kubectl create configmap my-kubeconfig --from-file=kube.config`, 并确保密钥/证书是 base64 而不是本地文件
 
-* NodePort：最简单的暴露服务模式，在集群中创建 NodePort 类型的 Service 资源。可以用过节点 IP 和 对应的端口号访问 cloudtty 服务。
+    - （第2步）
+	编辑这个 configmap, 修改 endpoint 的地址，从 IP 改为 servicename, 如`server: https://kubernetes.default.svc.cluster.local:443`
+
+
+
+## 进阶2: 访问方式
+
+Cloudtty 提供了4种模式来暴露服务: `ClusterIP`, `NodePort`, `Ingress`, `VitualService`来满足不同的使用场景：
+
+* ClusterIP： 在集群中创建 ClusterIP 类型的 [Service](https://kubernetes.io/docs/concepts/services-networking/service/) 资源。适用于第三方集成 cloudtty 服务，用户可以选择更加灵活的方式来暴露自己的服务。
+
+* NodePort：默认的模式，最简单的暴露服务模式，在集群中创建 NodePort 类型的 Service 资源。可以用过节点 IP 和 对应的端口号访问 cloudtty 服务。
 
 * Ingress：在集群中创建 ClusterIP 类型的 Service 资源，并创建 Ingress 资源，通过路由规则负载到 Service 上。适用于集群中使用 [Ingress Controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/) 进行流量负载的情况。
 
-* VirtualService：在集群中创建 ClusterIP 类型的 Service 资源，并创建 VirtaulService 资源。适用于集群中使用 [Istio](https://github.com/istio/istio) 进行流量负载的情况。
+* VirtualService (istio)：在集群中创建 ClusterIP 类型的 Service 资源，并创建 VirtaulService 资源。适用于集群中使用 [Istio](https://github.com/istio/istio) 进行流量负载的情况。
 
 #### 原理
 
