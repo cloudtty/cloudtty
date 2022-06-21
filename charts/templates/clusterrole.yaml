@@ -11,19 +11,28 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - serviceaccounts
+  verbs: ["create"]
+- apiGroups:
+  - ""
+  resources:
   - nodes
   verbs: ["get", "watch", "list"]
 - apiGroups:
   - ""
   resources:
   - pods
-  verbs:
-  - list
+  verbs: ["list"]
 - apiGroups:
   - batch
   resources:
   - jobs
   verbs: ["*"]
+- apiGroups:
+  - rbac.authorization.k8s.io/v1
+  resources:
+  - rolebindings
+  verbs: ["create"]
 - apiGroups:
   - cloudshell.cloudtty.io
   resources:
@@ -33,16 +42,12 @@ rules:
   - cloudshell.cloudtty.io
   resources:
   - cloudshells/finalizers
-  verbs:
-  - update
+  verbs: ["update"]
 - apiGroups:
   - cloudshell.cloudtty.io
   resources:
   - cloudshells/status
-  verbs:
-  - get
-  - patch
-  - update
+  verbs: ["get", "patch", "update"]
 - apiGroups:
   - networking.k8s.io
   resources:
