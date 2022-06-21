@@ -4,57 +4,46 @@ metadata:
   name: {{ include "cloudtty.controllerManager.fullname" . }}
 rules:
 - apiGroups:
-  - ""
+  - '*'
   resources:
-  - services
-  verbs: ["*"]
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs: ["create"]
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs: ["get", "watch", "list"]
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  verbs: ["list"]
-- apiGroups:
-  - batch
-  resources:
-  - jobs
-  verbs: ["*"]
-- apiGroups:
-  - rbac.authorization.k8s.io/v1
-  resources:
-  - clusterrolebindings
-  verbs: ["create"]
+  - '*'
+  verbs:
+  - '*'
 - apiGroups:
   - cloudshell.cloudtty.io
   resources:
   - cloudshells
-  verbs: ["*"]
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - cloudshell.cloudtty.io
   resources:
   - cloudshells/finalizers
-  verbs: ["update"]
+  verbs:
+  - update
 - apiGroups:
   - cloudshell.cloudtty.io
   resources:
   - cloudshells/status
-  verbs: ["get", "patch", "update"]
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs: ["*"]
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - networking.istio.io
   resources:
   - virtualservices
-  verbs: ["*"]
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

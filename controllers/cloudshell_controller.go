@@ -18,7 +18,11 @@ package controllers
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"os"
 	"strings"
 	"time"
 
@@ -32,7 +36,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -65,13 +68,7 @@ type CloudShellReconciler struct {
 //+kubebuilder:rbac:groups=cloudshell.cloudtty.io,resources=cloudshells,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cloudshell.cloudtty.io,resources=cloudshells/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cloudshell.cloudtty.io,resources=cloudshells/finalizers,verbs=update
-//+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;
-//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;
-//+kubebuilder:rbac:groups="",resources=pods,verbs=list;
-//+kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create;
-//+kubebuilder:rbac:groups="rbac.authorization.k8s.io/v1",resources=clusterrolebindings,verbs=create;
-//+kubebuilder:rbac:groups="networking.k8s.io/v1",resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="*",resources="*",verbs="*"
 //+kubebuilder:rbac:groups="networking.istio.io",resources=virtualservices,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -209,6 +206,33 @@ func (c *CloudShellReconciler) ensureFinalizer(cluster *cloudshellv1alpha1.Cloud
 func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	log := log.FromContext(ctx)
 
+	// if configmap is blank, use the Incluster rest config to generate kubeconfig and restore a configmap.
+	// the kubeconfig only work on current cluster.
+	if len(cloudshell.Spec.ConfigmapName) == 0 {
+		kubeConfigByte, err := GenerateKubeconfigInCluster()
+		if err != nil {
+			return err
+		}
+		kcm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: fmt.Sprintf("cloudshell-%s-", cloudshell.Name),
+				Namespace:    cloudshell.Namespace,
+			},
+			Data: map[string]string{"config": string(kubeConfigByte)},
+		}
+
+		// set reference for configmap, once the cloudshell is deleted, the configmap is also deleted.
+		if err := ctrlutil.SetControllerReference(cloudshell, kcm, c.Scheme); err != nil {
+			log.Error(err, "Failed to set owner reference")
+			return err
+		}
+
+		if err := c.Client.Create(ctx, kcm); err != nil {
+			return err
+		}
+		cloudshell.Spec.ConfigmapName = kcm.Name
+	}
+
 	jobTmpl := manifests.JobTmplV1
 	if template, err := util.LoadYamlTemplate("/etc/cloudtty/job-temp.yaml"); err == nil {
 		log.Info("load cloudtty job template from /etc/cloudtty")
@@ -216,14 +240,15 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 	}
 
 	jobBytes, err := util.ParseTemplate(jobTmpl, struct {
-		Namespace, Name, Ownership, Command string
-		Once                                bool
-		Ttl                                 int32
+		Namespace, Name, Ownership, Command, Configmap string
+		Once                                           bool
+		Ttl                                            int32
 	}{
 		Namespace: cloudshell.Namespace,
 		Name:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
 		Ownership: cloudshell.Name,
 		Once:      cloudshell.Spec.Once,
+		Configmap: cloudshell.Spec.ConfigmapName,
 		Command:   cloudshell.Spec.CommandAction,
 		Ttl:       cloudshell.Spec.Ttl,
 	})
@@ -243,79 +268,6 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 	if err := ctrlutil.SetControllerReference(cloudshell, job, c.Scheme); err != nil {
 		log.Error(err, "Failed to set owner reference")
 		return err
-	}
-
-	// if configmap is blank, create serviceacoount "cloudtty-admin" for job,
-	// and binding to clusterrole "cluster-admin".
-	if len(cloudshell.Spec.ConfigmapName) == 0 {
-		serviceAccount := &corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "cloudtty-admin-",
-				Namespace:    cloudshell.Namespace,
-			},
-		}
-
-		// set serivceAccount's owner, delete serviceAccount while delete cloudshell at the same time.
-		if err := ctrlutil.SetControllerReference(cloudshell, serviceAccount, c.Scheme); err != nil {
-			return err
-		}
-
-		if err := c.Client.Create(ctx, serviceAccount); err != nil {
-			return err
-		}
-
-		// must create cluster scope rolebinding.
-		cloudttyAdminRoleBinding := &rbacv1.ClusterRoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("cloudtty-admin-%s", cloudshell.Name),
-				Namespace: cloudshell.Namespace,
-			},
-			Subjects: []rbacv1.Subject{
-				{
-					Kind:      rbacv1.ServiceAccountKind,
-					Name:      serviceAccount.Name,
-					Namespace: cloudshell.Namespace,
-				},
-			},
-			RoleRef: rbacv1.RoleRef{
-				APIGroup: rbacv1.GroupName,
-				Kind:     "ClusterRole",
-				Name:     "cluster-admin",
-			},
-		}
-
-		if err := c.Client.Create(ctx, cloudttyAdminRoleBinding); err != nil {
-			return err
-		}
-
-		// set "POD_NAMESPACE" env and set serviceaccount to job.
-		pod := job.Spec.Template.Spec.Containers[0]
-		pod.Env = append(pod.Env, corev1.EnvVar{Name: "POD_NAMESPACE", Value: "default"})
-		job.Spec.Template.Spec.Containers[0] = pod
-
-		job.Spec.Template.Spec.ServiceAccountName = serviceAccount.Name
-	} else {
-		// set volume and VolumeMounts
-		volumes := job.Spec.Template.Spec.Volumes
-		volumes = append(volumes, corev1.Volume{
-			Name: "kubeconfig",
-			VolumeSource: corev1.VolumeSource{
-				ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: cloudshell.Spec.ConfigmapName,
-					},
-				},
-			},
-		})
-		job.Spec.Template.Spec.Volumes = volumes
-
-		pod := job.Spec.Template.Spec.Containers[0]
-		pod.Env = append(pod.Env, corev1.EnvVar{Name: "KUBECONFIG", Value: "/usr/local/kubeconfig/config"})
-		pod.VolumeMounts = append(pod.VolumeMounts, corev1.VolumeMount{
-			Name:      "kubeconfig",
-			MountPath: "/usr/local/kubeconfig",
-		})
-		job.Spec.Template.Spec.Containers[0] = pod
 	}
 
 	return c.Create(ctx, job)
@@ -632,18 +584,6 @@ func (c *CloudShellReconciler) UpdateCloudshellStatus(ctx context.Context, cloud
 // i.g: ingress or vitualService. if all of cloudshells was removed, it will delete the
 // ingress or vitualService.
 func (c *CloudShellReconciler) removeCloudshell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
-	// delete ClusterRoleBinding to local cluster.
-	if len(cloudshell.Spec.ConfigmapName) == 0 {
-		if err := c.Client.Delete(ctx, &rbacv1.ClusterRoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("cloudtty-admin-%s", cloudshell.Name),
-				Namespace: cloudshell.Namespace,
-			},
-		}); err != nil {
-			return err
-		}
-	}
-
 	// delete route rule.
 	switch cloudshell.Spec.ExposeMode {
 	case "", cloudshellv1alpha1.ExposureServiceClusterIP, cloudshellv1alpha1.ExposureServiceNodePort:
@@ -766,6 +706,38 @@ func (c *CloudShellReconciler) isRunning(ctx context.Context, job *batchv1.Job) 
 	}
 
 	return true, nil
+}
+
+// GenerateKubeconfigByInCluster load serviceaccount info under
+// "/var/run/secrets/kubernetes.io/serviceaccount" and generate kubeconfig str.
+func GenerateKubeconfigInCluster() ([]byte, error) {
+	const (
+		tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+		rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	)
+
+	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+	if len(host) == 0 || len(port) == 0 {
+		return nil, errors.New("unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
+	}
+
+	token, err := ioutil.ReadFile(tokenFile)
+	if err != nil {
+		return nil, err
+	}
+
+	rootCA, err := ioutil.ReadFile(rootCAFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return util.ParseTemplate(manifests.KubeconfigTmplV1, struct {
+		CAData, Server, Token string
+	}{
+		Server: "https://" + net.JoinHostPort(host, port),
+		CAData: base64.StdEncoding.EncodeToString(rootCA),
+		Token:  string(token),
+	})
 }
 
 // isWorking check whether the job is completed.
