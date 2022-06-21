@@ -31,7 +31,7 @@ rules:
 - apiGroups:
   - rbac.authorization.k8s.io/v1
   resources:
-  - rolebindings
+  - clusterrolebindings
   verbs: ["create"]
 - apiGroups:
   - cloudshell.cloudtty.io
