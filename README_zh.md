@@ -29,7 +29,10 @@ cloudtty 提供了这些功能，请使用 cloudtty 吧🎉!
 步骤1. 安装
 
 	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-	helm install --version 0.2.0 daocloud/cloudtty --generate-name
+	helm install cloudtty-operator --version 0.2.0 daocloud/cloudtty
+
+	等待pod运行起来
+	kubectl wait deployment  cloudtty-operator-controller-manager   --for=condition=Available=True
 
 步骤2. 创建CR，启动 cloudtty 的实例，并观察其状态
 
