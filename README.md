@@ -25,8 +25,8 @@ So you can try cloudtty.
 - Step 1: Install Operator and CRD
 
 ```
-helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-helm install --version 0.1.0 daocloud/cloudtty --generate-name
+helm repo add cloudtty https://github.com/cloudtty/cloudtty
+helm install --version 0.2.0 cloudtty/cloudtty --generate-name
 ```
 
 - Step 2: Create a cloud-tty instance by applying CR, then monitor its status
