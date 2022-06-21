@@ -342,9 +342,10 @@ func (c *CloudShellReconciler) CreateRouteRule(ctx context.Context, cloudshell *
 
 	var accessURL string
 	switch cloudshell.Spec.ExposeMode {
-	case "", cloudshellv1alpha1.ExposureServiceClusterIP:
+	case cloudshellv1alpha1.ExposureServiceClusterIP:
 		accessURL = fmt.Sprintf("%s:%d", service.Spec.ClusterIP, DefaultServicePort)
-	case cloudshellv1alpha1.ExposureServiceNodePort:
+	case "", cloudshellv1alpha1.ExposureServiceNodePort:
+		// Default(No explicit `ExposeMode` specified in CR) mode is Nodeport
 		host, err := c.GetMasterNodeIP(ctx)
 		if err != nil {
 			log.Error(err, "unable to get master node IP addr")
@@ -397,7 +398,6 @@ func (c *CloudShellReconciler) GetJobForCloudshell(ctx context.Context, namespac
 		log.Error(err, "unable to list child Jobs")
 		return nil, err
 	}
-	//log.Info("DEBUG, Found Jobs :", "jobs", len(childJobs.Items))
 	if len(childJobs.Items) > 1 {
 		err := errors.New("found duplicated child jobs")
 		log.Error(err, "more than 1 jobs found")
@@ -460,9 +460,12 @@ func (c *CloudShellReconciler) GetServiceForCloudshell(ctx context.Context, name
 func (c *CloudShellReconciler) CreateCloudShellService(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) (*corev1.Service, error) {
 	log := log.FromContext(ctx)
 
-	// if ExposeMode is nil, ingress or vituralService, default clusterIP.
 	serviceType := cloudshell.Spec.ExposeMode
-	if len(serviceType) == 0 || serviceType == cloudshellv1alpha1.ExposureIngress ||
+	if len(serviceType) == 0 {
+		serviceType = cloudshellv1alpha1.ExposureServiceNodePort
+	}
+	// if ExposeMode is ingress or vituralService, the svc type should be ClusterIP.
+	if serviceType == cloudshellv1alpha1.ExposureIngress ||
 		serviceType == cloudshellv1alpha1.ExposureVirtualService {
 
 		serviceType = cloudshellv1alpha1.ExposureServiceClusterIP
