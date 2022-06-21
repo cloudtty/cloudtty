@@ -18,49 +18,59 @@ package manifests
 
 const (
 	JobTmplV1 = `
-apiVersion: batch/v1
-kind: Job
-metadata:
-  namespace: {{ .Namespace }}
-  name: {{ .Name }}
-  labels:
-    ownership: {{ .Ownership }}
-spec:
-  activeDeadlineSeconds: 3600
-  ttlSecondsAfterFinished: 60
-  parallelism: 1
-  completions: 1
-  template:
-    spec:
-      containers:
-      - name:  web-tty
-        image: ghcr.io/cloudtty/cloudshell:v0.1.0
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 7681
-          name: tty-ui
-          protocol: TCP
-        command:
-          - bash
-          - "-c"
-          - |
-            once=""
-            index=""
-            if [ "${ONCE}" == "true" ];then once=" --once "; fi;
-            if [ -f /index.html ]; then index=" --index /index.html ";fi
-            if [ -z "${TTL}" ] || [ "${TTL}" == "0" ];then
-                ttyd ${index} ${once} sh -c "${COMMAND}"
-            else
-                timeout ${TTL} ttyd ${index} ${once} sh -c "${COMMAND}" || echo "exiting"
-            fi
-        env:
-        - name: ONCE
-          value: "{{ .Once }}"
-        - name: TTL
-          value: "{{ .Ttl }}"
-        - name: COMMAND
-          value: {{ .Command }}
-      restartPolicy: Never
+  apiVersion: batch/v1
+  kind: Job
+  metadata:
+    namespace: {{ .Namespace }}
+    name: {{ .Name }}
+    labels:
+      ownership: {{ .Ownership }}
+  spec:
+    activeDeadlineSeconds: 3600
+    ttlSecondsAfterFinished: 60
+    parallelism: 1
+    completions: 1
+    template:
+      spec:
+        containers:
+        - name:  web-tty
+          image: ghcr.io/cloudtty/cloudshell:v0.2.0
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 7681
+            name: tty-ui
+            protocol: TCP
+          command:
+            - bash
+            - "-c"
+            - |
+              once=""
+              index=""
+              if [ "${ONCE}" == "true" ];then once=" --once "; fi;
+              if [ -f /index.html ]; then index=" --index /index.html ";fi
+              if [ -z "${TTL}" ] || [ "${TTL}" == "0" ];then
+                  ttyd ${index} ${once} sh -c "${COMMAND}"
+              else
+                  timeout ${TTL} ttyd ${index} ${once} sh -c "${COMMAND}" || echo "exiting"
+              fi
+          env:
+          - name: KUBECONFIG
+            value: /usr/local/kubeconfig/config
+          - name: ONCE
+            value: "{{ .Once }}"
+          - name: TTL
+            value: "{{ .Ttl }}"
+          - name: COMMAND
+            value: {{ .Command }}
+          volumeMounts:
+            - mountPath: /usr/local/kubeconfig/
+              name: kubeconfig
+        restartPolicy: Never
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: {{ .Configmap }}
+          name: kubeconfig
 `
 
 	ServiceTmplV1 = `
@@ -128,5 +138,25 @@ spec:
         host: {{ .ServiceName }}.{{ .Namespace }}.svc.cluster.local
         port:
           number: 7681
+`
+
+	KubeconfigTmplV1 = `
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: {{ .CAData }}
+    server: {{ .Server }}
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: cloudtty-controller-manager
+  name: cloudtty-controller-manager@kubernetes
+current-context: cloudtty-controller-manager@kubernetes
+kind: Config
+users:
+- name: cloudtty-controller-manager
+  user: 
+    token: {{ .Token }}
 `
 )

@@ -36,19 +36,15 @@ If we want to create a cloud shell for cluster that the `cloudshell-operator` is
 
 User can not support configmap info to field `spec.configmap` of cloudshell cr. If this field is empty and we assume that the user want to created cloudshell in the local cluster. `cloudshell-operator` will complete the following steps:
 
-### Create RBAC resources for cloudshell on local cluster
+### Grant operator to admin permission
 
-1. we can leverage an existing clusterrole `cluster-admin`, it has the highest privileges:
+1. We need to use operator ServiceAccount to generate kubeconfig, so operator needs to have sufficient permissions.
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  annotations:
-    rbac.authorization.kubernetes.io/autoupdate: "true"
-  labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-  name: cluster-admin
+  name: cloudtty-controller-manager
 rules:
 - apiGroups:
   - '*'
@@ -56,80 +52,31 @@ rules:
   - '*'
   verbs:
   - '*'
-- nonResourceURLs:
-  - '*'
-  verbs:
-  - '*'
 ```
 
-2. create `serviceaccount` for cloudshell and binding to a new resource `cluterrolebinding`. e.g:
+2. Inside the cluster, use ServiceAccount to generate kubeconfig, load the `caData` and `token` under directory `/var/run/secrets/kubernetes.io/serviceaccount`. `Server` consists of the KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT environment variables.
 
 ```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  annotations:
-    rbac.authorization.kubernetes.io/autoupdate: "true"
-  labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-  name: cloudtty-admin
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: ServiceAccout
-  name: cloudtty-admin
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: {{ .CAData }}
+    server: {{ .Server }}
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: cloudtty-controller-manager
+  name: cloudtty-controller-manager@kubernetes
+current-context: cloudtty-controller-manager@kubernetes
+kind: Config
+users:
+- name: cloudtty-controller-manager
+  user: 
+    token: {{ .Token }}
 ```
 
-### Use serviceaccount running cloudshell job
+### restore configmap for kubeconfig and mount to the job
 
-According to the [documentation](https://kubernetes.io/docs/reference/kubectl/#in-cluster-authentication-and-namespace-overrides), we only need to run the job using serviceaacount `cloudtty-admin`. `kubectl` tool will automatically detect that it is running inside the cluster and load the `caData` and `token` under directory `/var/run/secrets/kubernetes.io/serviceaccount`. the namespace from `/var/run/secrets/kubernetes.io/serviceaccount/namespace` as the default namespace what it is the namespace of the serviceAccount. we can modify the default namespace by specifying the `POD_NAMESPACE` environment variable.
-
-```yaml
-apiVersion: batch/v1
-kind: Job
-metadata:
-  namespace: {{ .Namespace }}
-  name: {{ .Name }}
-  labels:
-    ownership: {{ .Ownership }}
-spec:
-  activeDeadlineSeconds: 3600
-  ttlSecondsAfterFinished: 60
-  parallelism: 1
-  completions: 1
-  template:
-    spec:
-      serviceAccount: cloudtty-admin
-      containers:
-      - name:  web-tty
-        image: ghcr.io/cloudtty/cloudshell:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 7681
-          name: tty-ui
-          protocol: TCP
-        command:
-          - bash
-          - "-c"
-          - |
-            once=""
-            index=""
-            if [ "${ONCE}" == "true" ];then once=" --once "; fi;
-            if [ -f /index.html ]; then index=" --index /index.html ";fi
-            if [ -z "${TTL}" ] || [ "${TTL}" == "0" ];then
-                ttyd ${index} ${once} sh -c "${COMMAND}"
-            else
-                timeout ${TTL} ttyd ${index} ${once} sh -c "${COMMAND}" || echo "exiting"
-            fi
-        env:
-        - name: TTL
-          value: "{{ .Ttl }}"
-        - name: COMMAND
-          value: {{ .Command }}
-        - name: POD_NAMESPACE
-          value: default
-```
+We will restore kubeconfig to configmap in the same namespace with cloudshell, and mount the configmap to pod of job and backfill configMap name to Cloudshell.
 
