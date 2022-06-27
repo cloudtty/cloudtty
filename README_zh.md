@@ -28,28 +28,38 @@ cloudtty 提供了这些功能，请使用 cloudtty 吧🎉!
 
 步骤1. 安装
 
-	helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-	helm install cloudtty-operator --version 0.2.0 daocloud/cloudtty
+```
+helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
+helm install cloudtty-operator --version 0.2.0 daocloud/cloudtty
+```
 
 	等待pod运行起来
-	kubectl wait deployment  cloudtty-operator-controller-manager   --for=condition=Available=True
+
+```
+kubectl wait deployment  cloudtty-operator-controller-manager   --for=condition=Available=True
+```
 
 步骤2. 创建CR，启动 cloudtty 的实例，并观察其状态
 
-	kubectl apply -f ./config/samples/local_cluster_v1alpha1_cloudshell.yaml
+```
+kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.2.0/config/samples/local_cluster_v1alpha1_cloudshell.yaml
+```
 
 更多范例，参见`config/samples/`
 
 步骤3. 观察 CR 状态，获取访问接入点，如: 
 
-	$kubectl get cloudshell -w
+```
+kubectl get cloudshell -w
+```
 
 可以看到类似：
 
-	NAME                 USER   COMMAND  TYPE        URL                 PHASE   AGE
-	cloudshell-sample    root   bash     NodePort    192.168.4.1:30167   Ready   31s
-	cloudshell-sample2   root   bash     NodePort    192.168.4.1:30385   Ready   9s
-
+```shell
+NAME                 USER   COMMAND  TYPE        URL                 PHASE   AGE
+cloudshell-sample    root   bash     NodePort    192.168.4.1:30167   Ready   31s
+cloudshell-sample2   root   bash     NodePort    192.168.4.1:30385   Ready   9s
+```
 
 当 cloudshell 对象状态变为`Ready`，并且`URL`字段出现之后，就可以通过该字段的访问方式，在浏览器打开，如下:
 
