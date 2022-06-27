@@ -38,7 +38,7 @@ kubectl wait deployment  cloudtty-operator-controller-manager   --for=condition=
 
 - Step 2: Create a cloud-tty instance by applying CR, then monitor its status
 ```
-kubectl apply -f ./config/samples/local_cluster_v1alpha1_cloudshell.yaml
+kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.2.0/config/samples/local_cluster_v1alpha1_cloudshell.yaml
 ```
 
 By default, it will create a cloudtty pod and expose `NodePort` type service.
