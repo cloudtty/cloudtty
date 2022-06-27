@@ -24,6 +24,10 @@ cloudtty 提供了这些功能，请使用 cloudtty 吧🎉!
 
 ![screenshot_gif](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.gif)
 
+如果将 CloudTTY 集成到您自己的 UI 里面，最终效果 demo 如下:
+![demo_png](https://github.com/cloudtty/cloudtty/raw/main/docs/demo.png)
+
+
 # 快速上手
 
 步骤1. 安装

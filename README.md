@@ -20,6 +20,10 @@ So you can try cloudtty :tada:.
 
 ![screenshot_gif](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.gif)
 
+After the cloudtty be intergated to your own UI, it would be like:
+![demo_png](https://github.com/cloudtty/cloudtty/raw/main/docs/demo.png)
+
+
 # Quick Start
 
 - Step 1: Install Operator and CRD
