@@ -1,5 +1,8 @@
 name: build-pr
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * *"
   pull_request:
     branches:
       - main
