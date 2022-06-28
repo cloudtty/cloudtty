@@ -2,10 +2,10 @@ name: Build & Release Image
 
 on:
   push:
-    branches: [ main ]
-  #pull_request:
-  #  branches: [ main ]
-
+    branches:
+      - main
+    tags:
+      - v*
 jobs:
   docker-build:
     runs-on: ubuntu-latest
