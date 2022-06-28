@@ -1,6 +1,7 @@
 # Image URL to use all building/pushing image targets
 
-REVISION=0.2.0
+# VERSION is the version of the binary.
+REVISION ?= $(shell git describe --tags --dirty 2>/dev/null)
 
 OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:v$(REVISION)
 TTY_IMG ?= ghcr.io/cloudtty/cloudshell:v$(REVISION)
