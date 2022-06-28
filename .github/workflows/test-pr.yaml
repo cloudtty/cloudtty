@@ -1,4 +1,4 @@
-name: build-pr
+name: Test PR
 on:
   workflow_dispatch:
   schedule:
