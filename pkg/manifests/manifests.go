@@ -65,6 +65,14 @@ const (
           volumeMounts:
             - mountPath: /usr/local/kubeconfig/
               name: kubeconfig
+          readinessProbe:
+            tcpSocket:
+              port: 7681
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 7681
+            periodSeconds: 20
         restartPolicy: Never
         volumes:
         - configMap:

@@ -696,8 +696,13 @@ func (c *CloudShellReconciler) isRunning(ctx context.Context, job *batchv1.Job) 
 			return false, err
 		}
 		for _, p := range pods.Items {
-			if p.Status.Phase == corev1.PodRunning {
-				return true, nil
+			if p.Status.Phase != corev1.PodRunning {
+				continue
+			}
+			for _, c := range p.Status.Conditions {
+				if c.Type == corev1.ContainersReady && c.Status == corev1.ConditionTrue {
+					return true, nil
+				}
 			}
 		}
 		return false, nil
