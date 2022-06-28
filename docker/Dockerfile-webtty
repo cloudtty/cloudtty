@@ -1,4 +1,4 @@
-FROM docker.m.daocloud.io/node:16.13.2 as builder
+FROM node:16.13.2 as builder
 # Build frontend code which added upload/download button
 WORKDIR /app
 COPY html/package.json /app/
@@ -8,7 +8,7 @@ COPY html/ /app/
 RUN yarn run build
 
 
-FROM docker.m.daocloud.io/ubuntu:20.04
+FROM ubuntu:22.04
 RUN apt-get update && apt-get install lrzsz curl -y
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 RUN chmod +x kubectl &&  mv kubectl /usr/local/bin/
