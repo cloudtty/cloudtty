@@ -7,14 +7,18 @@ RUN yarn install
 COPY html/ /app/
 RUN yarn run build
 
+FROM ghcr.io/dtzar/helm-kubectl:3.9
 
-FROM ubuntu:22.04
-RUN apt-get update && apt-get install lrzsz curl -y
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-RUN chmod +x kubectl &&  mv kubectl /usr/local/bin/
-RUN curl -LO https://github.com/tsl0922/ttyd/releases/download/1.6.3/ttyd.x86_64 && chmod +x ttyd.x86_64 && mv ttyd.x86_64 /usr/local/bin/ttyd
-#RUN wget https://github.com/yudai/gotty/releases/download/v1.0.1/gotty_linux_amd64.tar.gz && tar -zxvf gotty_linux_amd64.tar.gz && chmod +x gotty && mv gotty /usr/bin/
-RUN which ttyd
-RUN mkdir kubeconf
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories \
+    && apk -U upgrade \
+    && apk add --no-cache ca-certificates lrzsz \
+    && ln -s /usr/bin/lrz	/usr/bin/rz \
+    && ln -s /usr/bin/lsz	/usr/bin/sz \
+    && curl -LO https://github.com/tsl0922/ttyd/releases/download/1.6.3/ttyd.x86_64 \
+    && chmod +x ttyd.x86_64 \
+    && mv ttyd.x86_64 /usr/local/bin/ttyd \
+    && which ttyd \
+    && mkdir kubeconf
+
 COPY --from=builder /app/dist/inline.html index.html
 ENTRYPOINT ttyd
