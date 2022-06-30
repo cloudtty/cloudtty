@@ -117,6 +117,13 @@ Cloudtty 提供了4种模式来暴露服务: `ClusterIP`, `NodePort`, `Ingress`,
 
 前端 UI 也是从 `ttyd` 项目衍生出来的，另外镜像内所使用的`ttyd`二进制也是来源于这个项目。
 
+# 交流
+
+如果您有任何的问题，请以下面的方式联系我们：
+
+* [Slack Channel](https://cloud-native.slack.com/archives/C03LA6AUF7V)
+* 微信交流群: 请联系 `calvin0327`(wen.chen@daocloud.io)加入交流群
+
 ### 开发者模式
 
 1. 运行 operator 和安装 CRD

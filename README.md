@@ -111,6 +111,12 @@ Cloudtty provides four modes to expose cloudtty services: `ClusterIP`, `NodePort
 This project is based on https://github.com/tsl0922/ttyd. Many thanks to `tsl0922` `yudai` and the community.
 The frontend UI code was originated from `ttyd` project, and the ttyd binary inside the container also comes from `ttyd` project.
 
+# Communicating
+If you have any question, feel free to reach out to us in the following ways:
+
+* [Slack Channel](https://cloud-native.slack.com/archives/C03LA6AUF7V)
+* WeChat Group: Please contact `calvin0327`(wen.chen@daocloud.io)
+
 # Developer Guide
 
 ## Run operator and install CRD
