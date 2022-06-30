@@ -3,8 +3,8 @@
 # VERSION is the version of the binary.
 REVISION ?= $(shell git describe --tags --dirty 2>/dev/null)
 
-OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:v$(REVISION)
-TTY_IMG ?= ghcr.io/cloudtty/cloudshell:v$(REVISION)
+OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:$(REVISION)
+TTY_IMG ?= ghcr.io/cloudtty/cloudshell:$(REVISION)
 #NOTE: job.yaml.tmpl image should align with above
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
