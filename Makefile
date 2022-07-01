@@ -81,8 +81,8 @@ release: build-chart docker-build docker-push
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${OPERATOR_IMG} . -f docker/Dockerfile
-	docker build -t ${TTY_IMG} . -f docker/Dockerfile-webtty
+	docker build -t ${OPERATOR_IMG} . -f docker/operator/Dockerfile
+	docker build -t ${TTY_IMG} . -f docker/cloudshell/Dockerfile
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.

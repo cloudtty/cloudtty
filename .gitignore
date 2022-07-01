@@ -19,6 +19,7 @@ testbin/*
 
 # base crd
 config/crd/bases/*
+config/rbac/role.yaml
 
 # editor and IDE paraphernalia
 .vscode
