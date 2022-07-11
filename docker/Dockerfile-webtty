@@ -1,4 +1,4 @@
-FROM node:18.4.0 as builder
+FROM node:18.5.0 as builder
 # Build frontend code which added upload/download button
 WORKDIR /app
 COPY html/package.json /app/
