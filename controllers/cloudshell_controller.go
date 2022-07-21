@@ -45,6 +45,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -168,7 +169,7 @@ func (c *CloudShellReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{RequeueAfter: syncInterval}, nil
 	} else {
 		log.Info("Waiting job to active")
-		return ctrl.Result{RequeueAfter: time.Duration(5) * time.Second}, nil
+		return ctrl.Result{RequeueAfter: time.Duration(500) * time.Millisecond}, nil
 	}
 }
 
@@ -567,6 +568,9 @@ func (c *CloudShellReconciler) CreateVitualServiceForCloudshell(ctx context.Cont
 func (c *CloudShellReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&cloudshellv1alpha1.CloudShell{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: 5,
+		}).
 		Complete(c)
 }
 
@@ -691,7 +695,7 @@ func VsNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.Namespace
 // and be considered the cloudtty server is working.
 func (c *CloudShellReconciler) isRunning(ctx context.Context, job *batchv1.Job) (bool, error) {
 	pods := &corev1.PodList{}
-	if err := wait.PollImmediate(time.Second*1, time.Second*60, func() (bool, error) {
+	if err := wait.PollImmediate(time.Duration(500)*time.Millisecond, time.Second*60, func() (bool, error) {
 		if err := c.List(ctx, pods, client.InNamespace(job.Namespace), client.MatchingLabels{"job-name": job.Name}); err != nil {
 			return false, err
 		}
