@@ -68,7 +68,8 @@ const (
           readinessProbe:
             tcpSocket:
               port: 7681
-            periodSeconds: 5
+            periodSeconds: 1
+            failureThreshold: 15
           livenessProbe:
             tcpSocket:
               port: 7681
