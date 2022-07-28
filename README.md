@@ -1,5 +1,6 @@
 # A Kubernates Cloud-Shell (Web Terminal) Operator.
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6301/badge)](https://bestpractices.coreinfrastructure.org/projects/6301)
+
 English | [简体中文](https://github.com/cloudtty/cloudtty/blob/main/README_zh.md)
 
 # Why needs cloudtty ?
@@ -120,7 +121,7 @@ If you have any question, feel free to reach out to us in the following ways:
 # Developer Guide
 
 ## Run operator and install CRD
-  
+
 1. generate crd to [charts/_crds]()
 
 ```shell
@@ -132,13 +133,13 @@ make generate-yaml
 ```shell
 make install
 ```
-  
+
 3. running operator
 
   ```shell
 make run
   ```
- 
+
 ## create cloudshell
 
 example: automatically prints logs for a container
