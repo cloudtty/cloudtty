@@ -22,6 +22,7 @@ data:
       completions: 1
       template:
         spec:
+          automountServiceAccountToken: false
           {{- include "cloudtty.job.imagePullSecrets" . | nindent 10 }}
           containers:
           - name: web-tty
