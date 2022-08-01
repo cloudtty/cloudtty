@@ -1,7 +1,7 @@
 # Image URL to use all building/pushing image targets
 
 # VERSION is the version of the binary.
-REVISION ?= $(shell git describe --tags --dirty 2>/dev/null)
+REVISION ?= $(shell git describe --tags --dirty 2>/dev/null)latest
 
 OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:$(REVISION)
 TTY_IMG ?= ghcr.io/cloudtty/cloudshell:$(REVISION)
@@ -81,8 +81,8 @@ release: build-chart docker-build docker-push
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${OPERATOR_IMG} . -f docker/Dockerfile
-	docker build -t ${TTY_IMG} . -f docker/Dockerfile-webtty
+	docker build -t ${OPERATOR_IMG} . -f docker/controller-manager/Dockerfile
+	docker build -t ${TTY_IMG} . -f docker/cloudtty/Dockerfile
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
