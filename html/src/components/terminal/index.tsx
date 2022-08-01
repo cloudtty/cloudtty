@@ -339,15 +339,12 @@ export class Xterm extends Component<Props> {
 
         const { socket, textEncoder, terminal, fitAddon, overlayAddon } = this;
         const dims = fitAddon.proposeDimensions();
-        socket.send(
-            textEncoder.encode(
-                JSON.stringify({
-                    AuthToken: this.token,
-                    columns: dims.cols,
-                    rows: dims.rows,
-                })
-            )
-        );
+
+        const authTokenMsg = JSON.stringify({ AuthToken: this.token });
+        socket.send(textEncoder.encode(authTokenMsg));
+
+        const resizeMsg = JSON.stringify({ columns: dims.cols, rows: dims.rows });
+        socket.send(textEncoder.encode(Command.RESIZE_TERMINAL + resizeMsg));
 
         if (this.opened) {
             terminal.reset();
