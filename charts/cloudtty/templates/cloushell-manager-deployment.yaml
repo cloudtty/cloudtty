@@ -13,9 +13,6 @@ spec:
   selector:
     matchLabels:
       control-plane: {{ include "cloudtty.controllerManager.fullname" . }}
-      {{- if .Values.podLabels }}
-      {{- include "common.tplvalues.render" ( dict "value" .Values.podLabels "context" $ ) | nindent 6 }}
-      {{- end }}
   template:
     metadata:
       {{- if .Values.podAnnotations }}
