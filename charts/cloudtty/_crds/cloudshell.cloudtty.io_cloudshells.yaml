@@ -111,6 +111,10 @@ spec:
               ttl:
                 format: int32
                 type: integer
+              urlArg:
+                description: 'UrlArg allow client to send command line arguments in
+                  URL (eg: http://localhost:7681?arg=foo&arg=bar)'
+                type: boolean
               virtualServiceConfig:
                 description: VirtualServiceConfig specifies some of the parameters
                   necessary to create the virtaulService.

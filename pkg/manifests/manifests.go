@@ -49,10 +49,11 @@ const (
               index=""
               if [ "${ONCE}" == "true" ];then once=" --once "; fi;
               if [ -f /index.html ]; then index=" --index /index.html ";fi
+              if [ "${URLARG}" == "true" ];then urlarg=" -a "; fi
               if [ -z "${TTL}" ] || [ "${TTL}" == "0" ];then
-                  ttyd ${index} ${once} sh -c "${COMMAND}"
+                  ttyd ${index} ${once} ${urlarg} sh -c "${COMMAND}"
               else
-                  timeout ${TTL} ttyd ${index} ${once} sh -c "${COMMAND}" || echo "exiting"
+                  timeout ${TTL} ttyd ${index} ${once} ${urlarg} sh -c "${COMMAND}" || echo "exiting"
               fi
           env:
           - name: KUBECONFIG
@@ -63,6 +64,8 @@ const (
             value: "{{ .Ttl }}"
           - name: COMMAND
             value: {{ .Command }}
+          - name: URLARG
+            value: "{{ .UrlArg }}"
           volumeMounts:
             - mountPath: /usr/local/kubeconfig/
               name: kubeconfig

@@ -66,6 +66,8 @@ type CloudShellSpec struct {
 	VirtualServiceConfig *VirtualServiceConfig `json:"virtualServiceConfig,omitempty"`
 	// PathPrefix specified a path prefix to access url, if not, the default path is used.
 	PathPrefix string `json:"pathPrefix,omitempty"`
+	// UrlArg allow client to send command line arguments in URL (eg: http://localhost:7681?arg=foo&arg=bar)
+	UrlArg bool `json:"urlArg,omitempty"`
 }
 
 // VirtualServiceConfig specifies some of the parameters necessary to create the virtaulService.
