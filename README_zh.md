@@ -55,7 +55,7 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
 2. 创建 CR，启动 cloudtty 的实例，并观察其状态。
 
   ```
-  kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.2.0/config/samples/local_cluster_v1alpha1_cloudshell.yaml
+  kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.3.0/config/samples/local_cluster_v1alpha1_cloudshell.yaml
   ```
 
   更多范例，参见`config/samples/`。
