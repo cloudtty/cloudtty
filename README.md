@@ -58,7 +58,7 @@ After the cloudtty is intergated to your own UI, it would look like:
 - Step 2: Create a cloudtty instance by applying CR, and then monitor its status
 
   ```shell
-  kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.2.0/config/samples/local_cluster_v1alpha1_cloudshell.yaml
+  kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.3.0/config/samples/local_cluster_v1alpha1_cloudshell.yaml
   ```
 
   By default, it will create a cloudtty pod and expose the `NodePort` service.
