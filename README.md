@@ -46,7 +46,7 @@ After the cloudtty is intergated to your own UI, it would look like:
 
   ```shell
   helm repo add daocloud https://release.daocloud.io/chartrepo/cloudshell
-  helm install cloudtty-operator --version 0.2.0 daocloud/cloudtty
+  helm install cloudtty-operator --version 0.3.0 daocloud/cloudtty
   ```
 
   b. Wait for the operator pod until it is running
