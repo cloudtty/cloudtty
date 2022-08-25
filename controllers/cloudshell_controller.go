@@ -242,7 +242,7 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 
 	jobBytes, err := util.ParseTemplate(jobTmpl, struct {
 		Namespace, Name, Ownership, Command, Configmap string
-		Once                                           bool
+		Once, UrlArg                                   bool
 		Ttl                                            int32
 	}{
 		Namespace: cloudshell.Namespace,
@@ -252,6 +252,7 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 		Configmap: cloudshell.Spec.ConfigmapName,
 		Command:   cloudshell.Spec.CommandAction,
 		Ttl:       cloudshell.Spec.Ttl,
+		UrlArg:    cloudshell.Spec.UrlArg,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed create cloudshell job")
