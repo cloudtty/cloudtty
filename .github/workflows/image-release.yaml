@@ -11,6 +11,15 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@master
+      - name: Get the version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          if [[ ${GITHUB_REF} == "refs/heads/main" ]]; then
+            VERSION=latest
+          fi
+          echo ::set-output name=VERSION::${VERSION}
       - name: Checkout code
         uses: actions/checkout@v3
         with:
