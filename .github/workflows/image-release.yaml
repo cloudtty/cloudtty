@@ -11,6 +11,15 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@master
+      - name: Get the version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          if [[ ${GITHUB_REF} == "refs/heads/main" ]]; then
+            VERSION=latest
+          fi
+          echo ::set-output name=VERSION::${VERSION}
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -25,3 +34,32 @@ jobs:
       - name: Push 
         run: |
               make docker-push
+      - name: Build & Pushing cloudshell image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: docker/Dockerfile-webtty
+          labels: |-
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          #push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+          tags: |-
+             ghcr.io/cloudtty/cloudshell:${{ steps.get_version.outputs.VERSION }}
+      - name: Build & Pushing operator image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: docker/Dockerfile
+          labels: |-
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          #push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+          tags: |-
+             ghcr.io/cloudtty/cloudshell-operator:${{ steps.get_version.outputs.VERSION }}
+
