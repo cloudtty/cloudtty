@@ -14,10 +14,10 @@ RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repos
     && apk add --no-cache ca-certificates lrzsz \
     && ln -s /usr/bin/lrz	/usr/bin/rz \
     && ln -s /usr/bin/lsz	/usr/bin/sz
-RUN ttydArch="$(arch)" \
+RUN ttydArch="$(arch)" && echo "Building arch of $ttydArch.." \
     && curl -LO https://github.com/tsl0922/ttyd/releases/download/1.6.3/ttyd.${ttydArch} \
     && chmod +x ttyd.${ttydArch} \
-    && mv ttyd.x86_64 /usr/local/bin/ttyd \
+    && mv ttyd.${ttydArch} /usr/local/bin/ttyd \
     && which ttyd \
     && mkdir kubeconf
 
