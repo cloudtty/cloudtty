@@ -1,4 +1,5 @@
 FROM node:18.5.0 as builder
+
 # Build frontend code which added upload/download button
 WORKDIR /app
 COPY html/package.json /app/
@@ -8,18 +9,35 @@ COPY html/ /app/
 RUN yarn run build
 
 FROM ghcr.io/dtzar/helm-kubectl:3.9
+SHELL [ "/bin/bash", "-c" ]
 
 RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories \
     && apk -U upgrade \
     && apk add --no-cache ca-certificates lrzsz \
     && ln -s /usr/bin/lrz	/usr/bin/rz \
-    && ln -s /usr/bin/lsz	/usr/bin/sz
+    && ln -s /usr/bin/lsz	/usr/bin/sz \
+    && apk add bash-completion \
+    && source /usr/share/bash-completion/bash_completion \
+    && source <(kubectl completion bash)
+
 RUN ttydArch="$(arch)" && echo "Building arch of $ttydArch.." \
     && curl -LO https://github.com/tsl0922/ttyd/releases/download/1.6.3/ttyd.${ttydArch} \
     && chmod +x ttyd.${ttydArch} \
     && mv ttyd.${ttydArch} /usr/local/bin/ttyd \
     && which ttyd \
-    && mkdir kubeconf
+    && mkdir kubeconf \
+    && curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-${tools_arch}.tgz \
+    && tar -zxf kubectl-karmada-linux-${tools_arch}.tgz \
+    && chmod +x kubectl-karmada \
+    && mv kubectl-karmada /usr/local/bin/kubectl-karmada \
+    && which kubectl-karmada \
+    && rm -rf kubectl-karmada-linux-* \
+    && curl -fsSLO https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-${tools_arch}.tar.gz \
+    && tar -zxf kubectl-karmada-linux-${tools_arch}.tgz \
+    && chmod +x etcd-v3.4.20-linux-${tools_arch}/etcdctl \
+    && mv etcd-v3.4.20-linux-${tools_arch}/etcdctl /usr/local/bin/etcdctl \
+    && which kubectl-karmada \
+    && rm -rf etcd-v3.4.20-linux-*
 
 COPY --from=builder /app/dist/inline.html index.html
 ENTRYPOINT ttyd
