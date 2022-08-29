@@ -22,3 +22,10 @@ version: 0.3.0
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 appVersion: "0.3.0"
+
+sources:
+  - "https://github.com/clusterpedia-io/clusterpedia"
+
+maintainers:
+  - name: clusterpedia-io
+    url: https://github.com/clusterpedia-io/clusterpedia
