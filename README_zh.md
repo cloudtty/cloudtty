@@ -48,7 +48,7 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
 
   ```
   helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-  helm install cloudtty-operator --version 0.2.0 daocloud/cloudtty
+  helm install cloudtty-operator --version 0.3.0 daocloud/cloudtty
   kubectl wait deployment  cloudtty-operator-controller-manager   --for=condition=Available=True
   ```
 
@@ -77,6 +77,40 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
   当 cloudshell 对象状态变为 `Ready`，并且 `URL` 字段出现之后，就可以通过该字段的访问方式，在浏览器打开:
 
   ![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.png)
+
+### 怎么构建自定义镜像
+
+大多数用户除了使用基本的 `kubectl` 工具来管理集群外，还需要更多丰富的工具来管理集群。可以基于 cloudshell 的基础镜像来自定义，下面是一个添加 `karmadactl` 工具的一个案例：
+
+* 修改 ![Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
+
+```shell
+FROM ghcr.io/cloudtty/cloudshell:v0.3.0
+
+RUN curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-amd64.tgz \
+    && tar -zxf kubectl-karmada-linux-amd64.tgz \
+    && chmod +x kubectl-karmada \
+    && mv kubectl-karmada /usr/local/bin/kubectl-karmada \
+    && which kubectl-karmada
+
+ENTRYPOINT ttyd
+```
+
+* 重新构建带有 karmadactl 工具的新镜像：
+
+```shell
+docker build -t <IMAGE> . -f docker/Dockerfile-webtty
+```
+
+### 使用自定义的 cloudshell 镜像
+
+在安装 cloudtty 时可以设置 `JobTemplate` 镜像参数来运行自己的 cloudshell 的镜像。
+
+```shell
+helm install cloudtty-operator --version 0.3.0 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
+```
+
+> 如果你已经安装了 cloudtty，还可以修改 `JobTemplate` 的 configmap 来设置 cloudshell 的镜像。
 
 ## 进阶用法
 

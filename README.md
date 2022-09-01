@@ -82,6 +82,40 @@ After the cloudtty is intergated to your own UI, it would look like:
 
   ![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.png)
 
+### How to build custom cloudshell image
+
+Most users need more than just the basic `kubectl` tools to manage their clusters. we can customize image based on cloudshell base image. here is an example of adding the `karmadactl` tool.
+
+* Modify ![Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example).
+
+```shell
+FROM ghcr.io/cloudtty/cloudshell:v0.3.0
+
+RUN curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-amd64.tgz \
+    && tar -zxf kubectl-karmada-linux-amd64.tgz \
+    && chmod +x kubectl-karmada \
+    && mv kubectl-karmada /usr/local/bin/kubectl-karmada \
+    && which kubectl-karmada
+
+ENTRYPOINT ttyd
+```
+
+* Rebuild new image with `karmadactl` tool：
+
+```shell
+docker build -t <IMAGE> . -f docker/Dockerfile-webtty
+```
+
+### Use custom cloudshell image
+
+set the 'JobTemplate' image parameter to run custom cloudshell image when installing cloudtty.
+
+```shell
+helm install cloudtty-operator --version 0.3.0 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
+```
+
+> If you have installed cloudtty, you can also modify the configMap of JobTemplate to set the cloudshell image.
+
 ## Advanced Usage Guide
 
 ### Manage Multiple or Remote Clusters
