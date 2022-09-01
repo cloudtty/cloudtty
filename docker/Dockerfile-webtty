@@ -18,7 +18,9 @@ RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repos
     && ln -s /usr/bin/lsz	/usr/bin/sz \
     && apk add bash-completion \
     && source /usr/share/bash-completion/bash_completion \
-    && source <(kubectl completion bash)
+    && echo 'source <(kubectl completion bash)' >>~/.bashrc \
+    && echo 'alias k=kubectl' >>~/.bashrc \
+    && echo 'complete -o default -F __start_kubectl k' >>~/.bashrc
 
 RUN ttydArch="$(arch)" && echo "Building arch of $ttydArch.." \
     && curl -LO https://github.com/tsl0922/ttyd/releases/download/1.6.3/ttyd.${ttydArch} \
@@ -26,6 +28,7 @@ RUN ttydArch="$(arch)" && echo "Building arch of $ttydArch.." \
     && mv ttyd.${ttydArch} /usr/local/bin/ttyd \
     && which ttyd \
     && mkdir kubeconf \
+    && tools_arch="$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/)" && echo "Building tools_arch of $tools_arch.." \
     && curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-${tools_arch}.tgz \
     && tar -zxf kubectl-karmada-linux-${tools_arch}.tgz \
     && chmod +x kubectl-karmada \
@@ -33,7 +36,7 @@ RUN ttydArch="$(arch)" && echo "Building arch of $ttydArch.." \
     && which kubectl-karmada \
     && rm -rf kubectl-karmada-linux-* \
     && curl -fsSLO https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-${tools_arch}.tar.gz \
-    && tar -zxf kubectl-karmada-linux-${tools_arch}.tgz \
+    && tar -zxf etcd-v3.4.20-linux-${tools_arch}.tar.gz \
     && chmod +x etcd-v3.4.20-linux-${tools_arch}/etcdctl \
     && mv etcd-v3.4.20-linux-${tools_arch}/etcdctl /usr/local/bin/etcdctl \
     && which kubectl-karmada \

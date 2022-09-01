@@ -24,8 +24,8 @@ version: 0.3.0
 appVersion: "0.3.0"
 
 sources:
-  - "https://github.com/clusterpedia-io/clusterpedia"
+  - "https://github.com/cloudtty/cloudtty"
 
 maintainers:
   - name: clusterpedia-io
-    url: https://github.com/clusterpedia-io/clusterpedia
+    url: https://github.com/cloudtty/cloudtty
