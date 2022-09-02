@@ -1,4 +1,4 @@
-FROM node:18.8.0 as builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} node:18.8.0 as builder
 
 # Build frontend code which added upload/download button
 WORKDIR /app
@@ -8,7 +8,7 @@ RUN yarn install
 COPY html/ /app/
 RUN yarn run build
 
-FROM ghcr.io/dtzar/helm-kubectl:3.9
+FROM --platform=${BUILDPLATFORM:-linux/amd64} ghcr.io/dtzar/helm-kubectl:3.9
 SHELL [ "/bin/bash", "-c" ]
 
 RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories \
@@ -28,17 +28,17 @@ RUN ttydArch="$(arch)" && echo "Building arch of $ttydArch.." \
     && mv ttyd.${ttydArch} /usr/local/bin/ttyd \
     && which ttyd \
     && mkdir kubeconf \
-    && tools_arch="$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/)" && echo "Building tools_arch of $tools_arch.." \
-    && curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-${tools_arch}.tgz \
-    && tar -zxf kubectl-karmada-linux-${tools_arch}.tgz \
+    && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" && echo "Building tools_arch of $ARCH.." \
+    && curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-${ARCH}.tgz \
+    && tar -zxf kubectl-karmada-linux-${ARCH}.tgz \
     && chmod +x kubectl-karmada \
     && mv kubectl-karmada /usr/local/bin/kubectl-karmada \
     && which kubectl-karmada \
     && rm -rf kubectl-karmada-linux-* \
-    && curl -fsSLO https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-${tools_arch}.tar.gz \
-    && tar -zxf etcd-v3.4.20-linux-${tools_arch}.tar.gz \
-    && chmod +x etcd-v3.4.20-linux-${tools_arch}/etcdctl \
-    && mv etcd-v3.4.20-linux-${tools_arch}/etcdctl /usr/local/bin/etcdctl \
+    && curl -fsSLO https://github.com/etcd-io/etcd/releases/download/v3.4.20/etcd-v3.4.20-linux-${ARCH}.tar.gz \
+    && tar -zxf etcd-v3.4.20-linux-${ARCH}.tar.gz \
+    && chmod +x etcd-v3.4.20-linux-${ARCH}/etcdctl \
+    && mv etcd-v3.4.20-linux-${ARCH}/etcdctl /usr/local/bin/etcdctl \
     && which kubectl-karmada \
     && rm -rf etcd-v3.4.20-linux-*
 
