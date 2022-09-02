@@ -33,4 +33,4 @@ jobs:
           CR_SKIP_EXISTING: true
           CR_GIT_BASE_URL: "https://api.github.com/"
           CR_GIT_UPLOAD_URL: "https://uploads.github.com/"
-          CR_PACKAGE_PATH: .deploy
+          CR_PACKAGE_PATH: .cr-release-packages
