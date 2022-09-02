@@ -6,6 +6,7 @@ on:
       - main
     tags:
       - v*
+
 jobs:
   helm-release:
     runs-on: ubuntu-latest
@@ -14,15 +15,22 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
           version: v3.7.1
+
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.4.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_SKIP_EXISTING: true
+          CR_GIT_BASE_URL: "https://api.github.com/"
+          CR_GIT_UPLOAD_URL: "https://uploads.github.com/"
+          CR_PACKAGE_PATH: .deploy
