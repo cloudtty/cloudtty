@@ -18,5 +18,5 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.18"
-      - name: Run unit tests
-        # run: make test
+      # - name: Run unit tests
+      #   # run: make test
