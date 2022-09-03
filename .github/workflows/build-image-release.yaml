@@ -42,7 +42,7 @@ jobs:
           echo "${{ env.REGISTER_PASSWORD }}" | docker login ${{ env.REGISTER }} -u ${{ env.REGISTER_USER }} --password-stdin
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
