@@ -1,8 +1,14 @@
 name: Build & Release Image
 
 env:
-  ONLINE_REGISTER: ghcr.io
+  # ghcr.io/cloudtty/cloudtty/cloudshell:latest => ghcr.io/cloudtty/cloudshell:latest
+  # IMAGE_REPO: ${{ github.repository }}
+  IMAGE_REPO: cloudtty
+  REGISTER: ghcr.io
+  IMAGE_ROOT_PATH: docker
   BUILD_PLATFORM: linux/amd64,linux/arm64
+  REGISTER_USER: ${{ github.actor }}
+  REGISTER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
 on:
   workflow_dispatch:
@@ -33,7 +39,7 @@ jobs:
 
       - name: Login registry
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ env.REGISTER_PASSWORD }}" | docker login ${{ env.REGISTER }} -u ${{ env.REGISTER_USER }} --password-stdin
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -43,32 +49,32 @@ jobs:
         with:
           driver-opts: image=moby/buildkit:master
 
-      - name: Build & Pushing cloudshell image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: docker/Dockerfile-webtty
-          labels: |-
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-          platforms: ${{ env.BUILD_PLATFORM }}
-          build-args: |
-            VERSION=${{ steps.get_version.outputs.VERSION }}
-          tags: ${{ env.ONLINE_REGISTER }}/cloudtty/cloudshell:${{ steps.get_version.outputs.VERSION }}
-          push: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build & Pushing operator image
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: docker/Dockerfile
+          file: ${{ env.IMAGE_ROOT_PATH }}/Dockerfile
           labels: |-
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ env.IMAGE_REPO }}
             org.opencontainers.image.revision=${{ github.sha }}
           platforms: ${{ env.BUILD_PLATFORM }}
           build-args: |
             VERSION=${{ steps.get_version.outputs.VERSION }}
-          tags: ${{ env.ONLINE_REGISTER }}/cloudtty/cloudshell-operator:${{ steps.get_version.outputs.VERSION }}
+          tags: ${{ env.REGISTER }}/${{ env.IMAGE_REPO }}/cloudshell-operator:${{ steps.get_version.outputs.VERSION }}
           push: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ env.REGISTER_PASSWORD }}
+
+      - name: Build & Pushing cloudshell image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ${{ env.IMAGE_ROOT_PATH }}/Dockerfile-webtty
+          labels: |-
+            org.opencontainers.image.source=https://github.com/${{ env.IMAGE_REPO }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          platforms: ${{ env.BUILD_PLATFORM }}
+          build-args: |
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+          tags: ${{ env.REGISTER }}/${{ env.IMAGE_REPO }}/cloudshell:${{ steps.get_version.outputs.VERSION }}
+          push: true
+          github-token: ${{ env.REGISTER_PASSWORD }}
