@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM:-linux/amd64} node:18.8.0 as builder
+FROM --platform=${BUILDPLATFORM} node:18.8.0 as builder
 
 # Build frontend code which added upload/download button
 WORKDIR /app
@@ -8,7 +8,7 @@ RUN yarn install
 COPY html/ /app/
 RUN yarn run build
 
-FROM --platform=${BUILDPLATFORM:-linux/amd64} ghcr.io/dtzar/helm-kubectl:3.9
+FROM ghcr.io/dtzar/helm-kubectl:3.9
 SHELL [ "/bin/bash", "-c" ]
 
 RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories \
