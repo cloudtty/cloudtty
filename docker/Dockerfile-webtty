@@ -22,13 +22,13 @@ RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repos
     && echo 'alias k=kubectl' >>~/.bashrc \
     && echo 'complete -o default -F __start_kubectl k' >>~/.bashrc
 
-RUN ttydArch="$(arch)" && echo "Building arch of $ttydArch.." \
+RUN ttydArch="$(uname -m)" && echo "Building arch of $ttydArch.." \
     && curl -LO https://github.com/tsl0922/ttyd/releases/download/1.6.3/ttyd.${ttydArch} \
     && chmod +x ttyd.${ttydArch} \
     && mv ttyd.${ttydArch} /usr/local/bin/ttyd \
     && which ttyd \
     && mkdir kubeconf \
-    && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" && echo "Building tools_arch of $ARCH.." \
+    && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" && echo "Building ARCH of $ARCH.." \
     && curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-${ARCH}.tgz \
     && tar -zxf kubectl-karmada-linux-${ARCH}.tgz \
     && chmod +x kubectl-karmada \
