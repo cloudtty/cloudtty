@@ -50,7 +50,7 @@ jobs:
           driver-opts: image=moby/buildkit:master
 
       - name: Build & Pushing operator image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           file: ${{ env.IMAGE_ROOT_PATH }}/operator/Dockerfile
@@ -65,7 +65,7 @@ jobs:
           github-token: ${{ env.REGISTER_PASSWORD }}
 
       - name: Build & Pushing cloudshell image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           file: ${{ env.IMAGE_ROOT_PATH }}/cloudshell/Dockerfile
