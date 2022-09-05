@@ -4,7 +4,7 @@ metadata:
   name: {{ include "jobTemplate.config.fullname" . }}
   namespace: {{ .Release.Namespace }}
 data: 
-  job-temp.yaml: |-
+  job-temp.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
