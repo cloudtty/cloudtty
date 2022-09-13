@@ -300,3 +300,12 @@ cloudtty 还将提供更多的功能，此处列出一些已经排上日程的�
 4. 需要检查 Pod 的 Running 和 endpoint 的 Ready，才能置 CR 为 Ready
 5. 目前 TTL 只反映到 shell 的 timeout, 没有反映到 Job 的 yaml 里
 6. Job 的创建模板目前是 hardcode 方式，应该提供更灵活的方式修改 Job 的模板
+
+
+## 贡献者
+
+<a href="https://github.com/cloudtty/cloudtty/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=cloudtty/cloudtty" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
