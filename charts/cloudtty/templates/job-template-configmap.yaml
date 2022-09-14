@@ -11,15 +11,11 @@ data:
       namespace: {{`{{ .Namespace }}`}}
       name: {{`{{ .Name }}`}}
       labels:
-        ownership: {{`{{ .Ownership }}`}}
         {{- if .Values.labels }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.jobTemplate.labels "context" $ ) | nindent 4 }}
         {{- end }}
     spec:
-      activeDeadlineSeconds: 3600
-      ttlSecondsAfterFinished: 60
-      parallelism: 1
-      completions: 1
+      ttlSecondsAfterFinished: 30
       template:
         spec:
           automountServiceAccountToken: false
