@@ -31,8 +31,9 @@ spec:
           image: {{ include "cloudtty.controllerManager.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
-          - /manager
-          - --leader-elect
+          - manager
+          - --leader-elect-resource-namespace={{ .Release.Namespace }}
+          - --v=2
           {{- if .Values.resources }}
           resources: {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
@@ -40,13 +41,13 @@ spec:
           livenessProbe: {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
             httpGet:
               path: /healthz
-              port: 8081
+              port: 10357
           {{- end }}
-          {{- if .Values.livenessProbe.enabled}}
+          {{- if .Values.readinessProbe.enabled}}
           readinessProbe: {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
             httpGet:
               path: /readyz
-              port: 8081
+              port: 10357
           {{- end }}
           volumeMounts:
           - mountPath: /etc/cloudtty

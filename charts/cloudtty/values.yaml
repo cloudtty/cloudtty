@@ -46,13 +46,7 @@ image:
   ##
   pullSecrets: []
 ## @param controllerManager.resources
-resources:
-  limits:
-    cpu: 500m
-    memory: 128Mi
-  requests:
-    cpu: 10m
-    memory: 64Mi
+resources: {}
   # If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:

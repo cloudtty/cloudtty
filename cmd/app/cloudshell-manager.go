@@ -87,7 +87,6 @@ func Run(ctx context.Context, opts *options.Options) error {
 		LeaderElectionNamespace:    opts.LeaderElection.ResourceNamespace,
 		LeaderElectionResourceLock: opts.LeaderElection.ResourceLock,
 		HealthProbeBindAddress:     net.JoinHostPort(opts.BindAddress, strconv.Itoa(opts.SecurePort)),
-		LivenessEndpointName:       "/healthz",
 		MetricsBindAddress:         opts.MetricsBindAddress,
 	})
 	if err != nil {
@@ -105,6 +104,10 @@ func Run(ctx context.Context, opts *options.Options) error {
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		klog.ErrorS(err, "failed to add health check endpoint")
+		return err
+	}
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		klog.ErrorS(err, "failed to add health check endpoint")
 		return err
 	}
