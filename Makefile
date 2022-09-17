@@ -123,7 +123,7 @@ codegen:
 build-chart:
 	helm package ./charts/cloudtty --dependency-update --destination .  --app-version $(REVISION)
 
-CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
+CONTROLLER_GEN = $(shell go env GOPATH)/bin/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
 	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)

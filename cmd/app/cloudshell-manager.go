@@ -23,13 +23,19 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/term"
 	"k8s.io/klog/v2"
 	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	"github.com/cloudtty/cloudtty/cmd/app/options"
+	"github.com/cloudtty/cloudtty/pkg/constants"
 	"github.com/cloudtty/cloudtty/pkg/controllers"
 	"github.com/cloudtty/cloudtty/pkg/utils/gclient"
 	"github.com/cloudtty/cloudtty/pkg/version"
@@ -79,6 +85,17 @@ func NewManagerCommand(ctx context.Context) *cobra.Command {
 
 func Run(ctx context.Context, opts *options.Options) error {
 	klog.Infof("cloudshell-controller-manager version: %s", version.Get())
+
+	// we need to informer jobs, pods and all cloudshells, most of jobs and pods we don't care about.
+	// so we need to select resources related to cloudshell to reduce the pressure of apiserver and
+	// synchronically reduce the overhead of operator memory.
+	labelSelector := labels.NewSelector()
+	requirement, err := labels.NewRequirement(constants.CloudshellOwnerLabelKey, selection.Exists, []string{})
+	if err != nil {
+		return err
+	}
+	labelSelector = labelSelector.Add(*requirement)
+
 	mgr, err := controllerruntime.NewManager(controllerruntime.GetConfigOrDie(), controllerruntime.Options{
 		Logger:                     klog.Background(),
 		Scheme:                     gclient.NewSchema(),
@@ -88,6 +105,17 @@ func Run(ctx context.Context, opts *options.Options) error {
 		LeaderElectionResourceLock: opts.LeaderElection.ResourceLock,
 		HealthProbeBindAddress:     net.JoinHostPort(opts.BindAddress, strconv.Itoa(opts.SecurePort)),
 		MetricsBindAddress:         opts.MetricsBindAddress,
+		NewCache: cache.BuilderWithOptions(cache.Options{
+			Scheme: gclient.NewSchema(),
+			SelectorsByObject: cache.SelectorsByObject{
+				&corev1.Pod{}: {
+					Label: labelSelector,
+				},
+				&batchv1.Job{}: {
+					Label: labelSelector,
+				},
+			},
+		}),
 	})
 	if err != nil {
 		klog.ErrorS(err, "failed to build controller manager")
@@ -96,7 +124,7 @@ func Run(ctx context.Context, opts *options.Options) error {
 
 	if err = (&controllers.CloudShellReconciler{
 		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Scheme: gclient.NewSchema(),
 	}).SetupWithManager(mgr); err != nil {
 		klog.ErrorS(err, "unable to create controller", "controller", "cloudshell")
 		return err

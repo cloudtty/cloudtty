@@ -25,7 +25,6 @@ import (
 	"os"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	networkingv1beta1 "istio.io/api/networking/v1beta1"
@@ -38,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
@@ -48,7 +46,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
 	"github.com/cloudtty/cloudtty/pkg/constants"
@@ -60,6 +61,8 @@ const (
 	// CloudshellControllerFinalizer is added to cloudshell to ensure Work as well as the
 	// execution space (namespace) is deleted before itself is deleted.
 	CloudshellControllerFinalizer = "cloudtty.io/cloudshell-controller"
+
+	DefaultMaxConcurrentReconciles = 5
 )
 
 // CloudShellReconciler reconciles a CloudShell object
@@ -150,7 +153,7 @@ func (c *CloudShellReconciler) syncCloudshell(ctx context.Context, cloudshell *c
 
 		if ok, _ := c.isRunning(ctx, job); !ok {
 			klog.V(4).InfoS("Cloudshell phase is not ready", "cloudshell", klog.KObj(cloudshell))
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{}, nil
 		}
 		if err := c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseReady); err != nil {
 			return ctrl.Result{Requeue: true}, err
@@ -162,6 +165,17 @@ func (c *CloudShellReconciler) syncCloudshell(ctx context.Context, cloudshell *c
 func (c *CloudShellReconciler) fillForCloudshell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	if len(cloudshell.Spec.ExposeMode) == 0 {
 		cloudshell.Spec.ExposeMode = cloudshellv1alpha1.ExposureServiceNodePort
+	}
+
+	// we consider that the ttl is too short is not meaningful.
+	if cloudshell.Spec.Ttl < 300 {
+		cloudshell.Spec.Ttl = 300
+	}
+	if len(cloudshell.Spec.CommandAction) == 0 {
+		cloudshell.Spec.CommandAction = "bash"
+	}
+	if len(cloudshell.Spec.Image) == 0 {
+		cloudshell.Spec.Image = constants.DefaultCloudShellImage
 	}
 	return c.ensureFinalizer(cloudshell)
 }
@@ -214,18 +228,19 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 	}
 
 	jobTmpl := manifests.JobTmplV1
-	if template, err := util.LoadYamlTemplate("/etc/cloudtty/job-temp.yaml"); err == nil {
+	if template, err := util.LoadYamlTemplate(constants.JobTemplatePath); err == nil {
 		klog.V(2).InfoS("failed to load job template from /etc/cloudtty", "err", err)
 		jobTmpl = template
 	}
 
 	jobBytes, err := util.ParseTemplate(jobTmpl, struct {
-		Namespace, Name, Command, Configmap string
-		Once, UrlArg                        bool
-		Ttl                                 int32
+		Namespace, Name, Command, Configmap, Image string
+		Once, UrlArg                               bool
+		Ttl                                        int32
 	}{
 		Namespace: cloudshell.Namespace,
 		Name:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
+		Image:     cloudshell.Spec.Image,
 		Once:      cloudshell.Spec.Once,
 		Configmap: cloudshell.Spec.ConfigmapName,
 		Command:   cloudshell.Spec.CommandAction,
@@ -244,6 +259,7 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 	}
 	job := obj.(*batchv1.Job)
 	job.SetLabels(map[string]string{constants.CloudshellOwnerLabelKey: cloudshell.Name})
+	job.Spec.Template.SetLabels(map[string]string{constants.CloudshellOwnerLabelKey: cloudshell.Name})
 
 	if err := ctrlutil.SetControllerReference(cloudshell, job, c.Scheme); err != nil {
 		klog.ErrorS(err, "failed to set owner reference for job", "cloudshell", klog.KObj(cloudshell))
@@ -279,7 +295,7 @@ func (c *CloudShellReconciler) CreateRouteRule(ctx context.Context, cloudshell *
 		// Default(No explicit `ExposeMode` specified in CR) mode is Nodeport
 		host, err := c.GetMasterNodeIP(ctx)
 		if err != nil {
-			klog.Infof("Unable to get master node IP addr", "cloudshell", klog.KObj(cloudshell), "err", err)
+			klog.InfoS("Unable to get master node IP addr", "cloudshell", klog.KObj(cloudshell), "err", err)
 		}
 
 		var nodePort int32
@@ -526,15 +542,18 @@ func (c *CloudShellReconciler) CreateVitualServiceForCloudshell(ctx context.Cont
 // UpdateCloudshellStatus update the clodushell status.
 func (c *CloudShellReconciler) UpdateCloudshellStatus(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell, phase string) error {
 	firstTry := true
+	cloudshell.Status.Phase = phase
+	status := cloudshell.Status
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
 		if !firstTry {
 			if getErr := c.Get(ctx, types.NamespacedName{Name: cloudshell.Name, Namespace: cloudshell.Namespace}, cloudshell); err != nil {
 				return getErr
 			}
 		}
-		cloudshell.Status.Phase = phase
+		cloudshell.Status = status
+		cc := cloudshell.DeepCopy()
 
-		err = c.Status().Update(ctx, cloudshell)
+		err = c.Status().Update(ctx, cc)
 		firstTry = false
 		return
 	})
@@ -671,26 +690,47 @@ func VsNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.Namespace
 // TODO: The field `job.status.Ready` is alpha phase. we can depend on the field if it's to be beta.
 func (c *CloudShellReconciler) isRunning(ctx context.Context, job *batchv1.Job) (bool, error) {
 	pods := &corev1.PodList{}
-	if err := wait.PollImmediate(time.Duration(500)*time.Millisecond, time.Second*60, func() (bool, error) {
-		if err := c.List(ctx, pods, client.InNamespace(job.Namespace), client.MatchingLabels{"job-name": job.Name}); err != nil {
-			return false, err
+	if err := c.List(ctx, pods, client.InNamespace(job.Namespace), client.MatchingLabels{"job-name": job.Name}); err != nil {
+		return false, err
+	}
+	for _, p := range pods.Items {
+		if p.Status.Phase != corev1.PodRunning || p.DeletionTimestamp != nil {
+			continue
 		}
-		for _, p := range pods.Items {
-			if p.Status.Phase != corev1.PodRunning {
-				continue
-			}
-			for _, c := range p.Status.Conditions {
-				if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
-					return true, nil
-				}
+		for _, c := range p.Status.Conditions {
+			if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+				return true, nil
 			}
 		}
-		return false, nil
-	}); err != nil {
-		return false, errors.Errorf("no pod of job %s is running", job.Name)
 	}
 
-	return true, nil
+	return false, errors.Errorf("no pod of job %s is running", job.Name)
+}
+
+// findObjectsForPod define the relation between pod and cloudshell. we can find a
+// cloudshell by the label of pod.
+func (c *CloudShellReconciler) findObjectsForPod(pod client.Object) []reconcile.Request {
+	var cloudshellName string
+	for label, value := range pod.GetLabels() {
+		if label == constants.CloudshellOwnerLabelKey {
+			cloudshellName = value
+			break
+		}
+	}
+	if len(cloudshellName) == 0 {
+		return []reconcile.Request{}
+	}
+	attachedCloudshell := &cloudshellv1alpha1.CloudShell{}
+	err := c.Get(context.TODO(), types.NamespacedName{Namespace: pod.GetNamespace(), Name: cloudshellName}, attachedCloudshell)
+	if err != nil {
+		return []reconcile.Request{}
+	}
+	return []reconcile.Request{
+		{NamespacedName: types.NamespacedName{
+			Name:      attachedCloudshell.GetName(),
+			Namespace: attachedCloudshell.GetNamespace(),
+		}},
+	}
 }
 
 // GenerateKubeconfigByInCluster load serviceaccount info under
@@ -728,20 +768,30 @@ func GenerateKubeconfigInCluster() ([]byte, error) {
 // SetupWithManager sets up the controller with the Manager.
 func (c *CloudShellReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&cloudshellv1alpha1.CloudShell{}, builder.WithPredicates(predicate.Funcs{
-			UpdateFunc: OnCloudshellUpdate,
-		})).
-		Owns(&batchv1.Job{}, builder.WithPredicates(predicate.Funcs{
-			UpdateFunc:  OnJobUpdate,
-			DeleteFunc:  func(event.DeleteEvent) bool { return false },
-			CreateFunc:  func(event.CreateEvent) bool { return false },
-			GenericFunc: func(event.GenericEvent) bool { return false },
+		For(&cloudshellv1alpha1.CloudShell{},
+			builder.WithPredicates(predicate.Funcs{
+				UpdateFunc: OnCloudshellUpdate,
+			})).
+		Owns(&batchv1.Job{},
+			builder.WithPredicates(predicate.Funcs{
+				UpdateFunc:  OnJobUpdate,
+				DeleteFunc:  func(event.DeleteEvent) bool { return false },
+				CreateFunc:  func(event.CreateEvent) bool { return false },
+				GenericFunc: func(event.GenericEvent) bool { return false },
 
-			// TODO: the job be deleted during the ttl of cloudshell,
-			// should create job again？
-		})).
+				// TODO: the job be deleted during the ttl of cloudshell,
+				// should create job again？
+			})).
+		Watches(&source.Kind{Type: &corev1.Pod{}},
+			handler.EnqueueRequestsFromMapFunc(c.findObjectsForPod),
+			builder.WithPredicates(predicate.Funcs{
+				UpdateFunc:  OnPodUpdate,
+				DeleteFunc:  func(event.DeleteEvent) bool { return false },
+				CreateFunc:  func(event.CreateEvent) bool { return false },
+				GenericFunc: func(event.GenericEvent) bool { return false },
+			})).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 5,
+			MaxConcurrentReconciles: DefaultMaxConcurrentReconciles,
 		}).
 		Complete(c)
 }
@@ -753,9 +803,8 @@ func (c *CloudShellReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func OnCloudshellUpdate(updateEvent event.UpdateEvent) bool {
 	newObj := updateEvent.ObjectNew.(*cloudshellv1alpha1.CloudShell)
 	oldObj := updateEvent.ObjectOld.(*cloudshellv1alpha1.CloudShell)
-	update := !reflect.DeepEqual(newObj.Spec, oldObj.Spec) ||
-		!reflect.DeepEqual(newObj.DeletionTimestamp, oldObj.DeletionTimestamp)
-	return update
+
+	return newObj.DeletionTimestamp != nil || !reflect.DeepEqual(newObj.Spec, oldObj.Spec)
 }
 
 // OnJobUpdate difine update event to job, in following case, we need take
@@ -772,5 +821,26 @@ func OnJobUpdate(updateEvent event.UpdateEvent) bool {
 	if finished, _ := IsJobFinished(newObj); finished {
 		return true
 	}
+	return false
+}
+
+// OnJobUpdate difine update event to pod, in following case, we need take
+// cloudshell requeue:
+// 1. the pod status is running.
+func OnPodUpdate(updateEvent event.UpdateEvent) bool {
+	newObj := updateEvent.ObjectNew.(*corev1.Pod)
+	oldObj := updateEvent.ObjectOld.(*corev1.Pod)
+
+	if newObj.DeletionTimestamp != nil {
+		return false
+	}
+	if !reflect.DeepEqual(newObj.Status.Conditions, oldObj.Status.Conditions) {
+		for _, c := range newObj.Status.Conditions {
+			if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+				return true
+			}
+		}
+	}
+
 	return false
 }
