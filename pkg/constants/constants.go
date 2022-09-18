@@ -5,6 +5,9 @@ const (
 	DefaultIngressName        = "cloudshell-ingress"
 	DefaultVirtualServiceName = "cloudshell-virtualService"
 	DefaultServicePort        = 7681
+	DefaultCloudShellImage    = "ghcr.io/cloudtty/cloudshell:v0.3.0"
 
 	CloudshellOwnerLabelKey = "cloudshell.cloudtty.io/owner-name"
+
+	JobTemplatePath = "/etc/cloudtty/job-temp.yaml"
 )

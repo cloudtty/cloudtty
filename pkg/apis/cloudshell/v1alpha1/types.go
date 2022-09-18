@@ -38,7 +38,7 @@ const (
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// NOTE: json tags are required. Any new fields you add must have json tags for the fields to be serialized.
 
 // CloudShellSpec defines the desired state of CloudShell
 type CloudShellSpec struct {
@@ -48,25 +48,52 @@ type CloudShellSpec struct {
 	// Configmap of the target kube-config, will replace by SA
 	// +required
 	ConfigmapName string `json:"configmapName,omitempty"`
-	RunAsUser     string `json:"runAsUser,omitempty"`
+
+	// +optional
+	RunAsUser string `json:"runAsUser,omitempty"`
+
+	// Image defines the image to cloudshell, we can customize an image.
+	// Note: the image must be built on top of the officially available base image.
+	// Please see: https://github.com/cloudtty/cloudtty#how-to-build-custom-cloudshell-image
+	// +optional
+	Image string `json:"image,omitempty"`
+
 	// accept only one client and exit on disconnection
-	Once          bool   `json:"once,omitempty"`
+	// +optional
+	Once bool `json:"once,omitempty"`
+
+	// +optional
 	CommandAction string `json:"commandAction,omitempty"`
-	Ttl           int32  `json:"ttl,omitempty"`
+
+	// +optional
+	// TODO: repalce type `int32` of ttl with `time`.
+	Ttl int32 `json:"ttl,omitempty"`
+
 	// Cleanup specified whether to delete cloudshell resources when corresponding job status is completed.
+	// +optional
 	Cleanup bool `json:"cleanup,omitempty"`
+
 	// +kubebuilder:validation:Enum=ClusterIP;NodePort;Ingress;VirtualService
+	// + optional
 	ExposeMode ExposureMode `json:"exposureMode,omitempty"`
+
 	// Specifies a port number range 30000-32767 when using nodeport mode,
 	// if not specified, kubernetes default random rule is used.
 	// NodePort int32 `json:"NodePort,omitempty"`
 	// IngressConfig specifies necessary parameters to create ingress.
+	// +optional
 	IngressConfig *IngressConfig `json:"ingressConfig,omitempty"`
+
 	// VirtualServiceConfig specifies some of the parameters necessary to create the virtaulService.
+	// +optional
 	VirtualServiceConfig *VirtualServiceConfig `json:"virtualServiceConfig,omitempty"`
+
 	// PathPrefix specified a path prefix to access url, if not, the default path is used.
+	// +optional
 	PathPrefix string `json:"pathPrefix,omitempty"`
+
 	// UrlArg allow client to send command line arguments in URL (eg: http://localhost:7681?arg=foo&arg=bar)
+	// +optional
 	UrlArg bool `json:"urlArg,omitempty"`
 }
 
@@ -75,13 +102,16 @@ type VirtualServiceConfig struct {
 	// VirtualServiceName specifies a name to virtualService, if it's
 	// empty, default "cloudshell-VirtualService"
 	VirtualServiceName string `json:"virtualServiceName,omitempty"`
+
 	// Namespace specifies a namespace that the virtualService will be
 	// created in it. if it's empty, default the cloudshell namespace.
 	Namespace string `json:"namespace,omitempty"`
+
 	// The value "." is reserved and defines an export to the same namespace that
 	// the virtual service is declared in. Similarly the value "*" is reserved and
 	// defines an export to all namespaces.
 	ExportTo string `json:"export_to,omitempty"`
+
 	// Gateway must be specified and the gateway already exists in the cluster.
 	Gateway string `json:"gateway,omitempty"`
 }
@@ -90,9 +120,11 @@ type VirtualServiceConfig struct {
 type IngressConfig struct {
 	// IngressName specifies a name to ingress, if it's empty, default "cloudshell-ingress".
 	IngressName string `json:"ingressName,omitempty"`
+
 	// Namespace specifies a namespace that the virtualService will be
 	// created in it. if it's empty, default the cloudshell namespace.
 	Namespace string `json:"namespace,omitempty"`
+
 	// IngressClassName specifies a ingress controller to ingress,
 	// it must be fill when the cluster have multiple ingress controller service.
 	IngressClassName string `json:"ingressClassName,omitempty"`
@@ -102,7 +134,10 @@ type IngressConfig struct {
 type CloudShellStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Phase     string `json:"phase"`
+	// +optional
+	Phase string `json:"phase"`
+
+	// +optional
 	AccessURL string `json:"accessUrl"`
 }
 
@@ -119,10 +154,18 @@ type CloudShellStatus struct {
 
 // CloudShell is the Schema for the cloudshells API
 type CloudShell struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
+	// Standard object's metadata.
+	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CloudShellSpec   `json:"spec,omitempty"`
+	// Spec defines the desired behavior of the cloudshell.
+	// +optional
+	Spec CloudShellSpec `json:"spec,omitempty"`
+
+	// Most recently observed status of the cloudshell.
+	// +optional
 	Status CloudShellStatus `json:"status,omitempty"`
 }
 
@@ -132,6 +175,9 @@ type CloudShell struct {
 // CloudShellList contains a list of CloudShell
 type CloudShellList struct {
 	metav1.TypeMeta `json:",inline"`
+
+	// +optional
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CloudShell `json:"items"`
+
+	Items []CloudShell `json:"items"`
 }

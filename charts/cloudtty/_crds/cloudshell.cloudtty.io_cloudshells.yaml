@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: cloudshells.cloudshell.cloudtty.io
 spec:
@@ -57,7 +57,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: CloudShellSpec defines the desired state of CloudShell
+            description: Spec defines the desired behavior of the cloudshell.
             properties:
               cleanup:
                 description: Cleanup specified whether to delete cloudshell resources
@@ -77,6 +77,11 @@ spec:
                 - NodePort
                 - Ingress
                 - VirtualService
+                type: string
+              image:
+                description: 'Image defines the image to cloudshell, we can customize
+                  an image. Note: the image must be built on top of the officially
+                  available base image. Please see: https://github.com/cloudtty/cloudtty#how-to-build-custom-cloudshell-image'
                 type: string
               ingressConfig:
                 description: Specifies a port number range 30000-32767 when using
@@ -141,7 +146,7 @@ spec:
                 type: object
             type: object
           status:
-            description: CloudShellStatus defines the observed state of CloudShell
+            description: Most recently observed status of the cloudshell.
             properties:
               accessUrl:
                 type: string
@@ -150,18 +155,9 @@ spec:
                   of cluster Important: Run "make" to regenerate code after modifying
                   this file'
                 type: string
-            required:
-            - accessUrl
-            - phase
             type: object
         type: object
     served: true
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
