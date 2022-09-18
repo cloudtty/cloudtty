@@ -68,4 +68,4 @@ jobs:
           kubectl_version: ${{ env.K8S_VERSION }}
 
       - name: Run chart-testing (install)
-        run: ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --helm-extra-args "--timeout 400s"
+        run: ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --helm-extra-args "--timeout 400s" --helm-extra-set-args "--set=image.tag=latest"
