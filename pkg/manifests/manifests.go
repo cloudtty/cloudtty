@@ -75,9 +75,9 @@ const (
             periodSeconds: 20
         restartPolicy: Never
         volumes:
-        - configMap:
+        - secret:
             defaultMode: 420
-            name: {{ .Configmap }}
+            secretName: {{ .Secret }}
           name: kubeconfig
 `
 

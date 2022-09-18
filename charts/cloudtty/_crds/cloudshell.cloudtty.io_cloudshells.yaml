@@ -66,8 +66,10 @@ spec:
               commandAction:
                 type: string
               configmapName:
-                description: Configmap of the target kube-config, will replace by
-                  SA
+                description: 'Configmap of the target kube-config, will replace by
+                  SA TODO: it will be deprecated in v0.5.0 version and be removed
+                  in v0.6.0 if open the featuregate AllowSecretStoreKubeconfig, it''s
+                  not work.'
                 type: string
               exposureMode:
                 description: ExposeMode describes how to access ttyd service, either
@@ -113,7 +115,19 @@ spec:
                 type: string
               runAsUser:
                 type: string
+              secretRef:
+                description: 'SecretRef represents the secret contains mandatory credentials
+                  to access the target cluster. The secret should hold credentials
+                  as follows: - secret.data.token - secret.data.caBundle The field
+                  is alpha phase, paleas open the featuregate AllowSecretStoreKubeconfig
+                  to use it.'
+                properties:
+                  name:
+                    description: Name is the name of resource being referenced.
+                    type: string
+                type: object
               ttl:
+                description: 'TODO: repalce type `int32` of ttl with `time`.'
                 format: int32
                 type: integer
               urlArg:

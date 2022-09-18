@@ -46,8 +46,18 @@ type CloudShellSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Configmap of the target kube-config, will replace by SA
+	// TODO: it will be deprecated in v0.5.0 version and be removed in v0.6.0
+	// if open the featuregate AllowSecretStoreKubeconfig, it's not work.
 	// +required
 	ConfigmapName string `json:"configmapName,omitempty"`
+
+	// SecretRef represents the secret contains mandatory credentials to access the target cluster.
+	// The secret should hold credentials as follows:
+	// - secret.data.token
+	// - secret.data.caBundle
+	// The field is alpha phase, paleas open the featuregate AllowSecretStoreKubeconfig to use it.
+	// +optional
+	SecretRef *LocalSecretReference `json:"secretRef,omitempty"`
 
 	// +optional
 	RunAsUser string `json:"runAsUser,omitempty"`
@@ -128,6 +138,13 @@ type IngressConfig struct {
 	// IngressClassName specifies a ingress controller to ingress,
 	// it must be fill when the cluster have multiple ingress controller service.
 	IngressClassName string `json:"ingressClassName,omitempty"`
+}
+
+// LocalSecretReference is a reference to a secret within the enclosing
+// namespace.
+type LocalSecretReference struct {
+	// Name is the name of resource being referenced.
+	Name string `json:"name,omitempty"`
 }
 
 // CloudShellStatus defines the observed state of CloudShell
