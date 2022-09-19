@@ -104,7 +104,21 @@ docker build -t <IMAGE> . -f docker/Dockerfile-webtty
 
 ### 使用自定义的 cloudshell 镜像
 
-在安装 cloudtty 时可以设置 `JobTemplate` 镜像参数来运行自己的 cloudshell 的镜像。
+我们有两种方式来设置 cloudshell 的自定义镜像：
+
+1. 直接通过 cloudshell CR 字段 `spec.image` 来设置.
+
+```yaml
+apiVersion: cloudshell.cloudtty.io/v1alpha1
+kind: CloudShell
+metadata:
+  name: cloudshell-sample
+spec:
+  configmapName: "my-kubeconfig"
+  image: ghcr.io/cloudtty/customize_cloudshell:latest
+```
+
+2. 在安装 cloudtty 时可以设置 `JobTemplate` 镜像参数来运行自己的 cloudshell 的镜像。
 
 ```shell
 helm install cloudtty-operator --version 0.3.0 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
