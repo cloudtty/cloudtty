@@ -159,6 +159,24 @@ Be careful to ensure the /root/.kube/config:
   Inside the container, kubectl automatically detects `CA` certificates and token.
   If any concern with security, you can also provide your own kubeconfig to control the permissions for different users.)
 
+### Manager cluster node
+
+The basic image to cloudshell had integrated plugin of ![kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell), we can use its command to connect a arbitrary node of specified cluster. it will running a pod with privilege, if you attach importance to pod security, please be careful with the feature. see following sample:
+
+```yaml
+apiVersion: cloudshell.cloudtty.io/v1alpha1
+kind: CloudShell
+metadata:
+  name: cloudshell-node-shell
+spec:
+  configmapName: "<KUBECONFIg>"
+  commandAction: "kubectl node-shell <NODE_NAME>"
+```
+
+More sample to ![kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell)
+
+> If cluster had existed security policy such as `PodSecurity` and `PSP`, the feature may be affected.
+
 ### More Exposure Modes
 
 Cloudtty provides the following four modes to expose cloudtty services to satisfy different usage scenarios:
@@ -174,6 +192,15 @@ Cloudtty provides the following four modes to expose cloudtty services to satisf
 
 - `VirtualService` (Istio): Create a ClusterIP Service resource in a cluster and create a `VirtaulService` resource.
   This mode is used when [Istio](https://github.com/istio/istio) is used to load traffic in a cluster.
+
+### featureGate
+
+* AllowSecretStoreKubeconfig：restore kubeconfig file with secret resource, if open the featureGate, the field `spec.configmapName` will be disable, we can use field `spec.secretRef.name` to difine kubeconfig where are. currently the featureGate is alpha pahse, disabled by default.
+
+#### How to open featrueGate
+
+1. If use the way to `yaml` to deploy cloudtty, add `--feature-gates=AllowSecretStoreKubeconfig=true` to operator running args.
+2. If use the way to `helm` to deploy cloudtty, we can set the params `--set image.featureGates.AllowSecretStoreKubeconfig=true`.
 
 ## Rationale
 
@@ -253,9 +280,6 @@ If you have any question, feel free to reach out to us in the following ways:
 - Job creation templates are currently hardcode and should provide a more flexible way to modify the job template.
 
 More will be coming Soon. Welcome to [open an issue](https://github.com/cloudtty/cloudtty/issues) and [propose a PR](https://github.com/cloudtty/cloudtty/pulls). 🎉🎉🎉
-
-
-
 
 ## Contributors
 
