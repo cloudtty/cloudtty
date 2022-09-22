@@ -147,7 +147,25 @@ cloudtty 会自动挂载到容器中，请确保服务器地址与集群网络�
 
 2. 编辑这个 ConfigMap, 修改 endpoint 的地址，从 IP 改为 servicename，如 `server: https://kubernetes.default.svc.cluster.local:443`
 
-### 进阶 2：修改服务暴露方式
+### 进阶 2：用 cloudtty 访问集群上的 node 主机
+
+cloudshell 的基础镜像中集成 ![kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell) 插件，使用该插件可以通过 `kubectl` 的命令登陆到集群中任意节点上。该命令将会在节点上启动一个具有特权 pod，如果对安全性要求非常高，请谨慎使用此功能。下面是一个使用的实例：
+
+```yaml
+apiVersion: cloudshell.cloudtty.io/v1alpha1
+kind: CloudShell
+metadata:
+  name: cloudshell-node-shell
+spec:
+  configmapName: "<KUBECONFIg>"
+  commandAction: "kubectl node-shell <NODE_NAME>"
+```
+
+更多的示例可以参考 ![kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell).
+
+> 集群中如果已经存在 `PodSecurity` 和 `PSP` 等安全性策略，可能会影响该功能的使用。
+
+### 进阶 3：修改服务暴露方式
 
 cloudtty 提供了以下 4 种服务暴露模式以满足不同的使用场景。
 
@@ -162,6 +180,15 @@ cloudtty 提供了以下 4 种服务暴露模式以满足不同的使用场景�
 
 * `VirtualService (istio)`：在集群中创建 ClusterIP 类型的 Service 资源，并创建 VirtaulService 资源。
   适合在集群中使用 [Istio](https://github.com/istio/istio) 进行流量负载的情况。
+
+### featureGate
+
+* AllowSecretStoreKubeconfig：使用 secret 的方式存储 kubeconfig 文件，如果开启此 featureGate，该字段 `spec.configmapName` 将会失效，使用 `spec.secretRef.name` 来设置 kubeconfig, 目前处于 alpha 阶段，默认是关闭。
+
+#### 如何开启 featrueGate
+
+1. 如果使用 yaml 方式部署 cloudtty，在 operator 的启动参数中添加 `--feature-gates=AllowSecretStoreKubeconfig=true`.
+2. 如果使用 helm 部署的情况，安装指定参数 `--set image.featureGates.AllowSecretStoreKubeconfig=true`.
 
 ### 工作原理
 
