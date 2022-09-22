@@ -34,6 +34,9 @@ spec:
           - manager
           - --leader-elect-resource-namespace={{ .Release.Namespace }}
           - --v=2
+          {{- with (include "cloudtty.operator.featureGates" .) }}
+          - {{ . }}
+          {{- end }}
           {{- if .Values.resources }}
           resources: {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}

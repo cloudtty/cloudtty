@@ -77,6 +77,13 @@ readinessProbe:
   enabled: true
   initialDelaySeconds: 5
   periodSeconds: 10
+## @param featureGate to cloudtty operator
+featureGates:
+  # AllowSecretStoreKubeconfig is a feature gate for the cloudshell to store kubeconfig in secret.
+  # owner: @calvin0327
+  # alpha: v0.3.0
+  # beta: v0.4.0
+  AllowSecretStoreKubeconfig: false
 
 ## @jobTemplate job template config
 jobTemplate:

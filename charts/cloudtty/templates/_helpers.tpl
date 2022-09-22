@@ -38,3 +38,19 @@ Return the proper image Registry Secret Names
 {{- define "cloudtty.job.imagePullSecrets" -}}
 {{ include "common.images.pullSecrets" (dict "images" (list .Values.jobTemplate.image) "global" .Values.global) }}
 {{- end -}}
+
+{{- define "cloudtty.operator.featureGates" -}}
+     {{- if (not (empty .Values.featureGates)) }}
+          {{- $featureGatesFlag := "" -}}
+          {{- range $key, $value := .Values.featureGates -}}
+               {{- if not (empty (toString $value)) }}
+                    {{- $featureGatesFlag = cat $featureGatesFlag $key "=" $value ","  -}}
+               {{- end -}}
+          {{- end -}}
+
+          {{- if gt (len $featureGatesFlag) 0 }}
+               {{- $featureGatesFlag := trimSuffix "," $featureGatesFlag  | nospace -}}
+               {{- printf "%s=%s" "--feature-gates" $featureGatesFlag -}}
+          {{- end -}}
+     {{- end -}}
+{{- end -}}
