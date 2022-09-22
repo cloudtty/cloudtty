@@ -70,5 +70,5 @@ data:
           volumes:
           - secret:
               defaultMode: 420
-              secretName: {{ .Secret }}
+              secretName: {{`{{ .Secret }}`}}
             name: kubeconfig
