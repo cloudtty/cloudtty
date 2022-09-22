@@ -46,7 +46,7 @@ After the cloudtty is intergated to your own UI, it would look like:
 
   ```shell
   helm repo add daocloud https://release.daocloud.io/chartrepo/cloudshell
-  helm install cloudtty-operator --version 0.3.0 daocloud/cloudtty
+  helm install cloudtty-operator --version 0.4.0 daocloud/cloudtty
   ```
 
   b. Wait for the operator pod until it is running
@@ -125,7 +125,7 @@ spec:
 2. set the 'JobTemplate' image parameter to run customized cloudshell image when installing cloudtty.
 
 ```shell
-helm install cloudtty-operator --version 0.3.0 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
+helm install cloudtty-operator --version 0.4.0 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
 ```
 
 > If you have installed cloudtty, you can also modify the configMap of JobTemplate to set the cloudshell image.
