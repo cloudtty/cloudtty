@@ -55,6 +55,7 @@ import (
 	"github.com/cloudtty/cloudtty/pkg/constants"
 	"github.com/cloudtty/cloudtty/pkg/manifests"
 	util "github.com/cloudtty/cloudtty/pkg/utils"
+	"github.com/cloudtty/cloudtty/pkg/utils/feature"
 )
 
 const (
@@ -204,27 +205,61 @@ func (c *CloudShellReconciler) ensureFinalizer(cloudshell *cloudshellv1alpha1.Cl
 func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) (*batchv1.Job, error) {
 	// if configmap is blank, use the Incluster rest config to generate kubeconfig and restore a configmap.
 	// the kubeconfig only work on current cluster.
-	if len(cloudshell.Spec.ConfigmapName) == 0 {
+	if (feature.FeatureGate.Enabled(AllowSecretStoreKubeconfig) && cloudshell.Spec.SecretRef == nil) ||
+		(!feature.FeatureGate.Enabled(AllowSecretStoreKubeconfig) && len(cloudshell.Spec.ConfigmapName) == 0) {
 		kubeConfigByte, err := GenerateKubeconfigInCluster()
 		if err != nil {
 			return nil, err
 		}
-		kcm := &corev1.ConfigMap{
+
+		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: fmt.Sprintf("cloudshell-%s-", cloudshell.Name),
 				Namespace:    cloudshell.Namespace,
 			},
-			Data: map[string]string{"config": string(kubeConfigByte)},
+			Data: map[string][]byte{"config": kubeConfigByte},
 		}
 
-		if err := ctrlutil.SetControllerReference(cloudshell, kcm, c.Scheme); err != nil {
+		if err := ctrlutil.SetControllerReference(cloudshell, secret, c.Scheme); err != nil {
 			klog.ErrorS(err, "Failed to set owner reference for configmap", "cloudshell", klog.KObj(cloudshell))
 			return nil, err
 		}
-		if err := c.Client.Create(ctx, kcm); err != nil {
+		if err := c.Client.Create(ctx, secret); err != nil {
 			return nil, err
 		}
-		cloudshell.Spec.ConfigmapName = kcm.Name
+		cloudshell.Spec.SecretRef = &cloudshellv1alpha1.LocalSecretReference{
+			Name: secret.Name,
+		}
+	}
+
+	// TODO: we will not support configmap to store kubeconfig, it will be removed at v0.5.0 version.
+	if !feature.FeatureGate.Enabled(AllowSecretStoreKubeconfig) && len(cloudshell.Spec.ConfigmapName) > 0 {
+		configmap := &corev1.ConfigMap{}
+		err := c.Client.Get(ctx, types.NamespacedName{Name: cloudshell.Spec.ConfigmapName, Namespace: cloudshell.Namespace}, configmap)
+		if err != nil {
+			klog.ErrorS(err, "failed to find configmap", "configmap", cloudshell.Spec.ConfigmapName, "cloudshell", klog.KObj(cloudshell))
+			return nil, err
+		}
+
+		kubeConfig := configmap.Data["config"]
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: fmt.Sprintf("cloudshell-%s-", cloudshell.Name),
+				Namespace:    cloudshell.Namespace,
+			},
+			Data: map[string][]byte{"config": []byte(kubeConfig)},
+		}
+
+		if err := ctrlutil.SetControllerReference(cloudshell, secret, c.Scheme); err != nil {
+			klog.ErrorS(err, "Failed to set owner reference for configmap", "cloudshell", klog.KObj(cloudshell))
+			return nil, err
+		}
+		if err := c.Client.Create(ctx, secret); err != nil {
+			return nil, err
+		}
+		cloudshell.Spec.SecretRef = &cloudshellv1alpha1.LocalSecretReference{
+			Name: secret.Name,
+		}
 	}
 
 	jobTmpl := manifests.JobTmplV1
@@ -234,15 +269,15 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 	}
 
 	jobBytes, err := util.ParseTemplate(jobTmpl, struct {
-		Namespace, Name, Command, Configmap, Image string
-		Once, UrlArg                               bool
-		Ttl                                        int32
+		Namespace, Name, Command, Secret, Image string
+		Once, UrlArg                            bool
+		Ttl                                     int32
 	}{
 		Namespace: cloudshell.Namespace,
 		Name:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
 		Image:     cloudshell.Spec.Image,
 		Once:      cloudshell.Spec.Once,
-		Configmap: cloudshell.Spec.ConfigmapName,
+		Secret:    cloudshell.Spec.SecretRef.Name,
 		Command:   cloudshell.Spec.CommandAction,
 		Ttl:       cloudshell.Spec.Ttl,
 		UrlArg:    cloudshell.Spec.UrlArg,

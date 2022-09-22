@@ -17,7 +17,7 @@ package app
 
 import (
 	"context"
-	"flag"
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -27,8 +27,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	cliflag "k8s.io/component-base/cli/flag"
+	"k8s.io/component-base/cli/globalflag"
+	"k8s.io/component-base/logs"
+	logsapi "k8s.io/component-base/logs/api/v1"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 	"k8s.io/component-base/term"
+	"k8s.io/component-base/version/verflag"
 	"k8s.io/klog/v2"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -37,10 +43,14 @@ import (
 	"github.com/cloudtty/cloudtty/cmd/app/options"
 	"github.com/cloudtty/cloudtty/pkg/constants"
 	"github.com/cloudtty/cloudtty/pkg/controllers"
+	"github.com/cloudtty/cloudtty/pkg/utils/feature"
 	"github.com/cloudtty/cloudtty/pkg/utils/gclient"
 	"github.com/cloudtty/cloudtty/pkg/version"
-	"github.com/cloudtty/cloudtty/pkg/version/sharedcommand"
 )
+
+func init() {
+	runtime.Must(logsv1.AddFeatureGates(feature.MutableFeatureGate))
+}
 
 // NewManagerCommand creates a *cobra.Command object with default parameters
 func NewManagerCommand(ctx context.Context) *cobra.Command {
@@ -49,6 +59,16 @@ func NewManagerCommand(ctx context.Context) *cobra.Command {
 		Use:   "cloudshell-manager",
 		Short: `Run this command in order to run cloudshell controller manager`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			verflag.PrintAndExitIfRequested()
+
+			// Activate logging as soon as possible, after that
+			// show flags with the final logging configuration.
+			if err := logsapi.ValidateAndApply(opts.Logs, feature.FeatureGate); err != nil {
+				fmt.Fprintf(os.Stderr, "%v\n", err)
+				os.Exit(1)
+			}
+			cliflag.PrintFlags(cmd.Flags())
+
 			// validate options
 			if errs := opts.Validate(); len(errs) != 0 {
 				return errs.ToAggregate()
@@ -56,30 +76,31 @@ func NewManagerCommand(ctx context.Context) *cobra.Command {
 
 			return Run(ctx, opts)
 		},
+		Args: func(cmd *cobra.Command, args []string) error {
+			for _, arg := range args {
+				if len(arg) > 0 {
+					return fmt.Errorf("%q does not take any arguments, got %q", cmd.CommandPath(), args)
+				}
+			}
+			return nil
+		},
 	}
 
-	fss := cliflag.NamedFlagSets{}
-
-	genericFlagSet := fss.FlagSet("generic")
-
-	// add "--kubeconfig" to cloudshell controller.
-	genericFlagSet.AddGoFlagSet(flag.CommandLine)
-	genericFlagSet.Lookup("kubeconfig").Usage = "Path to cloudshell controller manager kubeconfig file."
-	opts.AddFlags(genericFlagSet)
-
-	// Set klog flags
-	logsFlagSet := fss.FlagSet("logs")
-	flagSetShim := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	klog.InitFlags(flagSetShim)
-	logsFlagSet.AddGoFlagSet(flagSetShim)
-
-	// add "--version" to cloudshell controller.
-	cmd.AddCommand(sharedcommand.NewCmdVersion("cloudshell-manager"))
-	cmd.Flags().AddFlagSet(genericFlagSet)
-	cmd.Flags().AddFlagSet(logsFlagSet)
+	nfs := opts.Flags
+	verflag.AddFlags(nfs.FlagSet("global"))
+	globalflag.AddGlobalFlags(nfs.FlagSet("global"), cmd.Name(), logs.SkipLoggingConfigurationFlags())
+	fs := cmd.Flags()
+	for _, f := range nfs.FlagSets {
+		fs.AddFlagSet(f)
+	}
 
 	cols, _, _ := term.TerminalSize(cmd.OutOrStdout())
-	cliflag.SetUsageAndHelpFunc(cmd, fss, cols)
+	cliflag.SetUsageAndHelpFunc(cmd, *nfs, cols)
+
+	if err := cmd.MarkFlagFilename("config", "yaml", "yml", "json"); err != nil {
+		klog.ErrorS(err, "Failed to mark flag filename")
+	}
+
 	return cmd
 }
 
