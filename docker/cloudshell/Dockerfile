@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} node:18.8.0 as builder
+FROM node:18.8.0 as builder
 
 # Build frontend code which added upload/download button
 WORKDIR /app
