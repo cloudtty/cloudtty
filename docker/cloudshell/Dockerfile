@@ -4,6 +4,7 @@ FROM node:18.8.0 as builder
 WORKDIR /app
 COPY html/package.json /app/
 COPY html/yarn.lock /app/
+RUN yarn config set network-timeout 100000
 RUN yarn install
 COPY html/ /app/
 RUN yarn run build
