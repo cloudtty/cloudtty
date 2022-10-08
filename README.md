@@ -86,47 +86,47 @@ After the cloudtty is intergated to your own UI, it would look like:
 
 Most users need more than just the basic `kubectl` tools to manage their clusters. we can customize image based on cloudshell base image. here is an example of adding the `karmadactl` tool.
 
-* Modify ![Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example).
+- Modify [Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example).
 
-```shell
-FROM ghcr.io/cloudtty/cloudshell:v0.4.0
+  ```shell
+  FROM ghcr.io/cloudtty/cloudshell:v0.4.0
 
-RUN curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-amd64.tgz \
-    && tar -zxf kubectl-karmada-linux-amd64.tgz \
-    && chmod +x kubectl-karmada \
-    && mv kubectl-karmada /usr/local/bin/kubectl-karmada \
-    && which kubectl-karmada
+  RUN curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-amd64.tgz \
+      && tar -zxf kubectl-karmada-linux-amd64.tgz \
+      && chmod +x kubectl-karmada \
+      && mv kubectl-karmada /usr/local/bin/kubectl-karmada \
+      && which kubectl-karmada
 
-ENTRYPOINT ttyd
-```
+  ENTRYPOINT ttyd
+  ```
 
-* Rebuild new image with `karmadactl` tool：
+- Rebuild new image with `karmadactl` tool：
 
-```shell
-docker build -t <IMAGE> . -f docker/Dockerfile-webtty
-```
+  ```shell
+  docker build -t <IMAGE> . -f docker/Dockerfile-webtty
+  ```
 
 ### Use customize cloudshell image
 
-There are two way to set customized cloudshell image:
+There are two ways to set the customized cloudshell image:
 
-1. we can set image directly by cloudshell CR field `spec.image`.
+1. You can set the image directly by using the cloudshell CR field `spec.image`.
 
-```yaml
-apiVersion: cloudshell.cloudtty.io/v1alpha1
-kind: CloudShell
-metadata:
-  name: cloudshell-sample
-spec:
-  configmapName: "my-kubeconfig"
-  image: ghcr.io/cloudtty/customize_cloudshell:latest
-```
+    ```yaml
+    apiVersion: cloudshell.cloudtty.io/v1alpha1
+    kind: CloudShell
+    metadata:
+      name: cloudshell-sample
+    spec:
+      configmapName: "my-kubeconfig"
+      image: ghcr.io/cloudtty/customize_cloudshell:latest
+    ```
 
-2. set the 'JobTemplate' image parameter to run customized cloudshell image when installing cloudtty.
+2. Set the 'JobTemplate' image parameter to run the customized cloudshell image when installing cloudtty.
 
-```shell
-helm install cloudtty-operator --version 0.4.0 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
-```
+    ```shell
+    helm install cloudtty-operator --version 0.4.0 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
+    ```
 
 > If you have installed cloudtty, you can also modify the configMap of JobTemplate to set the cloudshell image.
 
@@ -137,13 +137,13 @@ helm install cloudtty-operator --version 0.4.0 daocloud/cloudtty --set jobTempla
 If cloudtty manages a remote cluster (another cluster than which the cloudtty operator runs on),
 you need tell cloudtty the kube.conf of the remote cluster as below.
 
-You can copy the kube.config `~/.kube/config` from a remote cluster.
+You can copy the kube.config, `~/.kube/config`, from a remote cluster.
 
 ```shell
 kubectl create configmap my-kubeconfig --from-file=kube.config
 ```
 
-Be careful to ensure the /root/.kube/config:
+Be careful to ensure the `/root/.kube/config`:
 
 1. contains the base64 encoded certs/secrets instead of local files.
 
@@ -161,7 +161,7 @@ Be careful to ensure the /root/.kube/config:
 
 ### Manager cluster node
 
-The basic image to cloudshell had integrated plugin of ![kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell), we can use its command to connect a arbitrary node of specified cluster. it will running a pod with privilege, if you attach importance to pod security, please be careful with the feature. see following sample:
+The basic image to cloudshell had integrated with the plugin of [kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell), you can use its command to connect an arbitrary node of specified cluster. It will run a pod with privilege, if you attach importance to the pod security, please be careful with the feature. See the following sample:
 
 ```yaml
 apiVersion: cloudshell.cloudtty.io/v1alpha1
@@ -173,9 +173,9 @@ spec:
   commandAction: "kubectl node-shell <NODE_NAME>"
 ```
 
-More sample to ![kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell)
+For more samples refer to [kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell).
 
-> If cluster had existed security policy such as `PodSecurity` and `PSP`, the feature may be affected.
+> If a cluster has the security policy such as `PodSecurity` and `PSP`, the feature may be affected.
 
 ### More Exposure Modes
 
@@ -195,12 +195,13 @@ Cloudtty provides the following four modes to expose cloudtty services to satisf
 
 ### featureGate
 
-* AllowSecretStoreKubeconfig：restore kubeconfig file with secret resource, if open the featureGate, the field `spec.configmapName` will be disable, we can use field `spec.secretRef.name` to difine kubeconfig where are. currently the featureGate is alpha pahse, disabled by default.
+`AllowSecretStoreKubeconfig`：Restore kubeconfig file with secret resource, if the featureGate is enabled, the field `spec.configmapName` will be disabled.
+You can use the field `spec.secretRef.name` to difine where kubeconfig is. Currently the featureGate is in alpha phase, disabled by default.
 
 #### How to open featrueGate
 
-1. If use the way to `yaml` to deploy cloudtty, add `--feature-gates=AllowSecretStoreKubeconfig=true` to operator running args.
-2. If use the way to `helm` to deploy cloudtty, we can set the params `--set image.featureGates.AllowSecretStoreKubeconfig=true`.
+1. If you use `yaml` to deploy cloudtty, add `--feature-gates=AllowSecretStoreKubeconfig=true` to operator to run arguments.
+2. If you use `helm` to deploy cloudtty, set the parameter `--set image.featureGates.AllowSecretStoreKubeconfig=true`.
 
 ## Rationale
 
@@ -220,23 +221,23 @@ Cloudtty provides the following four modes to expose cloudtty services to satisf
 
 ### Run the Operator and Install CRDs
 
-1. Generate CRDs to [charts/_crds]()
+1. Generate CRDs to [charts/_crds](charts/cloudtty/_crds/)
 
-  ```shell
-  make generate-yaml
-  ```
+    ```shell
+    make generate-yaml
+    ```
 
 2. Install CRDs
 
-  ```shell
-  make install
-  ```
+    ```shell
+    make install
+    ```
 
 3. Run the operator
 
-  ```shell
-  make run
-  ```
+    ```shell
+    make run
+    ```
 
 ### Create cloudshell
 
