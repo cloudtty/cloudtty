@@ -175,9 +175,6 @@ func (c *CloudShellReconciler) fillForCloudshell(ctx context.Context, cloudshell
 	if len(cloudshell.Spec.CommandAction) == 0 {
 		cloudshell.Spec.CommandAction = "bash"
 	}
-	if len(cloudshell.Spec.Image) == 0 {
-		cloudshell.Spec.Image = constants.DefaultCloudShellImage
-	}
 	return c.ensureFinalizer(cloudshell)
 }
 
@@ -263,19 +260,19 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 	}
 
 	jobTmpl := manifests.JobTmplV1
-	if template, err := util.LoadYamlTemplate(constants.JobTemplatePath); err == nil {
+	if template, err := util.LoadYamlTemplate(constants.JobTemplatePath); err != nil {
 		klog.V(2).InfoS("failed to load job template from /etc/cloudtty", "err", err)
+	} else {
 		jobTmpl = template
 	}
 
 	jobBytes, err := util.ParseTemplate(jobTmpl, struct {
-		Namespace, Name, Command, Secret, Image string
-		Once, UrlArg                            bool
-		Ttl                                     int32
+		Namespace, Name, Command, Secret string
+		Once, UrlArg                     bool
+		Ttl                              int32
 	}{
 		Namespace: cloudshell.Namespace,
 		Name:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
-		Image:     cloudshell.Spec.Image,
 		Once:      cloudshell.Spec.Once,
 		Secret:    cloudshell.Spec.SecretRef.Name,
 		Command:   cloudshell.Spec.CommandAction,
@@ -293,8 +290,18 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 		return nil, err
 	}
 	job := obj.(*batchv1.Job)
+
+	// set CloudshellOwnerLabelKey label for job and its pods. we can informer the exact resource.
 	job.SetLabels(map[string]string{constants.CloudshellOwnerLabelKey: cloudshell.Name})
 	job.Spec.Template.SetLabels(map[string]string{constants.CloudshellOwnerLabelKey: cloudshell.Name})
+
+	if len(cloudshell.Spec.Image) > 0 {
+		for i, container := range job.Spec.Template.Spec.Containers {
+			if container.Name == constants.DefauletWebttyContainerName {
+				job.Spec.Template.Spec.Containers[i].Image = cloudshell.Spec.Image
+			}
+		}
+	}
 
 	if err := ctrlutil.SetControllerReference(cloudshell, job, c.Scheme); err != nil {
 		klog.ErrorS(err, "failed to set owner reference for job", "cloudshell", klog.KObj(cloudshell))
