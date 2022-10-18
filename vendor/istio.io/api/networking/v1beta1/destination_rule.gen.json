@@ -30,14 +30,14 @@
             "type": "string"
           },
           "subjectAltNames": {
-            "description": "A list of alternate names to verify the subject identity in the certificate. If specified, the proxy will verify that the server certificate's subject alt name matches one of the specified values. If specified, this list overrides the value of subject_alt_names from the ServiceEntry.",
+            "description": "A list of alternate names to verify the subject identity in the certificate. If specified, the proxy will verify that the server certificate's subject alt name matches one of the specified values. If specified, this list overrides the value of subject_alt_names from the ServiceEntry. If unspecified, automatic validation of upstream presented certificate for new upstream connections will be done based on the downstream HTTP host/authority header, provided `VERIFY_CERT_AT_CLIENT` and `ENABLE_AUTO_SNI` environmental variables are set to `true`.",
             "type": "array",
             "items": {
               "type": "string"
             }
           },
           "sni": {
-            "description": "SNI string to present to the server during TLS handshake.",
+            "description": "SNI string to present to the server during TLS handshake. If unspecified, SNI will be automatically set based on downstream HTTP host/authority header for SIMPLE and MUTUAL TLS modes, provided `ENABLE_AUTO_SNI` environmental variable is set to `true`.",
             "type": "string"
           },
           "insecureSkipVerify": {
@@ -74,12 +74,12 @@
         "type": "object",
         "properties": {
           "http1MaxPendingRequests": {
-            "description": "Maximum number of pending HTTP requests to a destination. Default 2^32-1.",
+            "description": "Maximum number of requests that will be queued while waiting for a ready connection pool connection. Default 1024. Refer to https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking under which conditions a new connection is created for HTTP2. Please note that this is applicable to both HTTP/1.1 and HTTP2.",
             "type": "integer",
             "format": "int32"
           },
           "http2MaxRequests": {
-            "description": "Maximum number of requests to a backend. Default 2^32-1.",
+            "description": "Maximum number of active requests to a destination. Default 1024. Please note that this is applicable to both HTTP/1.1 and HTTP2.",
             "type": "integer",
             "format": "int32"
           },
@@ -130,6 +130,10 @@
           },
           "tcpKeepalive": {
             "$ref": "#/components/schemas/istio.networking.v1beta1.ConnectionPoolSettings.TCPSettings.TcpKeepalive"
+          },
+          "maxConnectionDuration": {
+            "description": "The maximum duration of a connection. The duration is defined as the period since a connection was established. If not set, there is no max duration. When max_connection_duration is reached the connection will be closed. Duration must be at least 1ms.",
+            "type": "string"
           }
         }
       },
@@ -175,6 +179,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "workloadSelector": {
+            "$ref": "#/components/schemas/istio.type.v1beta1.WorkloadSelector"
           }
         }
       },
@@ -184,6 +191,10 @@
         "properties": {
           "localityLbSetting": {
             "$ref": "#/components/schemas/istio.networking.v1beta1.LocalityLoadBalancerSetting"
+          },
+          "warmupDurationSecs": {
+            "description": "Represents the warmup duration of Service. If set, the newly created endpoint of service remains in warmup mode starting from its creation time for the duration of this window and Istio progressively increases amount of traffic for that endpoint instead of sending proportional amount of traffic. This should be enabled for services that require warm up time to serve full production load with reasonable latency. Currently this is only supported for ROUND_ROBIN and LEAST_REQUEST load balancers.",
+            "type": "string"
           }
         },
         "oneOf": [
@@ -361,10 +372,12 @@
         "description": "Standard load balancing algorithms that require no tuning.",
         "type": "string",
         "enum": [
-          "ROUND_ROBIN",
+          "UNSPECIFIED",
           "LEAST_CONN",
           "RANDOM",
-          "PASSTHROUGH"
+          "PASSTHROUGH",
+          "ROUND_ROBIN",
+          "LEAST_REQUEST"
         ]
       },
       "istio.networking.v1beta1.LocalityLoadBalancerSetting": {
@@ -531,6 +544,9 @@
             "items": {
               "$ref": "#/components/schemas/istio.networking.v1beta1.TrafficPolicy.PortTrafficPolicy"
             }
+          },
+          "tunnel": {
+            "$ref": "#/components/schemas/istio.networking.v1beta1.TrafficPolicy.TunnelSettings"
           }
         }
       },
@@ -552,6 +568,36 @@
           },
           "tls": {
             "$ref": "#/components/schemas/istio.networking.v1beta1.ClientTLSSettings"
+          }
+        }
+      },
+      "istio.networking.v1beta1.TrafficPolicy.TunnelSettings": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "description": "Specifies which protocol to use for tunneling the downstream connection. Supported protocols are: CONNECT - uses HTTP CONNECT; POST - uses HTTP POST. CONNECT is used by default if not specified. HTTP version for upstream requests is determined by the service protocol defined for the proxy.",
+            "type": "string"
+          },
+          "targetHost": {
+            "description": "Specifies a host to which the downstream connection is tunneled. Target host must be an FQDN or IP address.",
+            "type": "string"
+          },
+          "targetPort": {
+            "description": "Specifies a port to which the downstream connection is tunneled.",
+            "type": "integer"
+          }
+        }
+      },
+      "istio.type.v1beta1.WorkloadSelector": {
+        "description": "WorkloadSelector specifies the criteria used to determine if a policy can be applied to a proxy. The matching criteria includes the metadata associated with a proxy, workload instance info such as labels attached to the pod/VM, or any other info that the proxy provides to Istio during the initial handshake. If multiple conditions are specified, all conditions need to match in order for the workload instance to be selected. Currently, only label based selection mechanism is supported.",
+        "type": "object",
+        "properties": {
+          "matchLabels": {
+            "description": "One or more labels that indicate a specific set of pods/VMs on which a policy should be applied. The scope of label search is restricted to the configuration namespace in which the resource is present.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       }
