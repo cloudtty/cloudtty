@@ -30,7 +30,7 @@ const (
         automountServiceAccountToken: false
         containers:
         - name: web-tty
-          image: "ghcr.io/cloudtty/cloudshell:v0.4.0"
+          image: "ghcr.io/cloudtty/cloudshell:v0.4.1"
           imagePullPolicy: IfNotPresent
           ports:
           - containerPort: 7681

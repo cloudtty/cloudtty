@@ -48,14 +48,14 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
 
   ```
   helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-  helm install cloudtty-operator --version 0.4.0 daocloud/cloudtty
+  helm install cloudtty-operator --version 0.4.1 daocloud/cloudtty
   kubectl wait deployment  cloudtty-operator-controller-manager   --for=condition=Available=True
   ```
 
 2. 创建 CR，启动 cloudtty 的实例，并观察其状态。
 
   ```
-  kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.4.0/config/samples/local_cluster_v1alpha1_cloudshell.yaml
+  kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.4.1/config/samples/local_cluster_v1alpha1_cloudshell.yaml
   ```
 
   更多范例，参见`config/samples/`。
@@ -85,7 +85,7 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
 * 修改 ![Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
 
 ```shell
-FROM ghcr.io/cloudtty/cloudshell:v0.4.0
+FROM ghcr.io/cloudtty/cloudshell:v0.4.1
 
 RUN curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-amd64.tgz \
     && tar -zxf kubectl-karmada-linux-amd64.tgz \
@@ -121,7 +121,7 @@ spec:
 2. 在安装 cloudtty 时可以设置 `JobTemplate` 镜像参数来运行自己的 cloudshell 的镜像。
 
 ```shell
-helm install cloudtty-operator --version 0.4.0 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
+helm install cloudtty-operator --version 0.4.1 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
 ```
 
 > 如果你已经安装了 cloudtty，还可以修改 `JobTemplate` 的 configmap 来设置 cloudshell 的镜像。
