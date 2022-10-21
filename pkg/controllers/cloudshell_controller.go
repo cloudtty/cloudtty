@@ -302,6 +302,14 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 			}
 		}
 	}
+	if len(cloudshell.Spec.Env) > 0 {
+		for i, container := range job.Spec.Template.Spec.Containers {
+			if container.Name == constants.DefauletWebttyContainerName {
+				job.Spec.Template.Spec.Containers[i].Env =
+					append(job.Spec.Template.Spec.Containers[i].Env, cloudshell.Spec.Env...)
+			}
+		}
+	}
 
 	if err := ctrlutil.SetControllerReference(cloudshell, job, c.Scheme); err != nil {
 		klog.ErrorS(err, "failed to set owner reference for job", "cloudshell", klog.KObj(cloudshell))

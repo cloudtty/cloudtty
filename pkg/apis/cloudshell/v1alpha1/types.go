@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -105,6 +106,13 @@ type CloudShellSpec struct {
 	// UrlArg allow client to send command line arguments in URL (eg: http://localhost:7681?arg=foo&arg=bar)
 	// +optional
 	UrlArg bool `json:"urlArg,omitempty"`
+
+	// List of environment variables to set in the container.
+	// Cannot be updated.
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	Env []corev1.EnvVar `json:"env,omitempty"`
 }
 
 // VirtualServiceConfig specifies some of the parameters necessary to create the virtaulService.
