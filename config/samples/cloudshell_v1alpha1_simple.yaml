@@ -5,3 +5,8 @@ metadata:
 spec:
   secretRef:
     name: "my-kubeconfig"
+  env:
+  - name: POD_NAMESPACE
+    value: aaa
+  - name: POD_NAME
+    value: bbb
