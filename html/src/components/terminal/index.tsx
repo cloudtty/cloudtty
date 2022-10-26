@@ -346,6 +346,20 @@ export class Xterm extends Component<Props> {
         const resizeMsg = JSON.stringify({ columns: dims.cols, rows: dims.rows });
         socket.send(textEncoder.encode(Command.RESIZE_TERMINAL + resizeMsg));
 
+        const uploadFileToPod = () => {
+            const { socket, textEncoder } = this;
+            const command = 'cd /tmp && rz && ls -t | head -n 1 | xargs -i{}  kubectl cp {}  ${POD_NAMESPACE}/${POD_NAME}:/tmp/';
+            socket.send(textEncoder.encode(Command.INPUT+command));
+            socket.send(textEncoder.encode(Command.INPUT+'\n'));
+        }
+
+        const path = window.location.pathname.replace(/[\/]+$/, '').split('/');
+        const actionType = path[path.length - 1] || '';
+
+        if (actionType === 'upload') {
+            uploadFileToPod();
+        }
+
         if (this.opened) {
             terminal.reset();
             terminal.resize(dims.cols, dims.rows);
