@@ -47,9 +47,10 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
 1. 安装并等待 Pod 运行起来。
 
   ```
-  helm repo add daocloud  https://release.daocloud.io/chartrepo/cloudshell
-  helm install cloudtty-operator --version 0.4.1 daocloud/cloudtty
-  kubectl wait deployment  cloudtty-operator-controller-manager   --for=condition=Available=True
+  helm repo add cloudtty https://release.daocloud.io/chartrepo/cloudshell
+  helm repo update
+  helm install cloudtty-operator --version 0.4.1 cloudtty/cloudtty
+  kubectl wait deployment cloudtty-operator-controller-manager --for=condition=Available=True
   ```
 
 2. 创建 CR，启动 cloudtty 的实例，并观察其状态。
@@ -121,7 +122,7 @@ spec:
 2. 在安装 cloudtty 时可以设置 `JobTemplate` 镜像参数来运行自己的 cloudshell 的镜像。
 
 ```shell
-helm install cloudtty-operator --version 0.4.1 daocloud/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
+helm install cloudtty-operator --version 0.4.1 cloudtty/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
 ```
 
 > 如果你已经安装了 cloudtty，还可以修改 `JobTemplate` 的 configmap 来设置 cloudshell 的镜像。
