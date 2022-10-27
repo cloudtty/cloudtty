@@ -697,6 +697,10 @@ func SetRouteRulePath(cloudshell *cloudshellv1alpha1.CloudShell) string {
 	} else {
 		pathPrefix += constants.DefaultPathPrefix
 	}
+
+	if len(cloudshell.Spec.PathSuffix) > 0 {
+		return fmt.Sprintf("%s/%s/%s", pathPrefix, cloudshell.Name, cloudshell.Spec.PathSuffix)
+	}
 	return fmt.Sprintf("%s/%s", pathPrefix, cloudshell.Name)
 }
 
