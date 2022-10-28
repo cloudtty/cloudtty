@@ -115,6 +115,7 @@ func (c *CloudShellReconciler) syncCloudshell(ctx context.Context, cloudshell *c
 	if IsCloudshellFinished(cloudshell) {
 		if cloudshell.Spec.Cleanup {
 			if err := c.Delete(ctx, cloudshell); err != nil {
+				klog.ErrorS(err, "Failed to delete cloudshell", "cloudshell", klog.KObj(cloudshell))
 				return ctrl.Result{Requeue: true}, nil
 			}
 		}
