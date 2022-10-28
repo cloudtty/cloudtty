@@ -12,7 +12,7 @@ RUN yarn run build
 FROM ghcr.io/dtzar/helm-kubectl:3.9
 SHELL [ "/bin/bash", "-c" ]
 
-ARG TTYD_VERSION=1.6.3
+ARG TTYD_VERSION=1.7.2
 ARG ETCDCTL_VERSION=v3.4.20
 ARG KREW_VERSION=v0.4.3
 ARG KARMACTL_VERSION=v1.2.0
