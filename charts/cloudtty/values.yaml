@@ -32,7 +32,7 @@ podLabels: {}
 image:
   registry: ghcr.io
   repository: cloudtty/cloudshell-operator
-  tag: "v0.4.1"
+  tag: "v0.5.0"
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -81,8 +81,8 @@ readinessProbe:
 featureGates:
   # AllowSecretStoreKubeconfig is a feature gate for the cloudshell to store kubeconfig in secret.
   # owner: @calvin0327
-  # alpha: v0.3.0
-  # beta: v0.4.0
+  # alpha: v0.4.0
+  # beta: v0.5.0
   AllowSecretStoreKubeconfig: false
 
 ## @jobTemplate job template config
@@ -98,7 +98,7 @@ jobTemplate:
   image:
     registry: ghcr.io
     repository: cloudtty/cloudshell
-    tag: "v0.4.1"
+    tag: "v0.5.0"
     ## Specify a imagePullPolicy
     ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
     ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images

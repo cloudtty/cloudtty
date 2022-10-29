@@ -47,7 +47,7 @@ After the cloudtty is intergated to your own UI, it would look like:
   ```shell
   helm repo add cloudtty https://release.daocloud.io/chartrepo/cloudshell
   helm repo update
-  helm install cloudtty-operator --version 0.4.1 cloudtty/cloudtty
+  helm install cloudtty-operator --version 0.5.0 cloudtty/cloudtty
   ```
 
   b. Wait for the operator pod until it is running
@@ -59,7 +59,7 @@ After the cloudtty is intergated to your own UI, it would look like:
 - Step 2: Create a cloudtty instance by applying CR, and then monitor its status
 
   ```shell
-  kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.4.1/config/samples/local_cluster_v1alpha1_cloudshell.yaml
+  kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v0.5.0/config/samples/local_cluster_v1alpha1_cloudshell.yaml
   ```
 
   By default, it will create a cloudtty pod and expose the `NodePort` service.
@@ -90,7 +90,7 @@ Most users need more than just the basic `kubectl` tools to manage their cluster
 - Modify [Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example).
 
   ```shell
-  FROM ghcr.io/cloudtty/cloudshell:v0.4.1
+  FROM ghcr.io/cloudtty/cloudshell:v0.5.0
 
   RUN curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-amd64.tgz \
       && tar -zxf kubectl-karmada-linux-amd64.tgz \
@@ -126,7 +126,7 @@ There are two ways to set the customized cloudshell image:
 2. Set the 'JobTemplate' image parameter to run the customized cloudshell image when installing cloudtty.
 
     ```shell
-    helm install cloudtty-operator --version 0.4.1 cloudtty/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
+    helm install cloudtty-operator --version 0.5.0 cloudtty/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
     ```
 
 > If you have installed cloudtty, you can also modify the configMap of JobTemplate to set the cloudshell image.
