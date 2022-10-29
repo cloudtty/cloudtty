@@ -346,6 +346,34 @@ export class Xterm extends Component<Props> {
         const resizeMsg = JSON.stringify({ columns: dims.cols, rows: dims.rows });
         socket.send(textEncoder.encode(Command.RESIZE_TERMINAL + resizeMsg));
 
+        const uploadFileToPod = (fileUrl) => {
+            const { socket, textEncoder } = this;
+            const command = 'rz && ls -t | head -n 1 | xargs -i{}  kubectl cp {} ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}`;
+            socket.send(textEncoder.encode(Command.INPUT+command));
+            socket.send(textEncoder.encode(Command.INPUT+'\n'));
+        }
+
+        const downLoadFileToPod = (fileUrl) => {
+            const { socket, textEncoder } = this;
+            const filePath = fileUrl.split('/');
+            const fileName = filePath[filePath.length - 1];
+            const command = 'kubectl cp  ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}` + ` /tmp/${fileName}` + ` && sz /tmp/${fileName}`;
+            socket.send(textEncoder.encode(Command.INPUT+command));
+            socket.send(textEncoder.encode(Command.INPUT+'\n'));
+        }
+
+        const path = window.location.pathname.replace(/[\/]+$/, '').split('/');
+        const actionType = path[path.length - 2] || '';
+        const fileUrl = path[path.length - 1] || '';
+
+        if (actionType === 'upload') {
+            uploadFileToPod(fileUrl);
+        }
+
+        if (actionType === 'download') {
+            downLoadFileToPod(fileUrl);
+        }
+
         if (this.opened) {
             terminal.reset();
             terminal.resize(dims.cols, dims.rows);
