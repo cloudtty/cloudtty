@@ -94,9 +94,9 @@ export class Xterm extends Component<Props> {
     componentDidUpdate() {
         if (this.props.showRz) {
             const { socket, textEncoder } = this;
-            socket.send(textEncoder.encode(Command.INPUT+'r'));
-            socket.send(textEncoder.encode(Command.INPUT+'z'));
-            socket.send(textEncoder.encode(Command.INPUT+'\n'));
+            socket.send(textEncoder.encode(Command.INPUT + 'r'));
+            socket.send(textEncoder.encode(Command.INPUT + 'z'));
+            socket.send(textEncoder.encode(Command.INPUT + '\n'));
         }
     }
 
@@ -125,24 +125,24 @@ export class Xterm extends Component<Props> {
                     control={control}
                     modalDownload={this.props.showSz}
                     modalUpload={this.props.showRz}
-                    change={(v) => {this.onChange((v))}}
-                    hideDownload={(v) => {this.onHideDownload((v))}}
-                    hideUpload={(v) => {this.onHideUpload((v))}}
+                    change={(v) => { this.onChange((v)) }}
+                    hideDownload={(v) => { this.onHideDownload((v)) }}
+                    hideUpload={(v) => { this.onHideUpload((v)) }}
                 />
             </div>
         );
     }
 
-    onChange(v){
+    onChange(v) {
         if (!v) return;
         const { socket, textEncoder } = this;
-            socket.send(textEncoder.encode(Command.INPUT+'s'));
-            socket.send(textEncoder.encode(Command.INPUT+'z'));
-            socket.send(textEncoder.encode(Command.INPUT+' '));
+        socket.send(textEncoder.encode(Command.INPUT + 's'));
+        socket.send(textEncoder.encode(Command.INPUT + 'z'));
+        socket.send(textEncoder.encode(Command.INPUT + ' '));
         for (let i in v) {
-            socket.send(textEncoder.encode(Command.INPUT+v[i]));
+            socket.send(textEncoder.encode(Command.INPUT + v[i]));
         }
-        socket.send(textEncoder.encode(Command.INPUT+'\n'));
+        socket.send(textEncoder.encode(Command.INPUT + '\n'));
     }
 
     onHideDownload(v) {
@@ -151,7 +151,7 @@ export class Xterm extends Component<Props> {
 
     onHideUpload(v) {
         this.props.hideUpload(v);
-    } 
+    }
 
     @bind
     private pause() {
@@ -173,7 +173,7 @@ export class Xterm extends Component<Props> {
         payload.set(data, 1);
         socket.send(payload);
     }
-    
+
     @bind
     private async refreshToken() {
         try {
@@ -349,29 +349,47 @@ export class Xterm extends Component<Props> {
         const uploadFileToPod = (fileUrl) => {
             const { socket, textEncoder } = this;
             const command = 'rz && ls -t | head -n 1 | xargs -i{}  kubectl cp {} ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}`;
-            socket.send(textEncoder.encode(Command.INPUT+command));
-            socket.send(textEncoder.encode(Command.INPUT+'\n'));
+            socket.send(textEncoder.encode(Command.INPUT + command));
+            socket.send(textEncoder.encode(Command.INPUT + '\n'));
+
+            const reminder = '\n the file have uploaded...';
+            socket.send(textEncoder.encode(Command.INPUT + reminder));
         }
 
         const downLoadFileToPod = (fileUrl) => {
             const { socket, textEncoder } = this;
             const filePath = fileUrl.split('/');
             const fileName = filePath[filePath.length - 1];
+
+            console.log(`[ttyd] download fileName : ${fileName}`);
+
             const command = 'kubectl cp  ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}` + ` /tmp/${fileName}` + ` && sz /tmp/${fileName}`;
-            socket.send(textEncoder.encode(Command.INPUT+command));
-            socket.send(textEncoder.encode(Command.INPUT+'\n'));
+            socket.send(textEncoder.encode(Command.INPUT + command));
+            socket.send(textEncoder.encode(Command.INPUT + '\n'));
+
+            const reminder = '\n the file have downloaded...';
+            socket.send(textEncoder.encode(Command.INPUT + reminder));
         }
 
-        const path = window.location.pathname.replace(/[\/]+$/, '').split('/');
-        const actionType = path[path.length - 2] || '';
-        const fileUrl = path[path.length - 1] || '';
+        const path = window.location.pathname.replace(/[\/]+$/, '');
 
-        if (actionType === 'upload') {
-            uploadFileToPod(fileUrl);
+        const uploadPathArr = path.split("/upload")
+        if (uploadPathArr.length > 1) {
+            var fileUrl = uploadPathArr[uploadPathArr.length - 1]
+            if (fileUrl.length == 0) {
+                fileUrl = "/"
+            }
+            console.log(`[ttyd] upload fileUrl : ${fileUrl}`);
+            uploadFileToPod(fileUrl)
         }
 
-        if (actionType === 'download') {
-            downLoadFileToPod(fileUrl);
+        const downloadPathArr = path.split("/download/")
+        if (downloadPathArr.length > 1) {
+            const fileUrl = downloadPathArr[downloadPathArr.length - 1]
+            if (fileUrl.length > 0) {
+                console.log(`[ttyd] download fileUrl : ${fileUrl}`);
+                downLoadFileToPod(fileUrl);
+            }
         }
 
         if (this.opened) {
