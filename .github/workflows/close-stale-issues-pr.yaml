@@ -1,4 +1,4 @@
-ame: Clean Stale Issues And PR
+name: Clean Stale Issues And PR
 
 on:
   schedule:
