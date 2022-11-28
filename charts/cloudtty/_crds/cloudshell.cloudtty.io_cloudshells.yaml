@@ -223,6 +223,10 @@ spec:
                 description: PathPrefix specified a path prefix to access url, if
                   not, the default path is used.
                 type: string
+              pathSuffix:
+                description: PathSuffix specified a path suffix to access url, if
+                  not, the default path is used.
+                type: string
               runAsUser:
                 type: string
               secretRef:

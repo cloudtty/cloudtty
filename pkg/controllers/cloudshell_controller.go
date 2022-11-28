@@ -115,6 +115,7 @@ func (c *CloudShellReconciler) syncCloudshell(ctx context.Context, cloudshell *c
 	if IsCloudshellFinished(cloudshell) {
 		if cloudshell.Spec.Cleanup {
 			if err := c.Delete(ctx, cloudshell); err != nil {
+				klog.ErrorS(err, "Failed to delete cloudshell", "cloudshell", klog.KObj(cloudshell))
 				return ctrl.Result{Requeue: true}, nil
 			}
 		}
@@ -696,6 +697,10 @@ func SetRouteRulePath(cloudshell *cloudshellv1alpha1.CloudShell) string {
 		pathPrefix = pathPrefix[:len(pathPrefix)-1] + constants.DefaultPathPrefix
 	} else {
 		pathPrefix += constants.DefaultPathPrefix
+	}
+
+	if len(cloudshell.Spec.PathSuffix) > 0 {
+		return fmt.Sprintf("%s/%s/%s", pathPrefix, cloudshell.Name, cloudshell.Spec.PathSuffix)
 	}
 	return fmt.Sprintf("%s/%s", pathPrefix, cloudshell.Name)
 }

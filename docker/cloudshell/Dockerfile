@@ -33,7 +33,6 @@ RUN ttydArch="$(uname -m)" && echo "Building arch of $ttydArch.." \
     && chmod +x ttyd.${ttydArch} \
     && mv ttyd.${ttydArch} /usr/local/bin/ttyd \
     && which ttyd \
-    && mkdir kubeconf \
     && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" && echo "Building ARCH of $ARCH.." \
     && curl -fsSLO https://github.com/etcd-io/etcd/releases/download/$ETCDCTL_VERSION/etcd-$ETCDCTL_VERSION-linux-${ARCH}.tar.gz \
     && tar -zxf etcd-$ETCDCTL_VERSION-linux-${ARCH}.tar.gz \
@@ -55,5 +54,7 @@ RUN ttydArch="$(uname -m)" && echo "Building arch of $ttydArch.." \
     && mv kubectl-karmada ~/.krew/bin/kubectl-karmada \
     && rm -rf kubectl-karmada-linux-*
 
-COPY --from=builder /app/dist/inline.html index.html
+RUN mkdir /usr/lib/ttyd
+COPY --from=builder /app/dist/inline.html /usr/lib/ttyd/index.html
 ENTRYPOINT ttyd
+WORKDIR /root

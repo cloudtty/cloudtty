@@ -103,6 +103,10 @@ type CloudShellSpec struct {
 	// +optional
 	PathPrefix string `json:"pathPrefix,omitempty"`
 
+	// PathSuffix specified a path suffix to access url, if not, the default path is used.
+	// +optional
+	PathSuffix string `json:"pathSuffix,omitempty"`
+
 	// UrlArg allow client to send command line arguments in URL (eg: http://localhost:7681?arg=foo&arg=bar)
 	// +optional
 	UrlArg bool `json:"urlArg,omitempty"`

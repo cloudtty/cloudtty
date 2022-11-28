@@ -8,4 +8,4 @@ spec:
   commandAction: "bash"
   ttl: 500
   once: false
-  image: ghcr.io/cloudtty/cloudshell:v0.4.1
+  image: ghcr.io/cloudtty/cloudshell:v0.5.0

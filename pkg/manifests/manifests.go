@@ -30,7 +30,7 @@ const (
         automountServiceAccountToken: false
         containers:
         - name: web-tty
-          image: "ghcr.io/cloudtty/cloudshell:v0.4.1"
+          image: "ghcr.io/cloudtty/cloudshell:v0.5.0"
           imagePullPolicy: IfNotPresent
           ports:
           - containerPort: 7681
@@ -43,7 +43,7 @@ const (
               once=""
               index=""
               if [ "${ONCE}" == "true" ];then once=" --once "; fi;
-              if [ -f /index.html ]; then index=" --index /index.html ";fi
+              if [ -f /usr/lib/ttyd/index.html ]; then index=" --index /usr/lib/ttyd/index.html ";fi
               if [ "${URLARG}" == "true" ];then urlarg=" -a "; fi
               if [ -z "${TTL}" ] || [ "${TTL}" == "0" ];then
                   ttyd ${index} ${once} ${urlarg} sh -c "${COMMAND}"
