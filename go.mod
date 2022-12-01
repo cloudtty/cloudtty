@@ -7,10 +7,10 @@ require (
 	github.com/spf13/cobra v1.4.0
 	istio.io/api v0.0.0-20220512212136-561ffec82582
 	istio.io/client-go v1.14.0
-	k8s.io/api v0.25.1
-	k8s.io/apimachinery v0.25.1
+	k8s.io/api v0.25.4
+	k8s.io/apimachinery v0.25.4
 	k8s.io/apiserver v0.25.1
-	k8s.io/client-go v0.25.1
+	k8s.io/client-go v0.25.4
 	k8s.io/code-generator v0.25.1
 	k8s.io/component-base v0.25.1
 	k8s.io/klog/v2 v2.70.1
