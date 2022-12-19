@@ -348,7 +348,7 @@ export class Xterm extends Component<Props> {
 
         const uploadFileToPod = (fileUrl) => {
             const { socket, textEncoder } = this;
-            const command = 'rz && ls -t | head -n 1 | xargs -i{}  kubectl cp {} ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}`;
+            const command = 'rz && ls -t | head -n 1 | xargs -i{}  kubectl cp -c "${CONTAINER}" {} ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}`;
             socket.send(textEncoder.encode(Command.INPUT + command));
             socket.send(textEncoder.encode(Command.INPUT + '\n'));
 
@@ -363,7 +363,7 @@ export class Xterm extends Component<Props> {
 
             console.log(`[ttyd] download fileName : ${fileName}`);
 
-            const command = 'kubectl cp  ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}` + ` /tmp/${fileName}` + ` && sz /tmp/${fileName}`;
+            const command = 'kubectl cp -c "${CONTAINER}" ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}` + ` /tmp/${fileName}` + ` && sz /tmp/${fileName}`;
             socket.send(textEncoder.encode(Command.INPUT + command));
             socket.send(textEncoder.encode(Command.INPUT + '\n'));
 
