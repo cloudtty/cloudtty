@@ -47,7 +47,7 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
 1. 安装并等待 Pod 运行起来。
 
   ```
-  helm repo add cloudtty https://release.daocloud.io/chartrepo/cloudshell
+  helm repo add cloudtty https://release.daocloud.io/chartrepo/cloudtty
   helm repo update
   helm install cloudtty-operator --version 0.5.0 cloudtty/cloudtty
   kubectl wait deployment cloudtty-operator-controller-manager --for=condition=Available=True
@@ -342,7 +342,6 @@ cloudtty 还将提供更多的功能，此处列出一些已经排上日程的�
 4. 需要检查 Pod 的 Running 和 endpoint 的 Ready，才能置 CR 为 Ready
 5. 目前 TTL 只反映到 shell 的 timeout, 没有反映到 Job 的 yaml 里
 6. Job 的创建模板目前是 hardcode 方式，应该提供更灵活的方式修改 Job 的模板
-
 
 ## 贡献者
 
