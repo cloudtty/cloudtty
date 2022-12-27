@@ -46,8 +46,6 @@ RUN ttydArch="$(uname -m)" && echo "Building arch of $ttydArch.." \
     && kubectl krew version \
     && echo 'PATH="${PATH}:${HOME}/.krew/bin"' >>~/.bashrc \
     && rm -rf krew-linux_* \
-    && kubectl krew index add kvaps https://github.com/kvaps/krew-index \
-    && kubectl krew install kvaps/node-shell \
     && curl -fsSLO https://github.com/karmada-io/karmada/releases/download/$KARMACTL_VERSION/kubectl-karmada-linux-${ARCH}.tgz \
     && tar -zxf kubectl-karmada-linux-${ARCH}.tgz \
     && chmod +x kubectl-karmada \

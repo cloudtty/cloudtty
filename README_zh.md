@@ -83,7 +83,7 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
 
 大多数用户除了使用基本的 `kubectl` 工具来管理集群外，还需要更多丰富的工具来管理集群。可以基于 cloudshell 的基础镜像来自定义，下面是一个添加 `karmadactl` 工具的一个案例：
 
-* 修改 ![Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
+* 修改 [Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
 
 ```shell
 FROM ghcr.io/cloudtty/cloudshell:v0.5.0
@@ -150,7 +150,28 @@ cloudtty 会自动挂载到容器中，请确保服务器地址与集群网络�
 
 ### 进阶 2：用 cloudtty 访问集群上的 node 主机
 
-cloudshell 的基础镜像中集成 ![kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell) 插件，使用该插件可以通过 `kubectl` 的命令登陆到集群中任意节点上。该命令将会在节点上启动一个具有特权 pod，如果对安全性要求非常高，请谨慎使用此功能。下面是一个使用的实例：
+可以在 cloudshell 的基础镜像中集成 [kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell) 插件，使用该插件可以通过 `kubectl` 的命令登陆到集群中任意节点上。该命令将会在节点上启动一个具有特权 pod，如果对安全性要求非常高，请谨慎使用此功能。
+
+* 修改[Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
+
+```shell
+FROM ghcr.io/cloudtty/cloudshell:v0.5.1
+
+RUN curl -fsSLO https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell \
+  && chmod +x ./kubectl-node_shell \
+  && mv ./kubectl-node_shell /usr/local/bin/kubectl-node_shell \
+  && which kubectl-node_shell
+
+ENTRYPOINT ttyd
+```
+
+* 重新构建带有 node-shell 工具的新镜像：
+
+```shell
+docker build -t <IMAGE> . -f docker/Dockerfile.example
+```
+
+下面是一个使用的实例：
 
 ```yaml
 apiVersion: cloudshell.cloudtty.io/v1alpha1
@@ -162,7 +183,7 @@ spec:
   commandAction: "kubectl node-shell <NODE_NAME>"
 ```
 
-更多的示例可以参考 ![kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell).
+更多的示例可以参考 [kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell).
 
 > 集群中如果已经存在 `PodSecurity` 和 `PSP` 等安全性策略，可能会影响该功能的使用。
 
