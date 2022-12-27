@@ -18,14 +18,13 @@ package controllers
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"reflect"
 	"strings"
 
+	"github.com/cloudtty/cloudtty/pkg/helper"
 	"github.com/pkg/errors"
 	networkingv1beta1 "istio.io/api/networking/v1beta1"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -267,19 +266,7 @@ func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshe
 		jobTmpl = template
 	}
 
-	jobBytes, err := util.ParseTemplate(jobTmpl, struct {
-		Namespace, Name, Command, Secret string
-		Once, UrlArg                     bool
-		Ttl                              int32
-	}{
-		Namespace: cloudshell.Namespace,
-		Name:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
-		Once:      cloudshell.Spec.Once,
-		Secret:    cloudshell.Spec.SecretRef.Name,
-		Command:   cloudshell.Spec.CommandAction,
-		Ttl:       cloudshell.Spec.Ttl,
-		UrlArg:    cloudshell.Spec.UrlArg,
-	})
+	jobBytes, err := util.ParseTemplate(jobTmpl, helper.NewPodTemplateValue(cloudshell))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed create cloudshell job")
 	}
@@ -447,14 +434,7 @@ func (c *CloudShellReconciler) CreateCloudShellService(ctx context.Context, clou
 		serviceType = cloudshellv1alpha1.ExposureServiceClusterIP
 	}
 
-	serviceBytes, err := util.ParseTemplate(manifests.ServiceTmplV1, struct {
-		Name, Namespace, JobName, Type string
-	}{
-		Name:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
-		Namespace: cloudshell.Namespace,
-		JobName:   fmt.Sprintf("cloudshell-%s", cloudshell.Name),
-		Type:      string(serviceType),
-	})
+	serviceBytes, err := util.ParseTemplate(manifests.ServiceTmplV1, helper.NewServiceTemplateValue(cloudshell, serviceType))
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to parse cloudshell service manifest")
 	}
@@ -497,16 +477,11 @@ func (c *CloudShellReconciler) CreateIngressForCloudshell(ctx context.Context, s
 			ingressClassName = cloudshell.Spec.IngressConfig.IngressClassName
 		}
 
-		ingressBytes, err := util.ParseTemplate(manifests.IngressTmplV1, struct {
-			Name, Namespace, IngressClassName, Path, ServiceName string
-		}{
-			Name:             objectKey.Name,
-			Namespace:        objectKey.Namespace,
-			IngressClassName: ingressClassName,
-			ServiceName:      service.Name,
-			// set default path prefix.
-			Path: SetRouteRulePath(cloudshell),
-		})
+		// set default path prefix.
+		rulePath := SetRouteRulePath(cloudshell)
+		ingressTemplateValue := helper.NewIngressTemplateValue(objectKey, ingressClassName, service.Name, rulePath)
+		ingressBytes, err := util.ParseTemplate(manifests.IngressTmplV1, ingressTemplateValue)
+
 		if err != nil {
 			return errors.Wrap(err, "failed to parse cloudshell ingress manifest")
 		}
@@ -538,7 +513,7 @@ func (c *CloudShellReconciler) CreateIngressForCloudshell(ctx context.Context, s
 func (c *CloudShellReconciler) CreateVitualServiceForCloudshell(ctx context.Context, service *corev1.Service, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	config := cloudshell.Spec.VirtualServiceConfig
 	if config == nil {
-		return errors.New("nable create virtualservice, missing configuration options")
+		return errors.New("unable create virtualservice, missing configuration options")
 	}
 
 	// TODO: check the crd in the cluster.
@@ -553,16 +528,9 @@ func (c *CloudShellReconciler) CreateVitualServiceForCloudshell(ctx context.Cont
 
 	// if there is not virtualService in the cluster, create the base virtualService.
 	if virtualService != nil && apierrors.IsNotFound(err) {
-		vitualServiceBytes, err := util.ParseTemplate(manifests.VirtualServiceV1Beta1, struct {
-			Name, Namespace, ExportTo, Gateway, Path, ServiceName string
-		}{
-			Name:        objectKey.Name,
-			Namespace:   objectKey.Namespace,
-			ExportTo:    config.ExportTo,
-			Gateway:     config.Gateway,
-			Path:        SetRouteRulePath(cloudshell),
-			ServiceName: service.Name,
-		})
+		rulePath := SetRouteRulePath(cloudshell)
+		virtualServiceTemplateValue := helper.NewVirtualServiceTemplateValue(objectKey, config, service.Name, rulePath)
+		vitualServiceBytes, err := util.ParseTemplate(manifests.VirtualServiceV1Beta1, virtualServiceTemplateValue)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse cloudshell [%s] virtualservice", cloudshell.Name)
 		}
@@ -811,13 +779,8 @@ func GenerateKubeconfigInCluster() ([]byte, error) {
 		return nil, err
 	}
 
-	return util.ParseTemplate(manifests.KubeconfigTmplV1, struct {
-		CAData, Server, Token string
-	}{
-		Server: "https://" + net.JoinHostPort(host, port),
-		CAData: base64.StdEncoding.EncodeToString(rootCA),
-		Token:  string(token),
-	})
+	kubeConfigTemplateValue := helper.NewKubeConfigTemplateValue(host, port, string(token), rootCA)
+	return util.ParseTemplate(manifests.KubeconfigTmplV1, kubeConfigTemplateValue)
 }
 
 // SetupWithManager sets up the controller with the Manager.
