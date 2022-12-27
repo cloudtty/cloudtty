@@ -15,7 +15,7 @@ SHELL [ "/bin/bash", "-c" ]
 ARG TTYD_VERSION=1.7.2
 ARG ETCDCTL_VERSION=v3.4.20
 ARG KREW_VERSION=v0.4.3
-ARG KARMACTL_VERSION=v1.3.0
+ARG KARMACTL_VERSION=v1.4.0
 
 RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories \
     && apk -U upgrade \
