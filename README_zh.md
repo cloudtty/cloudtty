@@ -47,7 +47,7 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
 1. 安装并等待 Pod 运行起来。
 
   ```
-  helm repo add cloudtty https://release.daocloud.io/chartrepo/cloudshell
+  helm repo add cloudtty https://release.daocloud.io/chartrepo/cloudtty
   helm repo update
   helm install cloudtty-operator --version 0.5.0 cloudtty/cloudtty
   kubectl wait deployment cloudtty-operator-controller-manager --for=condition=Available=True

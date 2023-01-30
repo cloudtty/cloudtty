@@ -45,7 +45,7 @@ After the cloudtty is intergated to your own UI, it would look like:
   a. Install the operator using Helm
 
   ```shell
-  helm repo add cloudtty https://release.daocloud.io/chartrepo/cloudshell
+  helm repo add cloudtty https://release.daocloud.io/chartrepo/cloudtty
   helm repo update
   helm install cloudtty-operator --version 0.5.0 cloudtty/cloudtty
   ```
