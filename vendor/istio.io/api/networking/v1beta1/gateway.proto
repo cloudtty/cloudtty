@@ -500,8 +500,7 @@ message Gateway {
 //     - "*"
 //     tls:
 //       mode: SIMPLE
-//       serverCertificate: /etc/certs/server.pem
-//       privateKey: /etc/certs/privatekey.pem
+//       credentialName: tls-cert
 // ```
 // {{</tab>}}
 //
@@ -523,8 +522,7 @@ message Gateway {
 //     - "*"
 //     tls:
 //       mode: SIMPLE
-//       serverCertificate: /etc/certs/server.pem
-//       privateKey: /etc/certs/privatekey.pem
+//       credentialName: tls-cert
 // ```
 // {{</tab>}}
 // {{</tabset>}}
@@ -538,8 +536,8 @@ message Server {
   // to. Format: `x.x.x.x` or `unix:///path/to/uds` or `unix://@foobar`
   // (Linux abstract namespace). When using Unix domain sockets, the port
   // number should be 0.
-  // This can be used to restrict the reachability of this server to be gateway internal only. 
-  // This is typically used when a gateway needs to communicate to another mesh service 
+  // This can be used to restrict the reachability of this server to be gateway internal only.
+  // This is typically used when a gateway needs to communicate to another mesh service
   // e.g. publishing metrics. In such case, the server created with the
   // specified bind will not be available to external gateway clients.
   string bind = 4;
@@ -600,8 +598,8 @@ message Port {
 
   // The protocol exposed on the port.
   // MUST BE one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
-  // TLS implies the connection will be routed based on the SNI header to
-  // the destination without terminating the TLS connection.
+  // TLS can be either used to terminate non-HTTP based connections on a specific port
+  // or to route traffic based on SNI header to the destination without terminating the TLS connection.
   string protocol = 2 [(google.api.field_behavior) = REQUIRED];
 
   // Label assigned to the port.
@@ -609,7 +607,8 @@ message Port {
 
   // The port number on the endpoint where the traffic will be
   // received. Applicable only when used with ServiceEntries.
-  uint32 target_port = 4;
+  // $hide_from_docs
+  uint32 target_port = 4 [deprecated=true];
 }
 
 message ServerTLSSettings {
@@ -688,7 +687,7 @@ message ServerTLSSettings {
   // certificate presented by the client.
   repeated string subject_alt_names = 6;
 
-  // An optional list of base64-encoded SHA-256 hashes of the SKPIs of
+  // An optional list of base64-encoded SHA-256 hashes of the SPKIs of
   // authorized client certificates.
   // Note: When both verify_certificate_hash and verify_certificate_spki
   // are specified, a hash matching either value will result in the
@@ -721,7 +720,11 @@ message ServerTLSSettings {
     TLSV1_3 = 4;
   }
 
-  // Optional: Minimum TLS protocol version.
+  // Optional: Minimum TLS protocol version. By default, it is `TLSV1_2`.
+  // TLS protocol versions below TLSV1_2 require setting compatible ciphers with the
+  // `cipherSuites` setting as they no longer include compatible ciphers.
+  //
+  // Note: Using TLS protocol versions below TLSV1_2 has serious security risks.
   TLSProtocol min_protocol_version = 7;
 
   // Optional: Maximum TLS protocol version.
