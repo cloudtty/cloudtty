@@ -18,14 +18,15 @@ package utils
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"text/template"
 
 	"github.com/pkg/errors"
 )
 
 func LoadYamlTemplate(fname string) (str string, err error) {
-	b, err := ioutil.ReadFile(fname)
+	// function ioutil.ReadFile is deprecated as of Go 1.16, it is simply calls os.ReadFile.
+	b, err := os.ReadFile(fname)
 	if err != nil {
 		return "", err
 	}
