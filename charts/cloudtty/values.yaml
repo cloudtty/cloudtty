@@ -32,7 +32,7 @@ podLabels: {}
 image:
   registry: ghcr.io
   repository: cloudtty/cloudshell-operator
-  tag: "v0.5.1"
+  tag: "v0.5.2"
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -99,7 +99,7 @@ jobTemplate:
   image:
     registry: ghcr.io
     repository: cloudtty/cloudshell
-    tag: "v0.5.1"
+    tag: "v0.5.2"
     ## Specify a imagePullPolicy
     ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
     ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images

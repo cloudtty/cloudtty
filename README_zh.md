@@ -154,7 +154,7 @@ cloudtty 会自动挂载到容器中，请确保服务器地址与集群网络�
 * 修改[Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
 
 ```shell
-FROM ghcr.io/cloudtty/cloudshell:v0.5.1
+FROM ghcr.io/cloudtty/cloudshell:v0.5.2
 
 RUN curl -fsSLO https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell \
   && chmod +x ./kubectl-node_shell \
