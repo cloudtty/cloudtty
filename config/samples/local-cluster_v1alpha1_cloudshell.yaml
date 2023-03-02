@@ -1,8 +1,0 @@
-apiVersion: cloudshell.cloudtty.io/v1alpha1
-kind: CloudShell
-metadata:
-  name: local-cluster-sample
-spec:
-  commandAction: "bash"
-  ttl: 500
-  once: false
