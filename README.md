@@ -119,7 +119,8 @@ There are two ways to set the customized cloudshell image:
     metadata:
       name: cloudshell-sample
     spec:
-      configmapName: "my-kubeconfig"
+      secretRef: 
+        name: "my-kubeconfig"
       image: ghcr.io/cloudtty/customize_cloudshell:latest
     ```
 
@@ -141,7 +142,7 @@ you need tell cloudtty the kube.conf of the remote cluster as below.
 You can copy the kube.config, `~/.kube/config`, from a remote cluster.
 
 ```shell
-kubectl create configmap my-kubeconfig --from-file=kube.config
+kubectl create secret generic my-kubeconfig --from-file=kube.config
 ```
 
 Be careful to ensure the `/root/.kube/config`:
@@ -151,7 +152,7 @@ Be careful to ensure the `/root/.kube/config`:
 2. can reach the k8s api-server endpoint (via host IP or cluster IP) instead of localhost.
 
 - If the cluster is remote, `cloudtty` needs to specify `kubeconfig` to access the cluster using the kubectl command tool.
-  You need to provide the kubeconfig stored in configmap and specify the name to cloudshell `spec.configmapName` CR.
+  You need to provide the kubeconfig stored in secret and specify the name to cloudshell `spec.secretRef.name` CR.
   kubeconfig will be automatically mounted to the cloudtty container.
   Ensure that the server IP address is properly connected to the cluster network.
 
@@ -170,7 +171,8 @@ kind: CloudShell
 metadata:
   name: cloudshell-node-shell
 spec:
-  configmapName: "<KUBECONFIg>"
+  secretRef:
+    name: "<KUBECONFIG>"
   commandAction: "kubectl node-shell <NODE_NAME>"
 ```
 
@@ -250,7 +252,8 @@ kind: CloudShell
 metadata:
   name: cloudshell-sample
 spec:
-  configmapName: "my-kubeconfig"
+  secretRef:
+    name: "my-kubeconfig"
   runAsUser: "root"
   commandAction: "kubectl -n kube-system logs -f kube-apiserver-cn-stack"
   once: false

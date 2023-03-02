@@ -12,6 +12,6 @@ spec:
  ttl: 500
  once: false
  ingressConfig: 
-    ingressName: "cloudshell-ingress-demo"
-    namespace: "cloudtty-system"
-    ingressClassName: "nginx"
+   ingressName: "cloudshell-ingress-demo"
+   namespace: "cloudtty-system"
+   ingressClassName: "nginx"

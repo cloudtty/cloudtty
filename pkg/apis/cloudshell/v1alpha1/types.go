@@ -46,12 +46,6 @@ type CloudShellSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Configmap of the target kube-config, will replace by SA
-	// TODO: it will be deprecated in v0.5.0 version and be removed in v0.6.0
-	// if open the featuregate AllowSecretStoreKubeconfig, it's not work.
-	// +required
-	ConfigmapName string `json:"configmapName,omitempty"`
-
 	// SecretRef represents the secret contains mandatory credentials to access the target cluster.
 	// The secret should hold credentials as follows:
 	// - secret.data.token

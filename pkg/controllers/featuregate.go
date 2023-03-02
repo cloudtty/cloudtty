@@ -39,5 +39,5 @@ func init() {
 // defaultFeatureGates consists of all known cloudtty-specific feature keys.
 // To add a new feature, define a key for it above and add it here.
 var defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	AllowSecretStoreKubeconfig: {Default: false, PreRelease: featuregate.Alpha},
+	AllowSecretStoreKubeconfig: {Default: true, PreRelease: featuregate.Beta},
 }
