@@ -115,7 +115,8 @@ kind: CloudShell
 metadata:
   name: cloudshell-sample
 spec:
-  configmapName: "my-kubeconfig"
+  secretRef:
+    name: "my-kubeconfig"
   image: ghcr.io/cloudtty/customize_cloudshell:latest
 ```
 
@@ -135,18 +136,16 @@ helm install cloudtty-operator --version 0.5.0 cloudtty/cloudtty --set jobTempla
 在容器的内部，`kubectl` 会自动发现 `ca` 证书和 token。如果有安全方面的考虑，您也可以自己提供 kubeconfig 来控制不同用户的权限。
 
 如果是远端集群，cloudtty 可以执行 kubectl 命令行工具。若访问集群，需要指定 kubeconfig。
-用户需自己提供 kubeconfig 并储存在 ConfigMap 中，并且在 `cloudshell` 的 CR 中，通过 `spec.configmapName` 指定 ConfigMap 的名称。
+用户需自己提供 kubeconfig 并储存在 Secret 中，并且在 `cloudshell` 的 CR 中，通过 `spec.secretRef.name` 指定 Secret 的名称。
 cloudtty 会自动挂载到容器中，请确保服务器地址与集群网络连接顺畅。
 
 设置 kubeconfig 的步骤:
 
-1. 准备 `kube.conf`，放入 ConfigMap 中，并确保密钥/证书是 base64 而不是本地文件。
+1. 准备 `kube.conf`，放入 Secret 中，并确保密钥/证书是 base64 而不是本地文件。
 
   ```
-  kubectl create configmap my-kubeconfig --from-file=kube.config`
+ kubectl create secret generic my-kubeconfig --from-file=kube.config
   ```
-
-2. 编辑这个 ConfigMap, 修改 endpoint 的地址，从 IP 改为 servicename，如 `server: https://kubernetes.default.svc.cluster.local:443`
 
 ### 进阶 2：用 cloudtty 访问集群上的 node 主机
 
@@ -250,7 +249,8 @@ cloudtty 还提供了开发者模式。
   metadata:
     name: cloudshell-sample
   spec:
-    configmapName: "my-kubeconfig"
+    secretRef:
+      name: "my-kubeconfig"
     runAsUser: "root"
     commandAction: "kubectl -n kube-system logs -f kube-apiserver-cn-stack"
     once: false

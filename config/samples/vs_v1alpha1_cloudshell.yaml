@@ -4,7 +4,8 @@ metadata:
   name: vs-demo
   namespace: "cloudtty-system"
 spec:
- configmapName: "my-kubeconfig"
+ secretRef:
+   name: "my-kubeconfig"
  runAsUser: "root"
  commandAction: "bash"
  exposureMode: "VirtualService"

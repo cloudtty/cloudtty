@@ -3,7 +3,8 @@ kind: CloudShell
 metadata:
   name: cloudshell-sample
 spec:
-  configmapName: "my-kubeconfig"
+  secretRef:
+    name: "my-kubeconfig"
   runAsUser: "root"
   commandAction: "bash"
   ttl: 500
