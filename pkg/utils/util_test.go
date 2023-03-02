@@ -71,7 +71,7 @@ func TestParseTemplate(t *testing.T) {
         automountServiceAccountToken: false
         containers:
         - name: web-tty
-          image: "ghcr.io/cloudtty/cloudshell:v0.5.1"
+          image: "ghcr.io/cloudtty/cloudshell:v0.5.2"
           imagePullPolicy: IfNotPresent
           ports:
           - containerPort: 7681

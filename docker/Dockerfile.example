@@ -1,4 +1,4 @@
-FROM ghcr.io/cloudtty/cloudshell:v0.5.1
+FROM ghcr.io/cloudtty/cloudshell:v0.5.2
 
 RUN curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-amd64.tgz \
     && tar -zxf kubectl-karmada-linux-amd64.tgz \
