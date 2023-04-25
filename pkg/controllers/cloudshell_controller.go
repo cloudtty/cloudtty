@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -738,12 +737,12 @@ func GenerateKubeconfigInCluster() ([]byte, error) {
 		return nil, errors.New("unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 	}
 
-	token, err := ioutil.ReadFile(tokenFile)
+	token, err := os.ReadFile(tokenFile)
 	if err != nil {
 		return nil, err
 	}
 
-	rootCA, err := ioutil.ReadFile(rootCAFile)
+	rootCA, err := os.ReadFile(rootCAFile)
 	if err != nil {
 		return nil, err
 	}
