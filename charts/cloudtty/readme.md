@@ -32,7 +32,7 @@ kubectl wait deployment cloudtty-operator-controller-manager --for=condition=Ava
 ## Usage
 Create a CloudTTY instance by applying CR, and then monitor its status
 ``` bash
-kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/${version}/config/samples/local_cluster_v1alpha1_cloudshell.yaml
+kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v${version}/config/samples/local_cluster_v1alpha1_cloudshell.yaml
 ```
 
 Observe CR status to obtain its web access url, such as:
