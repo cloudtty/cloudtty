@@ -29,6 +29,7 @@ const (
 	// owner: @calvin0327
 	// alpha: v0.3.0
 	// beta: v0.4.0
+	// Deprecated
 	AllowSecretStoreKubeconfig featuregate.Feature = "AllowSecretStoreKubeconfig"
 )
 

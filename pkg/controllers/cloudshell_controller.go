@@ -53,7 +53,6 @@ import (
 	"github.com/cloudtty/cloudtty/pkg/constants"
 	"github.com/cloudtty/cloudtty/pkg/manifests"
 	util "github.com/cloudtty/cloudtty/pkg/utils"
-	"github.com/cloudtty/cloudtty/pkg/utils/feature"
 )
 
 const (
@@ -199,9 +198,9 @@ func (c *CloudShellReconciler) ensureFinalizer(cloudshell *cloudshellv1alpha1.Cl
 // the job template set default images registry "ghcr.io" and default command, no modification is supported currently,
 // the configmap must be existed in the cluster.
 func (c *CloudShellReconciler) CreateCloudShellJob(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) (*batchv1.Job, error) {
-	// if configmap is blank, use the Incluster rest config to generate kubeconfig and restore a configmap.
+	// if secretRef is empty, use the Incluster rest config to generate kubeconfig and restore a secret.
 	// the kubeconfig only work on current cluster.
-	if feature.FeatureGate.Enabled(AllowSecretStoreKubeconfig) && cloudshell.Spec.SecretRef == nil {
+	if cloudshell.Spec.SecretRef == nil {
 		kubeConfigByte, err := GenerateKubeconfigInCluster()
 		if err != nil {
 			return nil, err
