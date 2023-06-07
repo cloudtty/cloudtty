@@ -17,7 +17,7 @@ ARG ETCDCTL_VERSION=v3.4.20
 ARG KREW_VERSION=v0.4.3
 ARG KARMACTL_VERSION=v1.5.0
 
-RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing/" >> /etc/apk/repositories \
+RUN echo "https://dl-cdn.alpinelinux.org/mirrors.aliyun.com/" >> /etc/apk/repositories \
     && apk -U upgrade \
     && apk add --no-cache ca-certificates lrzsz \
     && ln -s /usr/bin/lrz	/usr/bin/rz \
