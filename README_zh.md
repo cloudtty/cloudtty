@@ -36,7 +36,7 @@ cloudtty 的网页终端使用效果如下：
 
 ![screenshot_gif](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.gif)
 
-如果将 cloudtty 集成到您自己的 UI 里面，最终效果 demo 如下:
+如果将 cloudtty 集成到你自己的 UI 里面，最终效果 demo 如下：
 
 ![demo_png](https://github.com/cloudtty/cloudtty/raw/main/docs/demo.png)
 
@@ -75,7 +75,7 @@ cloudtty 的入门比较简单，请参照以下步骤进行安装和使用。
   cloudshell-sample2   root   bash     NodePort    192.168.4.1:30385   Ready   9s
   ```
 
-  当 cloudshell 对象状态变为 `Ready`，并且 `URL` 字段出现之后，就可以通过该字段的访问方式，在浏览器打开:
+  当 cloudshell 对象状态变为 `Ready`，并且 `URL` 字段出现之后，就可以通过该字段的访问方式，在浏览器打开：
 
   ![screenshot_png](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.png)
 
@@ -107,7 +107,7 @@ docker build -t <IMAGE> . -f docker/Dockerfile-webtty
 
 我们有两种方式来设置 cloudshell 的自定义镜像：
 
-1. 直接通过 cloudshell CR 字段 `spec.image` 来设置.
+1. 直接通过 cloudshell CR 字段 `spec.image` 来设置。
 
 ```yaml
 apiVersion: cloudshell.cloudtty.io/v1alpha1
@@ -130,16 +130,16 @@ helm install cloudtty-operator --version 0.5.0 cloudtty/cloudtty --set jobTempla
 
 ## 进阶用法
 
-### 进阶 1. 用 cloudtty 访问其他集群
+### 进阶 1：用 cloudtty 访问其他集群
 
 如果是本地集群，可以不提供 kubeconfig，cloudtty 会创建具有 `cluster-admin` 角色权限的 `serviceaccount`。
-在容器的内部，`kubectl` 会自动发现 `ca` 证书和 token。如果有安全方面的考虑，您也可以自己提供 kubeconfig 来控制不同用户的权限。
+在容器的内部，`kubectl` 会自动发现 `ca` 证书和 token。如果有安全方面的考虑，你也可以自己提供 kubeconfig 来控制不同用户的权限。
 
 如果是远端集群，cloudtty 可以执行 kubectl 命令行工具。若访问集群，需要指定 kubeconfig。
 用户需自己提供 kubeconfig 并储存在 Secret 中，并且在 `cloudshell` 的 CR 中，通过 `spec.secretRef.name` 指定 Secret 的名称。
 cloudtty 会自动挂载到容器中，请确保服务器地址与集群网络连接顺畅。
 
-设置 kubeconfig 的步骤:
+设置 kubeconfig 的步骤：
 
 1. 准备 `kube.conf`，放入 Secret 中，并确保密钥/证书是 base64 而不是本地文件。
 
@@ -182,7 +182,7 @@ spec:
   commandAction: "kubectl node-shell <NODE_NAME>"
 ```
 
-更多的示例可以参考 [kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell).
+更多的示例可以参考 [kubectl-node-shell](https://github.com/kvaps/kubectl-node-shell)。
 
 > 集群中如果已经存在 `PodSecurity` 和 `PSP` 等安全性策略，可能会影响该功能的使用。
 
@@ -340,7 +340,7 @@ cloudtty 还提供了开发者模式。
 
 ## 特别鸣谢
 
-cloudtty 这个项目的很多技术实现基于 [ttyd](https://github.com/tsl0922/ttyd), 非常感谢 `tsl0922`、`yudai` 和社区开发者们的努力.
+cloudtty 这个项目的很多技术实现基于 [ttyd](https://github.com/tsl0922/ttyd)，非常感谢 `tsl0922`、`yudai` 和社区开发者们的努力。
 
 cloudtty 前端 UI 及其镜像内所用的二进制文件均源于 ttyd 社区。
 
@@ -349,7 +349,7 @@ cloudtty 前端 UI 及其镜像内所用的二进制文件均源于 ttyd 社区�
 如果您有任何疑问，请联系我们：
 
 * [Slack 频道](https://cloud-native.slack.com/archives/C03LA6AUF7V)
-* 微信交流群: 请联系 `calvin0327`(wen.chen@daocloud.io) 加入交流群
+* 微信交流群：请联系 `calvin0327`(wen.chen@daocloud.io) 加入交流群
 
 非常欢迎大家[提出 issue](https://github.com/cloudtty/cloudtty/issues) 和[发起 PR](https://github.com/cloudtty/cloudtty/pulls)。🎉🎉🎉
 
@@ -361,7 +361,7 @@ cloudtty 还将提供更多的功能，此处列出一些已经排上日程的�
 2. 代码还未做边界处理（如 NodePort 准备工作）
 3. 为了安全, Job 应该在单独的 Namespace 跑，而不是在 CR 中用同一个 Namespace
 4. 需要检查 Pod 的 Running 和 endpoint 的 Ready，才能置 CR 为 Ready
-5. 目前 TTL 只反映到 shell 的 timeout, 没有反映到 Job 的 yaml 里
+5. 目前 TTL 只反映到 shell 的 timeout，没有反映到 Job 的 yaml 里
 6. Job 的创建模板目前是 hardcode 方式，应该提供更灵活的方式修改 Job 的模板
 
 ## 贡献者
