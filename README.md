@@ -14,6 +14,10 @@ You can use it anywhere with an internet conneciton and it will be automatically
 > Early user terminals connected to computers were electromechanical teleprinters or teletypewriters (TeleTYpewriter, TTY), which might be the origin of TTY.
 > Gradually, TTY has continued to be used as the name for a text-only console although now this text-only console is a virtual console not a physical console.
 
+<img src="https://github.com/cncf/artwork/blob/master/other/illustrations/ashley-mcnamara/transparent/cncf-cloud-gophers-transparent.png" style="width:600px;" />
+
+**cloudtty is a [Cloud Native Computing Foundation](https://cncf.io/) landscape project.**
+
 ## Why Do You Need cloudtty?
 
 A project [ttyd](https://github.com/tsl0922/ttyd) provides some features to share terminals over the web.
@@ -294,3 +298,8 @@ More will be coming Soon. Welcome to [open an issue](https://github.com/cloudtty
 
 Made with [contrib.rocks](https://contrib.rocks).
 
+<p align="center">
+<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<br/><br/>
+cloudtty enriches the <a href="https://landscape.cncf.io/?selected=cloud-tty">CNCF CLOUD NATIVE Landscape.</a>
+</p>
