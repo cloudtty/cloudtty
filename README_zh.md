@@ -13,6 +13,10 @@ cloudtty 意指云原生虚拟控制台，也称为 Cloud Shell（云壳）。
 > 没错，就是那种很古老会发出滴滴答答声响、用线缆相连的有线电报机，那是一种只负责显示和打字的纯 IO 设备。
 > 近些年随着虚拟化技术的飞速发展，TTY 常指虚拟控制台或虚拟终端。
 
+<img src="https://github.com/cncf/artwork/blob/master/other/illustrations/ashley-mcnamara/transparent/cncf-cloud-gophers-transparent.png" style="width:600px;" />
+
+**cloudtty 是一个[云原生计算基金会 (CNCF)](https://cncf.io/) 全景图项目。**
+
 ## 为什么需要 cloudtty?
 
 目前，社区的 [ttyd](https://github.com/tsl0922/ttyd) 等项目对 TTY 技术的探索已经达到了一定的深度，可以提供浏览器之上的终端能力。
@@ -371,3 +375,9 @@ cloudtty 还将提供更多的功能，此处列出一些已经排上日程的�
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).
+
+<p align="center">
+<img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
+<br/><br/>
+cloudtty 位列 <a href="https://landscape.cncf.io/?selected=cloud-tty">CNCF 云原生全景图。</a>
+</p>
