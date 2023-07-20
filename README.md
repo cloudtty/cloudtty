@@ -1,4 +1,4 @@
-# A Kubernates Cloud Shell (Web Terminal) Operator
+# A Kubernetes Cloud Shell (Web Terminal) Operator
 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6301/badge)](https://bestpractices.coreinfrastructure.org/projects/6301)
 
