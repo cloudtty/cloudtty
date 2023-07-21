@@ -27,3 +27,6 @@ config/rbac/role.yaml
 *.swp
 *.swo
 *~
+
+# macos
+.DS_Store
