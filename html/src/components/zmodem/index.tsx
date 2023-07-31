@@ -50,15 +50,15 @@ export class ZmodemAddon extends Component<Props, State> implements ITerminalAdd
                 <Modal show={this.props.modalUpload} onClose={() => {this.props.hideUpload(false)}}>
                     <label class="file-label">
                         <input onChange={this.sendFile} class="file-input" type="file" multiple />
-                        <span class="file-cta">选择文件</span>
+                        <span class="file-cta">Select File</span>
                     </label>
                 </Modal>
                 <Modal show={this.props.modalDownload} onClose={() => {this.props.hideDownload(false)}}>
                     <form onSubmit={this.onSubmit}>
                         <label class="file-label">
-                            文件路径: <input class="path-input" type="text" value={this.state.value} onInput={this.onInput}/>
+                            File Path: <input class="path-input" type="text" value={this.state.value} onInput={this.onInput}/>
                         </label>
-                        <button class="file-button" type="submit">下载文件</button>
+                        <button class="file-button" type="submit">Download File</button>
                     </form>
                 </Modal>
             </div>

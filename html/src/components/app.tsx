@@ -77,12 +77,12 @@ export class App extends Component {
                     <ul class="terminal-operator--menu" style={{ display: showMenu ? 'block' : 'none' }}>
                         <li onClick={() => this.hideRz(true)}>
                             <i class="iconfont icon-upload" />
-                            上传
+                            Upload
                         </li>
 
                         <li onClick={() => this.hideSz(true)}>
-                            <i class="iconfont icon-upload" />
-                            下载
+                            <i class="iconfont icon-download" />
+                            Download
                         </li>
                     </ul>
                 </div>
