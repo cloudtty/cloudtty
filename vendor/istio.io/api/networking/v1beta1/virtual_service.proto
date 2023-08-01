@@ -253,8 +253,8 @@ message VirtualService {
   repeated string gateways = 2;
 
   // An ordered list of route rules for HTTP traffic. HTTP routes will be
-  // applied to platform service ports named 'http-*'/'http2-*'/'grpc-*', gateway
-  // ports with protocol HTTP/HTTP2/GRPC/ TLS-terminated-HTTPS and service
+  // applied to platform service ports using HTTP/HTTP2/GRPC protocols, gateway
+  // ports with protocol HTTP/HTTP2/GRPC/TLS-terminated-HTTPS and service
   // entry ports using HTTP/HTTP2/GRPC protocols.  The first rule matching
   // an incoming request is used.
   repeated HTTPRoute http = 3;
@@ -574,17 +574,24 @@ message HTTPRoute {
   // is matched if any one of the match blocks succeed.
   repeated HTTPMatchRequest match = 1;
 
-  // A HTTP rule can either redirect or forward (default) traffic. The
-  // forwarding target can be one of several versions of a service (see
+  // A HTTP rule can either return a direct_response, redirect or forward (default) traffic.
+  // The forwarding target can be one of several versions of a service (see
   // glossary in beginning of document). Weights associated with the
   // service version determine the proportion of traffic it receives.
   repeated HTTPRouteDestination route = 2;
 
-  // A HTTP rule can either redirect or forward (default) traffic. If
-  // traffic passthrough option is specified in the rule,
+  // A HTTP rule can either return a direct_response, redirect or forward (default) traffic.
+  // If traffic passthrough option is specified in the rule,
   // route/redirect will be ignored. The redirect primitive can be used to
   // send a HTTP 301 redirect to a different URI or Authority.
   HTTPRedirect redirect = 3;
+
+  // A HTTP rule can either return a direct_response, redirect or forward (default) traffic.
+  // Direct Response is used to specify a fixed response that should
+  // be sent to clients.
+  //
+  // It can be set only when `Route` and `Redirect` are empty.
+  HTTPDirectResponse direct_response = 21;
 
   // Delegate is used to specify the particular VirtualService which
   // can be used to define delegate HTTPRoute.
@@ -649,7 +656,7 @@ message HTTPRoute {
   Headers headers = 16;
 
   // $hide_from_docs
-  // Next available field number: 21
+  // Next available field number: 22
 }
 
 
@@ -997,7 +1004,9 @@ message TCPRoute {
 // {{</tabset>}}
 //
 // HTTPMatchRequest CANNOT be empty.
-// **Note:** No regex string match can be set when delegate VirtualService is specified.
+// **Note:**
+// 1. If a root VirtualService have matched any property (path, header etc.) by regex, delegate VirtualServices should not have any other matches on the same property.
+// 2. If a delegate VirtualService have matched any property (path, header etc.) by regex, root VirtualServices should not have any other matches on the same property.
 message HTTPMatchRequest {
   // The name assigned to a match. The match's name will be
   // concatenated with the parent route's name and will be logged in
@@ -1061,7 +1070,7 @@ message HTTPMatchRequest {
   //
   // - `regex: "value"` for RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
   //
-  // If the value is empty and only the name of header is specfied, presence of the header is checked.
+  // If the value is empty and only the name of header is specified, presence of the header is checked.
   // **Note:** The keys `uri`, `scheme`, `method`, and `authority` will be ignored.
   map<string, StringMatch> headers = 5;
 
@@ -1091,11 +1100,12 @@ message HTTPMatchRequest {
   // - For a query parameter like "?key", the map key would be "key" and the
   //   string match could be defined as `exact: ""`.
   //
+  // - For a query parameter like "?key=abc" or "?key=abx", the map key would be "key" and the
+  //   string match could be defined as `prefix: "ab"`.
+  //
   // - For a query parameter like "?key=123", the map key would be "key" and the
   //   string match could be defined as `regex: "\d+$"`. Note that this
   //   configuration will only match values like "123" but not "a123" or "123a".
-  //
-  // **Note:** `prefix` matching is currently not supported.
   map<string, StringMatch> query_params = 9;
 
   // Flag to specify whether the URI matching should be case-insensitive.
@@ -1112,6 +1122,14 @@ message HTTPMatchRequest {
   // If the VirtualService has a list of gateways specified in the top-level `gateways` field,
   // it must include the reserved gateway `mesh` for this field to be applicable.
   string source_namespace = 13;
+
+  // The human readable prefix to use when emitting statistics for this route.
+  // The statistics are generated with prefix route.<stat_prefix>.
+  // This should be set for highly critical routes that one wishes to get "per-route" statistics on.
+  // This prefix is only for proxy-level statistics (envoy_*) and not service-level (istio_*) statistics.
+  // Refer to https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-route-stat-prefix 
+  // for statistics that are generated when this is configured.
+  string stat_prefix = 14;
 }
 
 // Each routing rule is associated with one or more service versions (see
@@ -1434,6 +1452,176 @@ message HTTPRedirect {
   // On a redirect, Specifies the HTTP status code to use in the redirect
   // response. The default response code is MOVED_PERMANENTLY (301).
   uint32 redirect_code = 3;
+}
+
+// HTTPDirectResponse can be used to send a fixed response to clients.
+// For example, the following rule returns a fixed 503 status with a body
+// to requests for /v1/getProductRatings API.
+//
+// {{<tabset category-name="example">}}
+// {{<tab name="v1alpha3" category-value="v1alpha3">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1alpha3
+// kind: VirtualService
+// metadata:
+//   name: ratings-route
+// spec:
+//   hosts:
+//   - ratings.prod.svc.cluster.local
+//   http:
+//   - match:
+//     - uri:
+//         exact: /v1/getProductRatings
+//     directResponse:
+//       status: 503
+//       body:
+//         string: "unknown error"
+//   ...
+// ```
+// {{</tab>}}
+//
+// {{<tab name="v1beta1" category-value="v1beta1">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
+// kind: VirtualService
+// metadata:
+//   name: ratings-route
+// spec:
+//   hosts:
+//   - ratings.prod.svc.cluster.local
+//   http:
+//   - match:
+//     - uri:
+//         exact: /v1/getProductRatings
+//     directResponse:
+//       status: 503
+//       body:
+//         string: "unknown error"
+//   ...
+// ```
+// {{</tab>}}
+// {{</tabset>}}
+//
+// It is also possible to specify a binary response body.
+// This is mostly useful for non text-based protocols such as gRPC.
+//
+// {{<tabset category-name="example">}}
+// {{<tab name="v1alpha3" category-value="v1alpha3">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1alpha3
+// kind: VirtualService
+// metadata:
+//   name: ratings-route
+// spec:
+//   hosts:
+//   - ratings.prod.svc.cluster.local
+//   http:
+//   - match:
+//     - uri:
+//         exact: /v1/getProductRatings
+//     directResponse:
+//       status: 503
+//       body:
+//         bytes: "dW5rbm93biBlcnJvcg==" # "unknown error" in base64
+//   ...
+// ```
+// {{</tab>}}
+//
+// {{<tab name="v1beta1" category-value="v1beta1">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
+// kind: VirtualService
+// metadata:
+//   name: ratings-route
+// spec:
+//   hosts:
+//   - ratings.prod.svc.cluster.local
+//   http:
+//   - match:
+//     - uri:
+//         exact: /v1/getProductRatings
+//     directResponse:
+//       status: 503
+//       body:
+//         bytes: "dW5rbm93biBlcnJvcg==" # "unknown error" in base64
+//   ...
+// ```
+// {{</tab>}}
+// {{</tabset>}}
+//
+// It is good practice to add headers in the HTTPRoute
+// as well as the direct_response, for example to specify
+// the returned Content-Type.
+//
+// {{<tabset category-name="example">}}
+// {{<tab name="v1alpha3" category-value="v1alpha3">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1alpha3
+// kind: VirtualService
+// metadata:
+//   name: ratings-route
+// spec:
+//   hosts:
+//   - ratings.prod.svc.cluster.local
+//   http:
+//   - match:
+//     - uri:
+//         exact: /v1/getProductRatings
+//     directResponse:
+//       status: 503
+//       body:
+//         string: "{\"error\": \"unknown error\"}"
+//     headers:
+//       response:
+//         set:
+//           content-type: "appliation/json"
+//   ...
+// ```
+// {{</tab>}}
+//
+// {{<tab name="v1beta1" category-value="v1beta1">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
+// kind: VirtualService
+// metadata:
+//   name: ratings-route
+// spec:
+//   hosts:
+//   - ratings.prod.svc.cluster.local
+//   http:
+//   - match:
+//     - uri:
+//         exact: /v1/getProductRatings
+//     directResponse:
+//       status: 503
+//       body:
+//         string: "{\"error\": \"unknown error\"}"
+//     headers:
+//       response:
+//         set:
+//           content-type: "text/plain"
+//   ...
+// ```
+// {{</tab>}}
+// {{</tabset>}}
+//
+message HTTPDirectResponse {
+  // Specifies the HTTP response status to be returned.
+  uint32 status = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Specifies the content of the response body. If this setting is omitted,
+  // no body is included in the generated response.
+  HTTPBody body = 2;
+}
+
+message HTTPBody {
+  oneof specifier {
+    // response body as a string
+    string string = 1;
+
+    // response body as base64 encoded bytes.
+    bytes bytes = 2;
+  }
 }
 
 // HTTPRewrite can be used to rewrite specific parts of a HTTP request
@@ -1764,7 +1952,7 @@ message HTTPFaultInjection {
   //
   // The _fixedDelay_ field is used to indicate the amount of delay in seconds.
   // The optional _percentage_ field can be used to only delay a certain
-  // percentage of requests. If left unspecified, all request will be delayed.
+  // percentage of requests. If left unspecified, no request will be delayed.
   message Delay {
     // Percentage of requests on which the delay will be injected (0-100).
     // Use of integer `percent` value is deprecated. Use the double `percentage`
@@ -1781,6 +1969,7 @@ message HTTPFaultInjection {
     }
 
     // Percentage of requests on which the delay will be injected.
+    // If left unspecified, no request will be delayed.
     Percent percentage = 5;
   }
 
@@ -1836,7 +2025,7 @@ message HTTPFaultInjection {
   //
   // The _httpStatus_ field is used to indicate the HTTP status code to
   // return to the caller. The optional _percentage_ field can be used to only
-  // abort a certain percentage of requests. If not specified, all requests are
+  // abort a certain percentage of requests. If not specified, no request will be
   // aborted.
   message Abort {
     reserved 1;
@@ -1846,7 +2035,10 @@ message HTTPFaultInjection {
       // HTTP status code to use to abort the Http request.
       int32 http_status = 2 [(google.api.field_behavior) = REQUIRED];
 
-      // $hide_from_docs
+      // GRPC status code to use to abort the request. The supported
+      // codes are documented in https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
+      // Note: If you want to return the status "Unavailable", then you should
+      // specify the code as `UNAVAILABLE`(all caps), but not `14`.
       string grpc_status = 3;
 
       // $hide_from_docs
@@ -1854,6 +2046,7 @@ message HTTPFaultInjection {
     }
 
     // Percentage of requests to be aborted with the error code provided.
+    // If not specified, no request will be aborted.
     Percent percentage = 5;
   }
 }
