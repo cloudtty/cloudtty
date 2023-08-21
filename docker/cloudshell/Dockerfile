@@ -1,4 +1,4 @@
-FROM node:18.8.0 as builder
+FROM node:18.16.0 as builder
 
 # Build frontend code which added upload/download button
 WORKDIR /app
@@ -9,13 +9,13 @@ RUN yarn install
 COPY html/ /app/
 RUN yarn run build
 
-FROM ghcr.io/dtzar/helm-kubectl:3.9
+FROM ghcr.io/dtzar/helm-kubectl:3.12.2
 SHELL [ "/bin/bash", "-c" ]
 
 ARG TTYD_VERSION=1.7.2
-ARG ETCDCTL_VERSION=v3.4.20
+ARG ETCDCTL_VERSION=v3.4.27
 ARG KREW_VERSION=v0.4.3
-ARG KARMACTL_VERSION=v1.5.0
+ARG KARMACTL_VERSION=v1.5.2
 
 RUN echo "https://mirrors.aliyun.com/alpine/edge/testing/" >> /etc/apk/repositories \
     && apk update \
