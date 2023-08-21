@@ -467,11 +467,26 @@ func (c *CloudShellReconciler) CreateIngressForCloudshell(ctx context.Context, s
 
 	// there is an ingress in the cluster, add a rule to the ingress.
 	IngressRule := ingress.Spec.Rules[0].IngressRuleValue.HTTP
-	newPathRule := IngressRule.Paths[0].DeepCopy()
-
-	newPathRule.Backend.Service.Name = service.Name
-	newPathRule.Path = SetRouteRulePath(cloudshell)
-	IngressRule.Paths = append(IngressRule.Paths, *newPathRule)
+	pathType := networkingv1.PathTypePrefix
+	IngressRule.Paths = append(IngressRule.Paths, networkingv1.HTTPIngressPath{
+		PathType: &pathType,
+		Path:     SetRouteRulePath(cloudshell),
+		Backend: networkingv1.IngressBackend{
+			Service: &networkingv1.IngressServiceBackend{
+				Name: service.Name,
+				Port: networkingv1.ServiceBackendPort{
+					Number: 7681,
+				},
+			},
+		},
+	})
+	// TODO: All paths will be rewritten here
+	ans := ingress.GetAnnotations()
+	if ans == nil {
+		ans = make(map[string]string)
+	}
+	ans["nginx.ingress.kubernetes.io/rewrite-target"] = "/"
+	ingress.SetAnnotations(ans)
 	return c.Update(ctx, ingress)
 }
 
