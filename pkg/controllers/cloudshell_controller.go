@@ -301,10 +301,10 @@ func (c *CloudShellReconciler) CreateRouteRule(ctx context.Context, cloudshell *
 		host, err := c.GetMasterNodeIP(ctx)
 		if err != nil {
 			klog.InfoS("Unable to get master node IP addr", "cloudshell", klog.KObj(cloudshell), "err", err)
+			return err
 		}
 
 		var nodePort int32
-		// TODO: nodePort may be blank due to delay filled by k8s, should `ctrl.Result{RequeueAfter: 5}, nil`
 		if service.Spec.Type == corev1.ServiceTypeNodePort {
 			for _, port := range service.Spec.Ports {
 				if port.NodePort != 0 {
@@ -312,6 +312,10 @@ func (c *CloudShellReconciler) CreateRouteRule(ctx context.Context, cloudshell *
 					break
 				}
 			}
+		}
+		if nodePort == 0 {
+			klog.InfoS("node port is blank", "cloudshell", klog.KObj(cloudshell))
+			return errors.New("node port is blank")
 		}
 		accessURL = fmt.Sprintf("%s:%d", host, nodePort)
 	case cloudshellv1alpha1.ExposureIngress:
