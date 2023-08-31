@@ -73,7 +73,7 @@ The following table lists the configurable parameters of the CloudTTY chart and 
 | podLabels | dict | {} | Controller Manager pod labels |
 | image.registry | string | ghcr.io | Cloudtty image registry |
 | image.repository | string | cloudtty/cloudshell-operator | Cloudtty image repository |
-| image.tag | string | v0.5.5 | Cloudtty image tag (immutable tags are recommended) |
+| image.tag | string | v0.5.6 | Cloudtty image tag (immutable tags are recommended) |
 | image.pullPolicy | string | IfNotPresent | Cloudtty image pull policy |
 | image.pullSecrets | list | [] | Specify Docker-registry secret names as an array |
 | resources | dict | {} | Resources |
@@ -90,6 +90,6 @@ The following table lists the configurable parameters of the CloudTTY chart and 
 | jobTemplate.labels | dict | {} | Job Template labels |
 | jobTemplate.image.registry | string | ghcr.io | Cloudtty Job image registry |
 | jobTemplate.image.repository | string | cloudtty/cloudshell | Cloudtty Job image repository |
-| jobTemplate.image.tag | string | v0.5.5 | Cloudtty Job image tag (immutable tags are recommended) |
+| jobTemplate.image.tag | string | v0.5.6 | Cloudtty Job image tag (immutable tags are recommended) |
 | jobTemplate.image.pullPolicy | string | IfNotPresent | Cloudtty Job image pull policy |
 | jobTemplate.image.pullSecrets | list | [] | Specify Docker-registry secret names as an array |
