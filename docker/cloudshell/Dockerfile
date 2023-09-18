@@ -9,7 +9,7 @@ RUN yarn install
 COPY html/ /app/
 RUN yarn run build
 
-FROM ghcr.io/dtzar/helm-kubectl:3.12.2
+FROM ghcr.io/dtzar/helm-kubectl:3.12.3
 SHELL [ "/bin/bash", "-c" ]
 
 ARG TTYD_VERSION=1.7.2
