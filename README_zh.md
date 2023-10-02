@@ -24,7 +24,7 @@ CloudTTY 意指云原生虚拟控制台，也称为 Cloud Shell（云壳）。
 但是在 Kubernetes 的场景下，这些 TTY 项目还需要更加云原生的能力拓展。
 如何让 ttyd 在容器内运行，如何通过 NodePort\Ingress 等方式访问，如何用 CRD 的方式创建多个实例？
 
-恭喜你，CloudTTY 提供了这些问题的解决方案，欢迎试用 CloudTTY 🎉!
+恭喜你，CloudTTY 提供了这些问题的解决方案，欢迎试用 CloudTTY 🎉！
 
 ## 适用场景
 
@@ -40,7 +40,7 @@ CloudTTY 的网页终端使用效果如下：
 
 ![screenshot_gif](https://github.com/cloudtty/cloudtty/raw/main/docs/snapshot.gif)
 
-如果将 CloudTTY 集成到您自己的 UI 里面，最终效果 demo 如下:
+如果将 CloudTTY 集成到您自己的 UI 里面，最终效果 demo 如下：
 
 ![demo_png](https://github.com/cloudtty/cloudtty/raw/main/docs/demo.png)
 
@@ -130,7 +130,7 @@ CloudTTY 的入门比较简单，请参照以下步骤进行安装和使用。
    helm install cloudtty-operator --version 0.5.0 cloudtty/cloudtty --set jobTemplate.image.registry=</REGISTRY> --set jobTemplate.image.repository=</REPOSITORY> --set jobTemplate.image.tag=</TAG>
    ```
 
-> 如果你已经安装了 CloudTTY，还可以修改 `JobTemplate` 的 configmap 来设置 cloudshell 的镜像。
+> 如果你已经安装了 CloudTTY，还可以修改 `JobTemplate` 的 ConfigMap 来设置 cloudshell 的镜像。
 
 ## 进阶用法
 
@@ -361,7 +361,7 @@ CloudTTY 还将提供更多的功能，此处列出一些已经排上日程的�
 
 1. 通过 RBAC 生成的 `/var/run/secret` 进行权限控制
 2. 代码还未做边界处理（如 NodePort 准备工作）
-3. 为了安全, Job 应该在单独的 Namespace 跑，而不是在 CR 中用同一个 Namespace
+3. 为了安全，Job 应该在单独的 Namespace 跑，而不是在 CR 中用同一个 Namespace
 4. 需要检查 Pod 的 Running 和 endpoint 的 Ready，才能置 CR 为 Ready
 5. 目前 TTL 只反映到 shell 的 timeout，没有反映到 Job 的 yaml 里
 6. Job 的创建模板目前是 hardcode 方式，应该提供更灵活的方式修改 Job 的模板
