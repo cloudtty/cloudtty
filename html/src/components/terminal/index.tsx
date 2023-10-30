@@ -357,18 +357,24 @@ export class Xterm extends Component<Props> {
         }
 
         const downLoadFileToPod = (fileUrl) => {
-            const { socket, textEncoder } = this;
-            const filePath = fileUrl.split('/');
-            const fileName = filePath[filePath.length - 1];
-
-            console.log(`[ttyd] download fileName : ${fileName}`);
-
-            const command = 'kubectl cp -c "${CONTAINER}" ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}` + ` /tmp/${fileName}` + ` && sz /tmp/${fileName}`;
-            socket.send(textEncoder.encode(Command.INPUT + command));
-            socket.send(textEncoder.encode(Command.INPUT + '\n'));
-
-            const reminder = '\n the file have downloaded...';
-            socket.send(textEncoder.encode(Command.INPUT + reminder));
+            try {
+                const { socket, textEncoder } = this;
+                const decodeFilURL = decodeURIComponent(fileUrl);
+                const filePath = decodeFilURL.split('/');
+                const fileName = filePath[filePath.length - 1];
+                const fileUrlStartWithSlash = `/${decodeFilURL}`.replace(/^[\/]+/, '/');
+    
+                console.log(`[ttyd] download fileName : ${fileName}`);
+    
+                const command = 'kubectl cp -c "${CONTAINER}" ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrlStartWithSlash}` + ` /tmp/${fileName}` + ` && sz /tmp/${fileName}`;
+                socket.send(textEncoder.encode(Command.INPUT + command));
+                socket.send(textEncoder.encode(Command.INPUT + '\n'));
+    
+                const reminder = '\n the file have downloaded...';
+                socket.send(textEncoder.encode(Command.INPUT + reminder));
+            } catch (e) {
+                console.log('[ttyd] download file to pod', e);
+            }
         }
 
         const path = window.location.pathname.replace(/[\/]+$/, '');
