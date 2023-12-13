@@ -19,8 +19,8 @@ package fake
 
 import (
 	clientset "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned"
-	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1"
-	fakecloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1/fake"
+	cloudshellv1alpha2 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha2"
+	fakecloudshellv1alpha2 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -78,7 +78,7 @@ var (
 	_ testing.FakeClient  = &Clientset{}
 )
 
-// CloudshellV1alpha1 retrieves the CloudshellV1alpha1Client
-func (c *Clientset) CloudshellV1alpha1() cloudshellv1alpha1.CloudshellV1alpha1Interface {
-	return &fakecloudshellv1alpha1.FakeCloudshellV1alpha1{Fake: &c.Fake}
+// CloudshellV1alpha2 retrieves the CloudshellV1alpha2Client
+func (c *Clientset) CloudshellV1alpha2() cloudshellv1alpha2.CloudshellV1alpha2Interface {
+	return &fakecloudshellv1alpha2.FakeCloudshellV1alpha2{Fake: &c.Fake}
 }

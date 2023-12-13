@@ -20,7 +20,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
+	v1alpha2 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -51,9 +51,9 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=cloudshell.cloudtty.io, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("cloudshells"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloudshell().V1alpha1().CloudShells().Informer()}, nil
+	// Group=cloudshell.cloudtty.io, Version=v1alpha2
+	case v1alpha2.SchemeGroupVersion.WithResource("cloudshells"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloudshell().V1alpha2().CloudShells().Informer()}, nil
 
 	}
 

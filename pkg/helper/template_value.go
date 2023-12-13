@@ -2,50 +2,11 @@ package helper
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net"
 
-	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
+	cloudshellv1alpha2 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha2"
 	"k8s.io/apimachinery/pkg/types"
 )
-
-type PodTemplateValue struct {
-	Namespace string
-	Name      string
-	Command   string
-	Secret    string
-	Once      bool
-	UrlArg    bool
-	Ttl       int32
-}
-
-func NewPodTemplateValue(cloudShell *cloudshellv1alpha1.CloudShell) PodTemplateValue {
-	return PodTemplateValue{
-		Namespace: cloudShell.Namespace,
-		Name:      fmt.Sprintf("cloudshell-%s", cloudShell.Name),
-		Once:      cloudShell.Spec.Once,
-		Secret:    cloudShell.Spec.SecretRef.Name,
-		Command:   cloudShell.Spec.CommandAction,
-		Ttl:       cloudShell.Spec.Ttl,
-		UrlArg:    cloudShell.Spec.UrlArg,
-	}
-}
-
-type ServiceTemplateValue struct {
-	Name      string
-	Namespace string
-	JobName   string
-	Type      string
-}
-
-func NewServiceTemplateValue(cloudShell *cloudshellv1alpha1.CloudShell, serviceType cloudshellv1alpha1.ExposureMode) ServiceTemplateValue {
-	return ServiceTemplateValue{
-		Name:      fmt.Sprintf("cloudshell-%s", cloudShell.Name),
-		Namespace: cloudShell.Namespace,
-		JobName:   fmt.Sprintf("cloudshell-%s", cloudShell.Name),
-		Type:      string(serviceType),
-	}
-}
 
 type IngressTemplateValue struct {
 	Name             string
@@ -74,7 +35,7 @@ type VirtualServiceTemplateValue struct {
 	ServiceName string
 }
 
-func NewVirtualServiceTemplateValue(objectKey types.NamespacedName, vsConfig *cloudshellv1alpha1.VirtualServiceConfig, serviceName, routePath string) VirtualServiceTemplateValue {
+func NewVirtualServiceTemplateValue(objectKey types.NamespacedName, vsConfig *cloudshellv1alpha2.VirtualServiceConfig, serviceName, routePath string) VirtualServiceTemplateValue {
 	return VirtualServiceTemplateValue{
 		Name:        objectKey.Name,
 		Namespace:   objectKey.Namespace,

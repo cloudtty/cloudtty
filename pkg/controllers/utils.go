@@ -17,7 +17,7 @@ limitations under the License.
 package controllers
 
 import (
-	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
+	cloudshellv1alpha2 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha2"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -34,12 +34,16 @@ func IsJobFinished(job *batchv1.Job) (bool, batchv1.JobConditionType) {
 	return false, ""
 }
 
-// IsJobFinished checks whether the given cloudshell has finished execution.
+// IsCloudshellFinished checks whether the given cloudshell has finished execution.
 // It does not discriminate between successful and failed terminations.
-func IsCloudshellFinished(cloudsehll *cloudshellv1alpha1.CloudShell) bool {
-	if cloudsehll.Status.Phase == cloudshellv1alpha1.PhaseCompleted ||
-		cloudsehll.Status.Phase == cloudshellv1alpha1.PhaseFailed {
+func IsCloudshellFinished(cloudsehll *cloudshellv1alpha2.CloudShell) bool {
+	if cloudsehll.Status.Phase == cloudshellv1alpha2.PhaseCompleted ||
+		cloudsehll.Status.Phase == cloudshellv1alpha2.PhaseFailed {
 		return true
 	}
 	return false
+}
+
+func IsCloudShellReady(cloudshell *cloudshellv1alpha2.CloudShell) bool {
+	return cloudshell.Status.Phase == cloudshellv1alpha2.PhaseReady
 }

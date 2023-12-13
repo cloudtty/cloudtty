@@ -17,68 +17,27 @@ limitations under the License.
 package manifests
 
 const (
-	JobTmplV1 = `
-  apiVersion: batch/v1
-  kind: Job
-  metadata:
-    namespace: {{ .Namespace }}
-    name: {{ .Name }}
-  spec:
-    ttlSecondsAfterFinished: 30
-    template:
-      spec:
-        automountServiceAccountToken: false
-        containers:
-        - name: web-tty
-          image: "ghcr.io/cloudtty/cloudshell:v0.5.7"
-          imagePullPolicy: IfNotPresent
-          ports:
-          - containerPort: 7681
-            name: tty-ui
-            protocol: TCP
-          command:
-            - bash
-            - "-c"
-            - |
-              once=""
-              index=""
-              if [ "${ONCE}" == "true" ];then once=" --once "; fi;
-              if [ -f /usr/lib/ttyd/index.html ]; then index=" --index /usr/lib/ttyd/index.html ";fi
-              if [ "${URLARG}" == "true" ];then urlarg=" -a "; fi
-              if [ -z "${TTL}" ] || [ "${TTL}" == "0" ];then
-                  ttyd ${index} ${once} ${urlarg} sh -c "${COMMAND}"
-              else
-                  timeout ${TTL} ttyd ${index} ${once} ${urlarg} sh -c "${COMMAND}" || echo "exiting"
-              fi
-          env:
-          - name: KUBECONFIG
-            value: /usr/local/kubeconfig/config
-          - name: ONCE
-            value: "{{ .Once }}"
-          - name: TTL
-            value: "{{ .Ttl }}"
-          - name: COMMAND
-            value: {{ .Command }}
-          - name: URLARG
-            value: "{{ .UrlArg }}"
-          volumeMounts:
-            - mountPath: /usr/local/kubeconfig/
-              name: kubeconfig
-          readinessProbe:
-            tcpSocket:
-              port: 7681
-            periodSeconds: 1
-            failureThreshold: 15
-          livenessProbe:
-            tcpSocket:
-              port: 7681
-            periodSeconds: 20
-        restartPolicy: Never
-        volumes:
-        - secret:
-            defaultMode: 420
-            secretName: {{ .Secret }}
-          name: kubeconfig
+	PodTmplV1 = `
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: {{ .Namespace }}
+  name: {{ .Name }}
+spec:
+  containers:
+  - name: web-tty
+    image: {{ .Image }}
+    imagePullPolicy: IfNotPresent
+    command:
+    - /bin/bash
+    - -ec
+    - |
+      while :; do sleep 2073600; done
+    ports:
+    - containerPort: 7681
+      name: tty-ui
+      protocol: TCP
+  restartPolicy: Never
 `
 
 	ServiceTmplV1 = `
@@ -94,7 +53,7 @@ spec:
     protocol: TCP
     targetPort: 7681
   selector:
-    job-name: {{ .JobName }}
+    worker.cloudtty.io/owner-name: {{ .Owner }}
   type: {{ .Type }}
 `
 

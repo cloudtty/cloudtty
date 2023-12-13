@@ -33,6 +33,15 @@ spec:
           command:
           - manager
           - --leader-elect-resource-namespace={{ .Release.Namespace }}
+          {{- if .Values.coreWorkerLimit }}
+          - --core-worker-limit={{.Values.coreWorkerLimit}}
+          {{- end }}
+          {{- if .Values.maxWorkerLimit }}
+          - --max-worker-limit={{.Values.maxWorkerLimit}}
+          {{- end }}
+          {{- if include "cloudtty.cloudshell.image" . }}
+          - --cloudshell-image={{ include "cloudtty.cloudshell.image" . }}
+          {{- end }}
           - --v=2
           {{- with (include "cloudtty.operator.featureGates" .) }}
           - {{ . }}
@@ -52,13 +61,6 @@ spec:
               path: /readyz
               port: 10357
           {{- end }}
-          volumeMounts:
-          - mountPath: /etc/cloudtty
-            name: cloudtty-job-template
-      volumes:
-        - name: cloudtty-job-template
-          configMap:
-            name: {{ include "jobTemplate.config.fullname" . }}
       {{- if .Values.affinity }}
       affinity: {{- include "common.tplvalues.render" (dict "value" .Values.affinity "context" $) | nindent 8 }}
       {{- end }}

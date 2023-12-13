@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
   name: cloudshells.cloudshell.cloudtty.io
 spec:
@@ -39,7 +39,7 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    name: v1alpha1
+    name: v1alpha2
     schema:
       openAPIV3Schema:
         description: CloudShell is the Schema for the cloudshells API
@@ -64,12 +64,6 @@ spec:
                   when corresponding job status is completed.
                 type: boolean
               commandAction:
-                type: string
-              configmapName:
-                description: 'Configmap of the target kube-config, will replace by
-                  SA TODO: it will be deprecated in v0.5.0 version and be removed
-                  in v0.6.0 if open the featuregate AllowSecretStoreKubeconfig, it''s
-                  not work.'
                 type: string
               env:
                 description: List of environment variables to set in the container.
@@ -113,7 +107,6 @@ spec:
                           required:
                           - key
                           type: object
-                          x-kubernetes-map-type: atomic
                         fieldRef:
                           description: 'Selects a field of the pod: supports metadata.name,
                             metadata.namespace, `metadata.labels[''<KEY>'']`, `metadata.annotations[''<KEY>'']`,
@@ -131,7 +124,6 @@ spec:
                           required:
                           - fieldPath
                           type: object
-                          x-kubernetes-map-type: atomic
                         resourceFieldRef:
                           description: 'Selects a resource of the container: only
                             resources limits and requests (limits.cpu, limits.memory,
@@ -156,7 +148,6 @@ spec:
                           required:
                           - resource
                           type: object
-                          x-kubernetes-map-type: atomic
                         secretKeyRef:
                           description: Selects a key of a secret in the pod's namespace
                           properties:
@@ -175,7 +166,6 @@ spec:
                           required:
                           - key
                           type: object
-                          x-kubernetes-map-type: atomic
                       type: object
                   required:
                   - name
@@ -227,8 +217,6 @@ spec:
                 description: PathSuffix specified a path suffix to access url, if
                   not, the default path is used.
                 type: string
-              runAsUser:
-                type: string
               secretRef:
                 description: 'SecretRef represents the secret contains mandatory credentials
                   to access the target cluster. The secret should hold credentials
@@ -240,9 +228,8 @@ spec:
                     description: Name is the name of resource being referenced.
                     type: string
                 type: object
-              ttl:
-                description: 'TODO: repalce type `int32` of ttl with `time`.'
-                format: int32
+              ttlSecondsAfterStarted:
+                format: int64
                 type: integer
               urlArg:
                 description: 'UrlArg allow client to send command line arguments in
@@ -277,6 +264,11 @@ spec:
             description: Most recently observed status of the cloudshell.
             properties:
               accessUrl:
+                type: string
+              lastScheduleTime:
+                description: Information when was the last time the pod was successfully
+                  scheduled.
+                format: date-time
                 type: string
               phase:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
