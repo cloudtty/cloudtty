@@ -14,8 +14,6 @@
 
 syntax = "proto3";
 
-import "google/api/field_behavior.proto";
-
 // $schema: istio.networking.v1beta1.WorkloadEntry
 // $title: Workload Entry
 // $description: Configuration affecting VMs onboarded into the mesh.
@@ -229,6 +227,44 @@ import "google/api/field_behavior.proto";
 // {{</tab>}}
 // {{</tabset>}}
 //
+//
+// The following example declares a VM workload without an address.
+// An alternative to having istiod read from remote API servers is 
+// to write a `WorkloadEntry` in the local cluster that represents 
+// the Workload(s) in the remote network with the given labels. A 
+// single `WorkloadEntry` with weights represent the aggregate of all
+// the actual workloads in a given remote network.
+//
+// {{<tabset category-name="example">}}
+// {{<tab name="v1alpha3" category-value="v1alpha3">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1alpha3
+// kind: WorkloadEntry
+// metadata:
+//   name: foo-workloads-cluster-2
+// spec:
+//   serviceAccount: foo
+//   network: cluster-2-network
+//   labels:
+//     app: foo
+// ```
+// {{</tab>}}
+//
+// {{<tab name="v1beta1" category-value="v1beta1">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
+// kind: WorkloadEntry
+// metadata:
+//   name: foo-workloads-cluster-2
+// spec:
+//   serviceAccount: foo
+//   network: cluster-2-network
+//   labels:
+//     app: foo
+// ```
+// {{</tab>}}
+// {{</tabset>}}
+//
 package istio.networking.v1beta1;
 
 option go_package = "istio.io/api/networking/v1beta1";
@@ -265,7 +301,8 @@ message WorkloadEntry {
   // port.  Domain names can be used if and only if the resolution is set
   // to DNS, and must be fully-qualified without wildcards. Use the form
   // unix:///absolute/path/to/socket for Unix domain socket endpoints.
-  string address = 1 [(google.api.field_behavior) = REQUIRED];
+  // If address is empty, network must be specified.
+  string address = 1;
 
   // Set of ports associated with the endpoint. If the port map is
   // specified, it must be a map of servicePortName to this endpoint's
@@ -293,7 +330,7 @@ message WorkloadEntry {
   // used to establish connectivity (usually using the
   // `AUTO_PASSTHROUGH` mode in a Gateway Server). This is
   // an advanced configuration used typically for spanning an Istio mesh
-  // over multiple clusters.
+  // over multiple clusters. Required if address is not provided.
   string network = 4;
 
   // The locality associated with the endpoint. A locality corresponds

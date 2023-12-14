@@ -24,8 +24,12 @@ func (o *Options) Validate() field.ErrorList {
 	errs := field.ErrorList{}
 	newPath := field.NewPath("Options")
 
-	if o.SecurePort < 0 || o.SecurePort > 65535 {
-		errs = append(errs, field.Invalid(newPath.Child("SecurePort"), o.SecurePort, "must be between 0 and 65535 inclusive"))
+	if o.CoreWorkerLimit < 0 {
+		errs = append(errs, field.Invalid(newPath.Child("CoreWorkerLimit"), o.MaxWorkerLimit, "core-worker-limit must be greater than or equals 0"))
+	}
+
+	if o.MaxWorkerLimit < 0 {
+		errs = append(errs, field.Invalid(newPath.Child("MaxWorkerLimit"), o.MaxWorkerLimit, "max-worker-limit must be greater than or equals 0"))
 	}
 
 	return errs

@@ -16,84 +16,151 @@ limitations under the License.
 package options
 
 import (
-	"time"
-
-	"github.com/cloudtty/cloudtty/pkg/utils/feature"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned"
+	"github.com/cloudtty/cloudtty/pkg/utils/gclient"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"k8s.io/client-go/tools/record"
 	cliflag "k8s.io/component-base/cli/flag"
 	componentbaseconfig "k8s.io/component-base/config"
 	"k8s.io/component-base/config/options"
+	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 	"k8s.io/component-base/logs"
 	logsapi "k8s.io/component-base/logs/api/v1"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	"github.com/cloudtty/cloudtty/cmd/app/config"
 )
 
 const (
-	defaultBindAddress      = "0.0.0.0"
-	defaultPort             = 10357
-	NamespaceCloudttySystem = "cloudtty-system"
-)
-
-var (
-	// defualt 15/10/2
-	defaultElectionLeaseDuration = metav1.Duration{Duration: 15 * time.Second}
-	defaultElectionRenewDeadline = metav1.Duration{Duration: 10 * time.Second}
-	defaultElectionRetryPeriod   = metav1.Duration{Duration: 2 * time.Second}
+	NamespaceCloudttySystem              = "cloudtty-system"
+	CloudShellControllerManagerUserAgent = "cloudshell-controller-manager"
 )
 
 // Options contains everything necessary to create and run cloudshell-manager.
 type Options struct {
 	// LeaderElection defines the configuration of leader election client.
-	LeaderElection *componentbaseconfig.LeaderElectionConfiguration
-	// BindAddress is the IP address on which to listen for the --secure-port port.
-	BindAddress string
-	// SecurePort is the port that the the server serves at.
-	// Note: We hope support https in the future once controller-runtime provides the functionality.
-	SecurePort int
-	// MetricsBindAddress is the TCP address that the controller should bind to
-	// for serving prometheus metrics.
-	// It can be set to "0" to disable the metrics serving.
-	// Defaults to ":8080".
-	MetricsBindAddress string
+	LeaderElection   componentbaseconfig.LeaderElectionConfiguration
+	ClientConnection componentbaseconfig.ClientConnectionConfiguration
 
-	Logs *logs.Options
-
-	// Flags hold the parsed CLI flags.
-	Flags *cliflag.NamedFlagSets
+	Master          string
+	Kubeconfig      string
+	CoreWorkerLimit int
+	MaxWorkerLimit  int
+	ClouShellImage  string
+	Logs            *logs.Options
 }
 
-// NewOptions builds an empty options.
-func NewOptions() *Options {
-	o := &Options{
-		LeaderElection: &componentbaseconfig.LeaderElectionConfiguration{
-			LeaderElect:       true,
-			ResourceLock:      resourcelock.LeasesResourceLock,
-			ResourceNamespace: NamespaceCloudttySystem,
-			ResourceName:      "cloudshell-controller-manager",
-		},
-		Logs: logs.NewOptions(),
-	}
-	o.initFlags()
+func NewOptions() (*Options, error) {
+	var (
+		leaderElection   componentbaseconfigv1alpha1.LeaderElectionConfiguration
+		clientConnection componentbaseconfigv1alpha1.ClientConnectionConfiguration
+	)
+	componentbaseconfigv1alpha1.RecommendedDefaultLeaderElectionConfiguration(&leaderElection)
+	componentbaseconfigv1alpha1.RecommendedDefaultClientConnectionConfiguration(&clientConnection)
 
-	return o
+	leaderElection.ResourceName = "cloudshell-controller-manager"
+	leaderElection.ResourceNamespace = NamespaceCloudttySystem
+	leaderElection.ResourceLock = resourcelock.LeasesResourceLock
+
+	clientConnection.ContentType = runtime.ContentTypeJSON
+
+	var options Options
+
+	// not need scheme.Convert
+	if err := componentbaseconfigv1alpha1.Convert_v1alpha1_LeaderElectionConfiguration_To_config_LeaderElectionConfiguration(&leaderElection, &options.LeaderElection, nil); err != nil {
+		return nil, err
+	}
+	if err := componentbaseconfigv1alpha1.Convert_v1alpha1_ClientConnectionConfiguration_To_config_ClientConnectionConfiguration(&clientConnection, &options.ClientConnection, nil); err != nil {
+		return nil, err
+	}
+
+	options.Logs = logs.NewOptions()
+	return &options, nil
 }
 
 // initFlags initializes flags by section name.
-func (o *Options) initFlags() {
-	if o.Flags != nil {
-		return
+func (o *Options) Flags() cliflag.NamedFlagSets {
+	nfs := cliflag.NamedFlagSets{}
+	genericfs := nfs.FlagSet("generic")
+
+	genericfs.StringVar(&o.ClientConnection.ContentType, "kube-api-content-type", o.ClientConnection.ContentType, "Content type of requests sent to apiserver.")
+	genericfs.Float32Var(&o.ClientConnection.QPS, "kube-api-qps", o.ClientConnection.QPS, "QPS to use while talking with kubernetes apiserver.")
+	genericfs.Int32Var(&o.ClientConnection.Burst, "kube-api-burst", o.ClientConnection.Burst, "Burst to use while talking with kubernetes apiserver.")
+	genericfs.IntVar(&o.CoreWorkerLimit, "core-worker-limit", 5, "The core limit of worker pool.")
+	genericfs.IntVar(&o.MaxWorkerLimit, "max-worker-limit", 10, "The max limit of worker pool.")
+	genericfs.StringVar(&o.ClouShellImage, "cloudshell-image", "", "The cloudshell image")
+
+	fs := nfs.FlagSet("misc")
+	fs.StringVar(&o.Master, "master", o.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig).")
+	fs.StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig, "Path to kubeconfig file with authorization and master location information.")
+
+	options.BindLeaderElectionFlags(&o.LeaderElection, genericfs)
+	logsapi.AddFlags(o.Logs, nfs.FlagSet("logs"))
+
+	return nfs
+}
+
+func (o *Options) Config() (*config.Config, error) {
+	if filedErr := o.Validate(); filedErr.ToAggregate() != nil {
+		return nil, filedErr.ToAggregate()
 	}
 
-	nfs := cliflag.NamedFlagSets{}
-	generic := nfs.FlagSet("generic")
-	generic.StringVar(&o.BindAddress, "bind-address", defaultBindAddress, "The IP address on which to listen for the --secure-port port.")
-	generic.IntVar(&o.SecurePort, "secure-port", defaultPort, "The secure port on which to serve HTTPS.")
-	generic.StringVar(&o.MetricsBindAddress, "metrics-bind-address", ":8080", "The TCP address that the controller should bind to for serving prometheus metrics(e.g. 127.0.0.1:8088, :8088)")
+	var err error
+	var kubeconfig *rest.Config
+	if len(o.Kubeconfig) == 0 {
+		kubeconfig, err = clientconfig.GetConfig()
+	} else {
+		kubeconfig, err = clientcmd.BuildConfigFromFlags(o.Master, o.Kubeconfig)
+	}
+	if err != nil {
+		return nil, err
+	}
 
-	options.BindLeaderElectionFlags(o.LeaderElection, nfs.FlagSet("leader election"))
+	kubeconfig.ContentConfig.AcceptContentTypes = o.ClientConnection.AcceptContentTypes
+	kubeconfig.ContentConfig.ContentType = o.ClientConnection.ContentType
+	kubeconfig.QPS = o.ClientConnection.QPS
+	kubeconfig.Burst = int(o.ClientConnection.Burst)
 
-	feature.MutableFeatureGate.AddFlag(nfs.FlagSet("feature gate"))
+	client, err := clientset.NewForConfig(rest.AddUserAgent(kubeconfig, CloudShellControllerManagerUserAgent))
+	if err != nil {
+		return nil, err
+	}
 
-	logsapi.AddFlags(o.Logs, nfs.FlagSet("logs"))
-	o.Flags = &nfs
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartStructuredLogging(0)
+	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: client.CoreV1().Events("")})
+	eventRecorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: CloudShellControllerManagerUserAgent})
+
+	runtimeClient, err := runtimeclient.New(kubeconfig, runtimeclient.Options{
+		Scheme: gclient.NewSchema(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	cloudshellClient, err := versioned.NewForConfig(kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config.Config{
+		KubeClient:       client,
+		CloudShellClient: cloudshellClient,
+		Client:           runtimeClient,
+		Kubeconfig:       kubeconfig,
+		EventRecorder:    eventRecorder,
+		CoreWorkerLimit:  o.CoreWorkerLimit,
+		MaxWorkerLimit:   o.MaxWorkerLimit,
+		CloudShellImage:  o.ClouShellImage,
+
+		LeaderElection: o.LeaderElection,
+	}, nil
 }

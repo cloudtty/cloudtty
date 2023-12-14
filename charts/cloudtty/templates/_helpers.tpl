@@ -28,15 +28,8 @@ Return the proper image Registry Secret Names
 {{ include "common.images.pullSecrets" (dict "images" (list .Values.image) "global" .Values.global) }}
 {{- end -}}
 
-{{- define "cloudtty.job.image" -}}
-{{ include "common.images.image" (dict "imageRoot" .Values.jobTemplate.image "global" .Values.global) }}
-{{- end -}}
-
-{{/*
-Return the proper image Registry Secret Names
-*/}}
-{{- define "cloudtty.job.imagePullSecrets" -}}
-{{ include "common.images.pullSecrets" (dict "images" (list .Values.jobTemplate.image) "global" .Values.global) }}
+{{- define "cloudtty.cloudshell.image" -}}
+{{ include "common.images.image" (dict "imageRoot" .Values.cloudshellImage "global" .Values.global) }}
 {{- end -}}
 
 {{- define "cloudtty.operator.featureGates" -}}

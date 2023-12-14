@@ -1,0 +1,27 @@
+# apiVersion: cloudshell.cloudtty.io/v1alpha2
+# kind: CloudShell
+# metadata:
+#   name: cloudshell-sample4
+#   namespace: test
+# spec:
+#   secretRef:
+#     name: "my-kubeconfig"
+#   commandAction: "bash"
+#   ttlSecondsAfterStarted: 100
+#   once: false
+#   cleanup: true
+
+---
+
+apiVersion: cloudshell.cloudtty.io/v1alpha2
+kind: CloudShell
+metadata:
+  name: cloudshell-sample1
+  namespace: cloudtty-system
+spec:
+  secretRef:
+    name: "my-kubeconfig"
+  commandAction: "bash"
+  ttlSecondsAfterStarted: 10000
+  once: false
+  cleanup: true

@@ -22,6 +22,7 @@ import "networking/v1beta1/workload_entry.proto";
 // $description: Describes a collection of workload instances.
 // $location: https://istio.io/docs/reference/config/networking/workload-group.html
 // $aliases: [/docs/reference/config/networking/v1alpha3/workload-group]
+// $mode: none
 
 // `WorkloadGroup` describes a collection of workload instances.
 // It provides a specification that the workload instances can use to bootstrap 
@@ -41,6 +42,40 @@ import "networking/v1beta1/workload_entry.proto";
 // {{<tab name="v1alpha3" category-value="v1alpha3">}}
 // ```yaml
 // apiVersion: networking.istio.io/v1alpha3
+// kind: WorkloadGroup
+// metadata:
+//   name: reviews
+//   namespace: bookinfo
+// spec:
+//   metadata:
+//     labels:
+//       app.kubernetes.io/name: reviews
+//       app.kubernetes.io/version: "1.3.4"
+//   template:
+//     ports:
+//       grpc: 3550
+//       http: 8080
+//     serviceAccount: default
+//   probe:
+//     initialDelaySeconds: 5
+//     timeoutSeconds: 3
+//     periodSeconds: 4
+//     successThreshold: 3
+//     failureThreshold: 3
+//     httpGet:
+//      path: /foo/bar
+//      host: 127.0.0.1
+//      port: 3100
+//      scheme: HTTPS
+//      httpHeaders:
+//      - name: Lit-Header
+//        value: Im-The-Best
+// ```
+// {{</tab>}}
+//
+// {{<tab name="v1beta1" category-value="v1beta1">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
 // kind: WorkloadGroup
 // metadata:
 //   name: reviews

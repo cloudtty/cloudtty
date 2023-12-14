@@ -26,6 +26,6 @@ import (
 
 func main() {
 	ctx := apiserver.SetupSignalContext()
-	code := cli.Run(app.NewManagerCommand(ctx))
+	code := cli.Run(app.NewCloudShellManagerCommand(ctx))
 	os.Exit(code)
 }
