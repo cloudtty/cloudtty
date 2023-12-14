@@ -14,7 +14,7 @@ You can use it anywhere with an internet conneciton and it will be automatically
 > Early user terminals connected to computers were electromechanical teleprinters or teletypewriters (TeleTYpewriter, TTY), which might be the origin of TTY.
 > Gradually, TTY has continued to be used as the name for a text-only console although now this text-only console is a virtual console not a physical console.
 
-<img src="https://github.com/cncf/artwork/blob/master/other/illustrations/ashley-mcnamara/transparent/cncf-cloud-gophers-transparent.png" style="width:600px;" />
+<img src="https://github.com/cncf/artwork/blob/main/other/illustrations/ashley-mcnamara/transparent/cncf-cloud-gophers-transparent.png?raw=true" style="width:600px;" />
 
 **cloudtty is a [Cloud Native Computing Foundation](https://cncf.io/) landscape project.**
 
