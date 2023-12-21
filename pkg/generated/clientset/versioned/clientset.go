@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	cloudshellv1alpha2 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha2"
+	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -29,18 +29,18 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	CloudshellV1alpha2() cloudshellv1alpha2.CloudshellV1alpha2Interface
+	CloudshellV1alpha1() cloudshellv1alpha1.CloudshellV1alpha1Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	cloudshellV1alpha2 *cloudshellv1alpha2.CloudshellV1alpha2Client
+	cloudshellV1alpha1 *cloudshellv1alpha1.CloudshellV1alpha1Client
 }
 
-// CloudshellV1alpha2 retrieves the CloudshellV1alpha2Client
-func (c *Clientset) CloudshellV1alpha2() cloudshellv1alpha2.CloudshellV1alpha2Interface {
-	return c.cloudshellV1alpha2
+// CloudshellV1alpha1 retrieves the CloudshellV1alpha1Client
+func (c *Clientset) CloudshellV1alpha1() cloudshellv1alpha1.CloudshellV1alpha1Interface {
+	return c.cloudshellV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -87,7 +87,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
-	cs.cloudshellV1alpha2, err = cloudshellv1alpha2.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.cloudshellV1alpha1, err = cloudshellv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.cloudshellV1alpha2 = cloudshellv1alpha2.New(c)
+	cs.cloudshellV1alpha1 = cloudshellv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

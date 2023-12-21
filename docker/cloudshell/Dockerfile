@@ -31,11 +31,14 @@ RUN ttydArch="$(uname -m)" && echo "Building arch of $ttydArch.." \
     && mv ttyd.${ttydArch} /usr/local/bin/ttyd \
     && which ttyd
 
-RUN mkdir /root/.kube
-RUN mkdir /usr/lib/ttyd
 COPY --from=builder /app/dist/inline.html /usr/lib/ttyd/index.html
 COPY ./docker/cloudshell/script/reset.sh  /usr/lib/ttyd/
 COPY ./docker/cloudshell/script/startup.sh  /usr/lib/ttyd/
-RUN chmod +x /usr/lib/ttyd/*.sh
 
+RUN mkdir /root/.kube \
+    && chmod +x /usr/lib/ttyd/*.sh \
+    && echo 'source /root/.env' >>~/.bashrc \
+    && echo '' > .env
+
+USER root
 WORKDIR /root

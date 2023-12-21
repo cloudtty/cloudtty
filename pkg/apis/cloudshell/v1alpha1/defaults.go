@@ -1,4 +1,4 @@
-package v1alpha2
+package v1alpha1
 
 import (
 	"github.com/cloudtty/cloudtty/pkg/constants"

@@ -156,7 +156,7 @@ func StartControllers(c *config.Config, stopCh <-chan struct{}) error {
 	pool := worerkpool.New(c.Client, c.CoreWorkerLimit, c.MaxWorkerLimit, podInformer)
 
 	informerFactory := externalversions.NewSharedInformerFactory(c.CloudShellClient, 0)
-	informer := informerFactory.Cloudshell().V1alpha2().CloudShells()
+	informer := informerFactory.Cloudshell().V1alpha1().CloudShells()
 	controller := controllers.New(c.Client, c.Kubeconfig, pool, c.CloudShellImage, informer, podInformer)
 
 	factory.Start(stopCh)

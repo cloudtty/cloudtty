@@ -3,7 +3,9 @@ package controllers
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"net"
 	"os"
 	"reflect"
 	"strings"
@@ -35,11 +37,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	cloudshellv1alpha2 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha2"
+	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
 	"github.com/cloudtty/cloudtty/pkg/constants"
-	cloudshellinformers "github.com/cloudtty/cloudtty/pkg/generated/informers/externalversions/cloudshell/v1alpha2"
-	cloudshellisters "github.com/cloudtty/cloudtty/pkg/generated/listers/cloudshell/v1alpha2"
-	"github.com/cloudtty/cloudtty/pkg/helper"
+	cloudshellinformers "github.com/cloudtty/cloudtty/pkg/generated/informers/externalversions/cloudshell/v1alpha1"
+	cloudshellisters "github.com/cloudtty/cloudtty/pkg/generated/listers/cloudshell/v1alpha1"
 	"github.com/cloudtty/cloudtty/pkg/manifests"
 	util "github.com/cloudtty/cloudtty/pkg/utils"
 	"github.com/cloudtty/cloudtty/pkg/utils/gclient"
@@ -57,13 +58,12 @@ const (
 	// MaxCloudShellBackOff is the max backoff period. Exported for tests.
 	MaxCloudShellBackOff = 5 * time.Second
 
-	KubeConfigPath  = "/root/.kube/config"
-	startScriptPath = "/usr/lib/ttyd/startup.sh"
-	endScriptPath   = "/usr/lib/ttyd/reset.sh"
+	startupScriptPath = "/usr/lib/ttyd/startup.sh"
+	resetScriptPath   = "/usr/lib/ttyd/reset.sh"
 )
 
-// CloudShellController reconciles a CloudShell object
-type CloudShellController struct {
+// Controller reconciles a CloudShell object
+type Controller struct {
 	client.Client
 	config     *rest.Config
 	Scheme     *runtime.Scheme
@@ -79,8 +79,8 @@ type CloudShellController struct {
 }
 
 func New(client client.Client, config *rest.Config, wp *worerkpool.WorkerPool, cloudshellImage string,
-	cloudshellInformer cloudshellinformers.CloudShellInformer, podInformer informercorev1.PodInformer) *CloudShellController {
-	controller := &CloudShellController{
+	cloudshellInformer cloudshellinformers.CloudShellInformer, podInformer informercorev1.PodInformer) *Controller {
+	controller := &Controller{
 		Client:     client,
 		config:     config,
 		Scheme:     gclient.NewSchema(),
@@ -102,8 +102,8 @@ func New(client client.Client, config *rest.Config, wp *worerkpool.WorkerPool, c
 				controller.enqueue(obj)
 			},
 			UpdateFunc: func(oldObj, newObj interface{}) {
-				older := oldObj.(*cloudshellv1alpha2.CloudShell)
-				newer := newObj.(*cloudshellv1alpha2.CloudShell)
+				older := oldObj.(*cloudshellv1alpha1.CloudShell)
+				newer := newObj.(*cloudshellv1alpha1.CloudShell)
 				if !reflect.DeepEqual(older.Spec, newer.Spec) || !newer.DeletionTimestamp.IsZero() {
 					controller.enqueue(newObj)
 				}
@@ -120,13 +120,13 @@ func New(client client.Client, config *rest.Config, wp *worerkpool.WorkerPool, c
 	return controller
 }
 
-func (c *CloudShellController) enqueue(obj interface{}) {
-	cloudshell := obj.(*cloudshellv1alpha2.CloudShell)
+func (c *Controller) enqueue(obj interface{}) {
+	cloudshell := obj.(*cloudshellv1alpha1.CloudShell)
 	key, _ := cache.MetaNamespaceKeyFunc(cloudshell)
 	c.queue.Add(key)
 }
 
-func (c *CloudShellController) processNextItem() bool {
+func (c *Controller) processNextItem() bool {
 	key, quit := c.queue.Get()
 	if quit {
 		return false
@@ -147,7 +147,7 @@ func (c *CloudShellController) processNextItem() bool {
 	return true
 }
 
-func (c *CloudShellController) worker(stopCh <-chan struct{}) {
+func (c *Controller) worker(stopCh <-chan struct{}) {
 	for c.processNextItem() {
 		select {
 		case <-stopCh:
@@ -157,7 +157,7 @@ func (c *CloudShellController) worker(stopCh <-chan struct{}) {
 	}
 }
 
-func (c *CloudShellController) Run(workers int, stopCh <-chan struct{}) {
+func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
@@ -185,7 +185,7 @@ func (c *CloudShellController) Run(workers int, stopCh <-chan struct{}) {
 	wg.Wait()
 }
 
-func (c *CloudShellController) syncHandler(ctx context.Context, key string) (*time.Duration, error) {
+func (c *Controller) syncHandler(ctx context.Context, key string) (*time.Duration, error) {
 	klog.V(4).Infof("Reconciling cloudshell %s", key)
 	startTime := time.Now()
 	defer func() {
@@ -220,7 +220,7 @@ func (c *CloudShellController) syncHandler(ctx context.Context, key string) (*ti
 	return c.syncCloudShell(ctx, cloudShell)
 }
 
-func (c *CloudShellController) syncCloudShell(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell) (*time.Duration, error) {
+func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) (*time.Duration, error) {
 	t := nextRequeueTimeDuration(cloudshell)
 
 	// remove cloudshell while ttl is timeout.
@@ -232,7 +232,7 @@ func (c *CloudShellController) syncCloudShell(ctx context.Context, cloudshell *c
 			return nil, c.Delete(ctx, cloudshell)
 		}
 
-		return nil, c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha2.PhaseCompleted)
+		return nil, c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseCompleted)
 	}
 
 	worker, err := c.GetBindingWorkerFor(cloudshell)
@@ -250,7 +250,7 @@ func (c *CloudShellController) syncCloudShell(ctx context.Context, cloudshell *c
 			CloudShellQueue: c.queue,
 		}
 
-		pod, err := c.workerPool.Borrow(req)
+		worker, err = c.workerPool.Borrow(req)
 		if err != nil {
 			if err == worerkpool.NotWorkerErr {
 				klog.InfoS("wait worker poll to create worker", "cloudshell", klog.KObj(cloudshell))
@@ -261,34 +261,31 @@ func (c *CloudShellController) syncCloudShell(ctx context.Context, cloudshell *c
 			return nil, err
 		}
 
-		cloudshell.SetLabels(map[string]string{constants.CloudshellPodLabelKey: pod.Name})
+		cloudshell.SetLabels(map[string]string{constants.CloudshellPodLabelKey: worker.Name})
 		if err := c.Update(context.TODO(), cloudshell); err != nil {
 			return nil, err
 		}
 	}
 
-	if err = c.StartPodForCloudShell(ctx, cloudshell); err != nil {
-		klog.ErrorS(err, "Failed to start pod for CloudShell", "cloudshell", klog.KObj(cloudshell))
+	url, err := c.CreateRouteRule(ctx, cloudshell, worker)
+	if err != nil {
+		klog.ErrorS(err, "failed to create route rule for cloudshell", "cloudshell", klog.KObj(cloudshell))
 		return nil, err
 	}
 
-	url, err := c.CreateRouteRule(ctx, cloudshell)
-	if err != nil {
+	if err = c.StartupWorkerFor(ctx, cloudshell); err != nil {
+		klog.ErrorS(err, "failed to start pod for cloudshell", "cloudshell", klog.KObj(cloudshell))
 		return nil, err
 	}
-	cloudshell.Status.AccessURL = url
 
 	now := metav1.Now()
+	cloudshell.Status.AccessURL = url
 	cloudshell.Status.LastScheduleTime = &now
 
-	if err := c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha2.PhaseReady); err != nil {
-		return nil, err
-	}
-
-	return t, nil
+	return t, c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseReady)
 }
 
-func nextRequeueTimeDuration(cloudshell *cloudshellv1alpha2.CloudShell) *time.Duration {
+func nextRequeueTimeDuration(cloudshell *cloudshellv1alpha1.CloudShell) *time.Duration {
 	if cloudshell.Spec.TTLSecondsAfterStarted != nil {
 		startTime := metav1.Now()
 		if cloudshell.Status.LastScheduleTime != nil {
@@ -304,14 +301,13 @@ func nextRequeueTimeDuration(cloudshell *cloudshellv1alpha2.CloudShell) *time.Du
 	return nil
 }
 
-// StartPodForCloudShell copy kubeConfig and start ttyd
-func (c *CloudShellController) StartPodForCloudShell(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell) error {
+// StartupWorkerFor copy kubeConfig and start ttyd
+func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	// if secretRef is empty, use the Incluster rest config to generate kubeconfig and restore a secret.
 	// the kubeconfig only work on current cluster.
 	var kubeConfigByte []byte
 	if cloudshell.Spec.SecretRef == nil {
-		var err error
-		kubeConfigByte, err = GenerateKubeconfigInCluster()
+		kubeConfigByte, err := GenerateKubeconfigInCluster()
 		if err != nil {
 			return err
 		}
@@ -331,7 +327,7 @@ func (c *CloudShellController) StartPodForCloudShell(ctx context.Context, clouds
 		if err := c.Client.Create(ctx, secret); err != nil {
 			return err
 		}
-		cloudshell.Spec.SecretRef = &cloudshellv1alpha2.LocalSecretReference{
+		cloudshell.Spec.SecretRef = &cloudshellv1alpha1.LocalSecretReference{
 			Name: secret.Name,
 		}
 	} else {
@@ -340,32 +336,38 @@ func (c *CloudShellController) StartPodForCloudShell(ctx context.Context, clouds
 		if err != nil {
 			return err
 		}
+
 		kubeConfigByte = secret.Data["config"]
 	}
 
-	return c.StartTTYd(ctx, cloudshell, kubeConfigByte)
+	return c.StartupWorker(ctx, cloudshell, kubeConfigByte)
 }
 
-func (c *CloudShellController) StartTTYd(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell, kubeConfigByte []byte) error {
-	// copy kubeConfig
-	echoCommand := fmt.Sprintf("echo '%s' > %s", kubeConfigByte, KubeConfigPath)
-	if err := execCommand(cloudshell, []string{"bash", "-c", echoCommand}, c.config); err != nil {
-		return err
+func (c *Controller) StartupWorker(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell, kubeConfigByte []byte) error {
+	// TODO: Some extra logic in order to upload and download files.
+	var podName, namespace, container string
+	for _, env := range cloudshell.Spec.Env {
+		switch env.Name {
+		case "POD_NAME":
+			podName = env.Value
+		case "POD_NAMESPACE":
+			namespace = env.Value
+		case "CONTAINER":
+			container = env.Value
+		}
 	}
 
 	// start ttyd, ttyd args passed as shell parameter
-	// case: ttydCommand := []string{"/root/startup.sh", "100", "true", "false", "kubectl get po -n default"}
-
-	// TODO: TTLSecondsAfterStarted == nil?
-	ttydCommand := []string{startScriptPath, fmt.Sprint(*cloudshell.Spec.TTLSecondsAfterStarted), fmt.Sprint(cloudshell.Spec.Once), fmt.Sprint(cloudshell.Spec.UrlArg), cloudshell.Spec.CommandAction}
-	if err := execCommand(cloudshell, ttydCommand, c.config); err != nil {
-		return err
+	// case: ttydCommand := []string{"/usr/lib/ttyd/startup.sh", "${KUBECONFIG}" "${ONCE}", "${URLARG}", "${COMMAND}"}
+	ttydCommand := []string{
+		startupScriptPath,
+		string(kubeConfigByte), fmt.Sprint(cloudshell.Spec.Once), fmt.Sprint(cloudshell.Spec.UrlArg),
+		cloudshell.Spec.CommandAction, podName, namespace, container,
 	}
-
-	return nil
+	return execCommand(cloudshell, ttydCommand, c.config)
 }
 
-func (c *CloudShellController) removeFinalizer(cloudshell *cloudshellv1alpha2.CloudShell) error {
+func (c *Controller) removeFinalizer(cloudshell *cloudshellv1alpha1.CloudShell) error {
 	if ctrlutil.RemoveFinalizer(cloudshell, CloudshellControllerFinalizer) {
 		return c.Client.Update(context.TODO(), cloudshell)
 	}
@@ -373,7 +375,7 @@ func (c *CloudShellController) removeFinalizer(cloudshell *cloudshellv1alpha2.Cl
 	return nil
 }
 
-func (c *CloudShellController) ensureCloudShell(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell) error {
+func (c *Controller) ensureCloudShell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	updated := ctrlutil.AddFinalizer(cloudshell, CloudshellControllerFinalizer)
 
 	older := cloudshell.DeepCopy()
@@ -393,71 +395,50 @@ func (c *CloudShellController) ensureCloudShell(ctx context.Context, cloudshell 
 // CreateRouteRule create a service resource in the same namespace of cloudshell no matter what expose model.
 // if the expose model is ingress or virtualService, it will create additional resources, e.g: ingress or virtualService.
 // and the accressUrl will be update.
-func (c *CloudShellController) CreateRouteRule(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell) (string, error) {
-	service, err := c.GetServiceForCloudshell(ctx, cloudshell.Namespace, cloudshell)
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return "", err
-		}
-		if service, err = c.CreateCloudShellService(ctx, cloudshell); err != nil {
-			return "", err
-		}
-	}
-
+func (c *Controller) CreateRouteRule(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell, worker *corev1.Pod) (string, error) {
 	var accessURL string
 	switch cloudshell.Spec.ExposeMode {
-	case cloudshellv1alpha2.ExposureServiceClusterIP:
-		accessURL = fmt.Sprintf("%s:%d", service.Spec.ClusterIP, constants.DefaultServicePort)
-	case "", cloudshellv1alpha2.ExposureServiceNodePort:
+	case "", cloudshellv1alpha1.ExposureServiceNodePort:
 		// Default(No explicit `ExposeMode` specified in CR) mode is Nodeport
 		host, err := c.GetMasterNodeIP(ctx)
 		if err != nil {
-			klog.InfoS("Unable to get master node IP addr", "cloudshell", klog.KObj(cloudshell), "err", err)
+			klog.ErrorS(err, "unable to get contro plane node IP addr", "cloudshell", klog.KObj(cloudshell))
+		}
+
+		service, err := c.CreateCloudShellService(cloudshell, worker)
+		if err != nil {
+			return "", fmt.Errorf("failed to create service for cloudshell, err: %v", err)
 		}
 
 		var nodePort int32
-		// TODO: nodePort may be blank due to delay filled by k8s, should `ctrl.Result{RequeueAfter: 5}, nil`
-		if service.Spec.Type == corev1.ServiceTypeNodePort {
-			for _, port := range service.Spec.Ports {
-				if port.NodePort != 0 {
-					nodePort = port.NodePort
-					break
-				}
+		for _, port := range service.Spec.Ports {
+			if port.NodePort != 0 {
+				nodePort = port.NodePort
+				break
 			}
 		}
 		accessURL = fmt.Sprintf("%s:%d", host, nodePort)
-	case cloudshellv1alpha2.ExposureIngress:
-		if err := c.CreateIngressForCloudshell(ctx, service, cloudshell); err != nil {
-			klog.ErrorS(err, "failed create ingress for cloudshell", "cloudshell", klog.KObj(cloudshell))
+	case cloudshellv1alpha1.ExposureIngress:
+		if err := c.CreateIngressForCloudshell(ctx, worker.GetName(), cloudshell); err != nil {
+			klog.ErrorS(err, "failed to create ingress for cloudshell", "cloudshell", klog.KObj(cloudshell))
 			return "", err
 		}
+
 		accessURL = SetRouteRulePath(cloudshell)
-	case cloudshellv1alpha2.ExposureVirtualService:
-		if err := c.CreateVirtualServiceForCloudshell(ctx, service, cloudshell); err != nil {
-			klog.ErrorS(err, "failed create virtualservice for cloudshell", "cloudshell", klog.KObj(cloudshell))
+	case cloudshellv1alpha1.ExposureVirtualService:
+		if err := c.CreateVirtualServiceForCloudshell(ctx, worker.GetName(), cloudshell); err != nil {
+			klog.ErrorS(err, "failed to create virtualservice for cloudshell", "cloudshell", klog.KObj(cloudshell))
 			return "", err
 		}
+
 		accessURL = SetRouteRulePath(cloudshell)
 	}
 
 	return accessURL, nil
 }
 
-// GetPodForCloudshell to find pod of cloudshell according to labels ""cloudshell.cloudtty.io/owner-name"".
-func (c *CloudShellController) GetPodForCloudshell(ctx context.Context, namespace string, cloudshell *cloudshellv1alpha2.CloudShell) (*corev1.Pod, error) {
-	pod := &corev1.Pod{}
-	podName, ok := cloudshell.Labels[constants.CloudshellPodLabelKey]
-	if ok {
-		if err := c.Get(context.TODO(), client.ObjectKey{Namespace: cloudshell.Namespace, Name: podName}, pod); err != nil {
-			return pod, err
-		}
-	}
-
-	return pod, nil
-}
-
 // GetMasterNodeIP could find the one master node IP.
-func (c *CloudShellController) GetMasterNodeIP(ctx context.Context) (string, error) {
+func (c *Controller) GetMasterNodeIP(ctx context.Context) (string, error) {
 	// the label "node-role.kubernetes.io/master" be removed in k8s 1.24, and replace with
 	// "node-role.kubernetes.io/cotrol-plane".
 	nodes := &corev1.NodeList{}
@@ -479,45 +460,19 @@ func (c *CloudShellController) GetMasterNodeIP(ctx context.Context) (string, err
 	return "", nil
 }
 
-// GetServiceForCloudshell to find service of cloudshell according to labels "cloudshell.cloudtty.io/owner-name".
-func (c *CloudShellController) GetServiceForCloudshell(ctx context.Context, namespace string, cloudshell *cloudshellv1alpha2.CloudShell) (*corev1.Service, error) {
-	var services corev1.ServiceList
-	if err := c.List(ctx, &services, client.InNamespace(namespace), client.MatchingLabels{constants.WorkerOwnerLabelKey: cloudshell.Name}); err != nil {
-		return nil, err
-	}
-	if len(services.Items) > 1 {
-		klog.InfoS("found multiple cloudshell service", "cloudshell", klog.KObj(cloudshell))
-		return nil, errors.New("found multiple cloudshell services")
-	}
-	if len(services.Items) == 0 {
-		return nil, apierrors.NewNotFound(corev1.Resource("services"), fmt.Sprintf("cloudshell-%s", cloudshell.Name))
-	}
-	return &services.Items[0], nil
-}
-
 // CreateCloudShellService Create service resource for cloudshell, the service type is either ClusterIP, NodePort,
 // Ingress or virtualService. if the expose model is ingress or virtualService. it will create clusterIP type service.
-func (c *CloudShellController) CreateCloudShellService(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell) (*corev1.Service, error) {
-	serviceType := cloudshell.Spec.ExposeMode
-	if len(serviceType) == 0 {
-		serviceType = cloudshellv1alpha2.ExposureServiceNodePort
-	}
-	// if ExposeMode is ingress or vituralService, the svc type should be ClusterIP.
-	if serviceType == cloudshellv1alpha2.ExposureIngress ||
-		serviceType == cloudshellv1alpha2.ExposureVirtualService {
-		serviceType = cloudshellv1alpha2.ExposureServiceClusterIP
-	}
-
+func (c *Controller) CreateCloudShellService(cloudshell *cloudshellv1alpha1.CloudShell, worker *corev1.Pod) (*corev1.Service, error) {
 	serviceBytes, err := util.ParseTemplate(manifests.ServiceTmplV1, struct {
 		Name      string
 		Namespace string
-		Owner     string
+		Worker    string
 		Type      string
 	}{
 		Name:      fmt.Sprintf("cloudshell-%s", cloudshell.Name),
-		Namespace: cloudshell.Namespace,
-		Owner:     cloudshell.GetName(),
-		Type:      string(serviceType),
+		Namespace: worker.GetNamespace(),
+		Worker:    worker.GetName(),
+		Type:      string(corev1.ServiceTypeNodePort),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse cloudshell service manifest")
@@ -529,6 +484,7 @@ func (c *CloudShellController) CreateCloudShellService(ctx context.Context, clou
 		klog.ErrorS(err, "failed to decode service manifest", "cloudshell", klog.KObj(cloudshell))
 		return nil, err
 	}
+
 	svc := obj.(*corev1.Service)
 	svc.SetLabels(map[string]string{constants.WorkerOwnerLabelKey: cloudshell.Name})
 
@@ -537,35 +493,40 @@ func (c *CloudShellController) CreateCloudShellService(ctx context.Context, clou
 		return nil, err
 	}
 
-	if err := c.Create(ctx, svc); err != nil {
-		return nil, err
-	}
-	return svc, nil
+	return svc, util.CreateOrUpdateService(c.Client, svc)
 }
 
 // CreateIngressForCloudshell create ingress for cloudshell, if there isn't an ingress controller server
 // in the cluster, the ingress is still not working. before create ingress, there's must a service
 // as the ingress backend service. all of services should be loaded in an ingress "cloudshell-ingress".
-func (c *CloudShellController) CreateIngressForCloudshell(ctx context.Context, service *corev1.Service, cloudshell *cloudshellv1alpha2.CloudShell) error {
+func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service string, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	ingress := &networkingv1.Ingress{}
 	objectKey := IngressNamespacedName(cloudshell)
-	err := c.Get(ctx, objectKey, ingress)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
 
-	// if there is no ingress in the cluster, create the base ingress.
-	if ingress != nil && apierrors.IsNotFound(err) {
+	if err := c.Get(ctx, objectKey, ingress); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
+
 		var ingressClassName string
 		if cloudshell.Spec.IngressConfig != nil && len(cloudshell.Spec.IngressConfig.IngressClassName) > 0 {
 			ingressClassName = cloudshell.Spec.IngressConfig.IngressClassName
 		}
 
 		// set default path prefix.
-		rulePath := SetRouteRulePath(cloudshell)
-		ingressTemplateValue := helper.NewIngressTemplateValue(objectKey, ingressClassName, service.Name, rulePath)
-		ingressBytes, err := util.ParseTemplate(manifests.IngressTmplV1, ingressTemplateValue)
-
+		ingressBytes, err := util.ParseTemplate(manifests.IngressTmplV1, struct {
+			Name             string
+			Namespace        string
+			IngressClassName string
+			Path             string
+			ServiceName      string
+		}{
+			Name:             objectKey.Name,
+			Namespace:        objectKey.Namespace,
+			IngressClassName: ingressClassName,
+			ServiceName:      service,
+			Path:             SetRouteRulePath(cloudshell),
+		})
 		if err != nil {
 			return errors.Wrap(err, "failed to parse cloudshell ingress manifest")
 		}
@@ -590,13 +551,14 @@ func (c *CloudShellController) CreateIngressForCloudshell(ctx context.Context, s
 		Path:     SetRouteRulePath(cloudshell),
 		Backend: networkingv1.IngressBackend{
 			Service: &networkingv1.IngressServiceBackend{
-				Name: service.Name,
+				Name: service,
 				Port: networkingv1.ServiceBackendPort{
 					Number: 7681,
 				},
 			},
 		},
 	})
+
 	// TODO: All paths will be rewritten here
 	ans := ingress.GetAnnotations()
 	if ans == nil {
@@ -607,9 +569,43 @@ func (c *CloudShellController) CreateIngressForCloudshell(ctx context.Context, s
 	return c.Update(ctx, ingress)
 }
 
+func (c *Controller) CreateServiceFor(ctx context.Context, worker *corev1.Pod) error {
+	serviceBytes, err := util.ParseTemplate(manifests.ServiceTmplV1, struct {
+		Name      string
+		Namespace string
+		Worker    string
+		Type      string
+	}{
+		Name:      worker.GetName(),
+		Namespace: worker.GetNamespace(),
+		Worker:    worker.GetName(),
+		Type:      string(corev1.ServiceTypeClusterIP),
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to parse service manifest")
+	}
+
+	decoder := scheme.Codecs.UniversalDeserializer()
+	obj, _, err := decoder.Decode(serviceBytes, nil, nil)
+	if err != nil {
+		klog.ErrorS(err, "failed to decode service manifest", "worker", klog.KObj(worker))
+		return err
+	}
+
+	svc := obj.(*corev1.Service)
+	svc.SetLabels(map[string]string{constants.WorkerOwnerLabelKey: worker.Name})
+
+	// set reference for service, once the cloudshell is deleted, the service is alse deleted.
+	if err := ctrlutil.SetControllerReference(worker, svc, c.Scheme); err != nil {
+		return err
+	}
+
+	return util.CreateOrUpdateService(c.Client, svc)
+}
+
 // CreateVirtualServiceForCloudshell create a virtualService resource in the cluster. if there
 // is no istio server be deployed in the cluster. will not create the resource.
-func (c *CloudShellController) CreateVirtualServiceForCloudshell(ctx context.Context, service *corev1.Service, cloudshell *cloudshellv1alpha2.CloudShell) error {
+func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, service string, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	config := cloudshell.Spec.VirtualServiceConfig
 	if config == nil {
 		return errors.New("unable create virtualservice, missing configuration options")
@@ -620,23 +616,32 @@ func (c *CloudShellController) CreateVirtualServiceForCloudshell(ctx context.Con
 	objectKey := VsNamespacedName(cloudshell)
 	virtualService := &istionetworkingv1beta1.VirtualService{}
 
-	err := c.Get(ctx, objectKey, virtualService)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
+	if err := c.Get(ctx, objectKey, virtualService); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 
-	// if there is not virtualService in the cluster, create the base virtualService.
-	if virtualService != nil && apierrors.IsNotFound(err) {
-		rulePath := SetRouteRulePath(cloudshell)
-		virtualServiceTemplateValue := helper.NewVirtualServiceTemplateValue(objectKey, config, service.Name, rulePath)
-		vitualServiceBytes, err := util.ParseTemplate(manifests.VirtualServiceV1Beta1, virtualServiceTemplateValue)
+		// if there is not virtualService in the cluster, create the base virtualService.
+		vitualServiceBytes, err := util.ParseTemplate(manifests.VirtualServiceV1Beta1, struct {
+			Name        string
+			Namespace   string
+			ExportTo    string
+			Gateway     string
+			Path        string
+			ServiceName string
+		}{
+			Name:        objectKey.Name,
+			Namespace:   objectKey.Namespace,
+			ExportTo:    config.ExportTo,
+			Gateway:     config.Gateway,
+			Path:        SetRouteRulePath(cloudshell),
+			ServiceName: service,
+		})
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse cloudshell [%s] virtualservice", cloudshell.Name)
 		}
 
-		scheme := runtime.NewScheme()
-		istionetworkingv1beta1.AddToScheme(scheme)
-		decoder := serializer.NewCodecFactory(scheme).UniversalDeserializer()
+		decoder := serializer.NewCodecFactory(c.Scheme).UniversalDeserializer()
 		obj, _, err := decoder.Decode(vitualServiceBytes, nil, nil)
 		if err != nil {
 			klog.ErrorS(err, "failed to decode virtualservice manifest", "cloudshell", klog.KObj(cloudshell))
@@ -651,14 +656,14 @@ func (c *CloudShellController) CreateVirtualServiceForCloudshell(ctx context.Con
 	// there is a virtualService in the cluster, add a destination to it.
 	newHttpRoute := virtualService.Spec.Http[0].DeepCopy()
 	newHttpRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: SetRouteRulePath(cloudshell)}
-	newHttpRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service.Name, objectKey.Namespace)
+	newHttpRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
 
 	virtualService.Spec.Http = append(virtualService.Spec.Http, newHttpRoute)
 	return c.Update(ctx, virtualService)
 }
 
 // UpdateCloudshellStatus update the clodushell status.
-func (c *CloudShellController) UpdateCloudshellStatus(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell, phase string) error {
+func (c *Controller) UpdateCloudshellStatus(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell, phase string) error {
 	firstTry := true
 	cloudshell.Status.Phase = phase
 	status := cloudshell.Status
@@ -683,14 +688,14 @@ func (c *CloudShellController) UpdateCloudshellStatus(ctx context.Context, cloud
 	})
 }
 
-func (c *CloudShellController) removeCloudshell(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell) error {
+func (c *Controller) removeCloudshell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	worker, err := c.GetBindingWorkerFor(cloudshell)
 	if err != nil {
 		return err
 	}
 
 	if worker != nil {
-		if err = c.resetPod(ctx, cloudshell); err != nil {
+		if err = c.resetWorker(ctx, cloudshell); err != nil {
 			klog.ErrorS(err, "failed reset worker")
 		}
 		if err := c.workerPool.Back(worker); err != nil {
@@ -709,15 +714,20 @@ func (c *CloudShellController) removeCloudshell(ctx context.Context, cloudshell 
 	return c.removeFinalizer(cloudshell)
 }
 
+// resetWorker cleanup the kubeConfig and kill ttyd
+func (c *Controller) resetWorker(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
+	return execCommand(cloudshell, []string{resetScriptPath}, c.config)
+}
+
 // removeCloudshell remove the cloudshell, at the same time, update addition resource.
 // i.g: ingress or vitualService. if all of cloudshells was removed, it will delete the
 // ingress or vitualService.
-func (c *CloudShellController) removeCloudshellRoute(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell) error {
+func (c *Controller) removeCloudshellRoute(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	// delete route rule.
 	switch cloudshell.Spec.ExposeMode {
-	case "", cloudshellv1alpha2.ExposureServiceClusterIP, cloudshellv1alpha2.ExposureServiceNodePort:
+	case "", cloudshellv1alpha1.ExposureServiceClusterIP, cloudshellv1alpha1.ExposureServiceNodePort:
 		// TODO: whether to delete ownReference resource.
-	case cloudshellv1alpha2.ExposureIngress:
+	case cloudshellv1alpha1.ExposureIngress:
 		ingress := &networkingv1.Ingress{}
 		if err := c.Get(ctx, IngressNamespacedName(cloudshell), ingress); err != nil {
 			if apierrors.IsNotFound(err) {
@@ -740,7 +750,7 @@ func (c *CloudShellController) removeCloudshellRoute(ctx context.Context, clouds
 			return c.Delete(ctx, ingress)
 		}
 		return c.Update(ctx, ingress)
-	case cloudshellv1alpha2.ExposureVirtualService:
+	case cloudshellv1alpha1.ExposureVirtualService:
 		virtualService := &istionetworkingv1beta1.VirtualService{}
 		if err := c.Get(ctx, VsNamespacedName(cloudshell), virtualService); err != nil {
 			if apierrors.IsNotFound(err) {
@@ -774,7 +784,7 @@ func (c *CloudShellController) removeCloudshellRoute(ctx context.Context, clouds
 }
 
 // SetRouteRulePath return access url according to cloudshell.
-func SetRouteRulePath(cloudshell *cloudshellv1alpha2.CloudShell) string {
+func SetRouteRulePath(cloudshell *cloudshellv1alpha1.CloudShell) string {
 	var pathPrefix string
 	if len(cloudshell.Spec.PathPrefix) != 0 {
 		pathPrefix = cloudshell.Spec.PathPrefix
@@ -793,7 +803,7 @@ func SetRouteRulePath(cloudshell *cloudshellv1alpha2.CloudShell) string {
 }
 
 // IngressNamespacedName return a namespacedName accroding to ingressConfig.
-func IngressNamespacedName(cloudshell *cloudshellv1alpha2.CloudShell) types.NamespacedName {
+func IngressNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.NamespacedName {
 	// set custom name and namespace to ingress.
 	config := cloudshell.Spec.IngressConfig
 	ingressName := constants.DefaultIngressName
@@ -810,7 +820,7 @@ func IngressNamespacedName(cloudshell *cloudshellv1alpha2.CloudShell) types.Name
 }
 
 // VsNamespacedName return a namespacedName accroding to virtaulServiceConfig.
-func VsNamespacedName(cloudshell *cloudshellv1alpha2.CloudShell) types.NamespacedName {
+func VsNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.NamespacedName {
 	// set custom name and namespace to ingress.
 	config := cloudshell.Spec.VirtualServiceConfig
 	vsName := constants.DefaultVirtualServiceName
@@ -844,16 +854,23 @@ func GenerateKubeconfigInCluster() ([]byte, error) {
 		return nil, err
 	}
 
-	rootCA, err := os.ReadFile(rootCAFile)
+	rootCa, err := os.ReadFile(rootCAFile)
 	if err != nil {
 		return nil, err
 	}
 
-	kubeConfigTemplateValue := helper.NewKubeConfigTemplateValue(host, port, string(token), rootCA)
-	return util.ParseTemplate(manifests.KubeconfigTmplV1, kubeConfigTemplateValue)
+	return util.ParseTemplate(manifests.KubeconfigTmplV1, struct {
+		CAData string
+		Server string
+		Token  string
+	}{
+		Server: "https://" + net.JoinHostPort(host, port),
+		CAData: base64.StdEncoding.EncodeToString(rootCa),
+		Token:  string(token),
+	})
 }
 
-func (c *CloudShellController) GetBindingWorkerFor(cloudshell *cloudshellv1alpha2.CloudShell) (*corev1.Pod, error) {
+func (c *Controller) GetBindingWorkerFor(cloudshell *cloudshellv1alpha1.CloudShell) (*corev1.Pod, error) {
 	podName := cloudshell.Labels[constants.CloudshellPodLabelKey]
 	if len(podName) == 0 {
 		return nil, nil
@@ -870,7 +887,7 @@ func (c *CloudShellController) GetBindingWorkerFor(cloudshell *cloudshellv1alpha
 	return pod, nil
 }
 
-func execCommand(cloudshell *cloudshellv1alpha2.CloudShell, command []string, config *rest.Config) error {
+func execCommand(cloudshell *cloudshellv1alpha1.CloudShell, command []string, config *rest.Config) error {
 	config.GroupVersion = &corev1.SchemeGroupVersion
 	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
 	config.APIPath = "/api"
@@ -905,15 +922,5 @@ func execCommand(cloudshell *cloudshellv1alpha2.CloudShell, command []string, co
 		klog.ErrorS(err, "failed to run command")
 		return err
 	}
-	return nil
-}
-
-// resetPod cleanup the kubeConfig and kill ttyd
-func (c *CloudShellController) resetPod(ctx context.Context, cloudshell *cloudshellv1alpha2.CloudShell) error {
-	cleanupCommand := []string{endScriptPath}
-	if err := execCommand(cloudshell, cleanupCommand, c.config); err != nil {
-		return err
-	}
-
 	return nil
 }

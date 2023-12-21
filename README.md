@@ -94,7 +94,7 @@ Most users need more than just the basic `kubectl` tools to manage their cluster
 - Modify [Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example).
 
   ```shell
-  FROM ghcr.io/cloudtty/cloudshell:v0.5.0
+  FROM ghcr.io/cloudtty/cloudshell:v0.6.0
 
   RUN curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-amd64.tgz \
       && tar -zxf kubectl-karmada-linux-amd64.tgz \

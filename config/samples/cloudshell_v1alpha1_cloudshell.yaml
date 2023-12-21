@@ -5,8 +5,7 @@ metadata:
 spec:
   secretRef:
     name: "my-kubeconfig"
-  runAsUser: "root"
   commandAction: "bash"
   ttl: 500
   once: false
-  image: ghcr.io/cloudtty/cloudshell:v0.5.0
+  image: release-ci.daocloud.io/cloudtty/cloudshell:v0.6.0
