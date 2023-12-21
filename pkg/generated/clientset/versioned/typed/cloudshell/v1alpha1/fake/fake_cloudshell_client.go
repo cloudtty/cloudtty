@@ -18,22 +18,22 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha2 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha2"
+	v1alpha1 "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned/typed/cloudshell/v1alpha1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeCloudshellV1alpha2 struct {
+type FakeCloudshellV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeCloudshellV1alpha2) CloudShells(namespace string) v1alpha2.CloudShellInterface {
+func (c *FakeCloudshellV1alpha1) CloudShells(namespace string) v1alpha1.CloudShellInterface {
 	return &FakeCloudShells{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeCloudshellV1alpha2) RESTClient() rest.Interface {
+func (c *FakeCloudshellV1alpha1) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }

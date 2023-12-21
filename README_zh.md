@@ -90,7 +90,7 @@ CloudTTY 的入门比较简单，请参照以下步骤进行安装和使用。
 * 修改 [Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
 
   ```shell
-  FROM ghcr.io/cloudtty/cloudshell:v0.5.0
+  FROM ghcr.io/cloudtty/cloudshell:v0.6.0
 
   RUN curl -fsSLO https://github.com/karmada-io/karmada/releases/download/v1.2.0/kubectl-karmada-linux-amd64.tgz \
       && tar -zxf kubectl-karmada-linux-amd64.tgz \
@@ -156,7 +156,7 @@ kubectl create secret generic my-kubeconfig --from-file=kube.config
 * 修改 [Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
 
   ```shell
-  FROM ghcr.io/cloudtty/cloudshell:v0.5.2
+  FROM ghcr.io/cloudtty/cloudshell:v0.6.0
 
   RUN curl -fsSLO https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell \
       && chmod +x ./kubectl-node_shell \

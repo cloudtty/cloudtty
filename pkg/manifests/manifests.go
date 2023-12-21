@@ -27,7 +27,7 @@ spec:
   containers:
   - name: web-tty
     image: {{ .Image }}
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     command:
     - /bin/bash
     - -ec
@@ -53,7 +53,7 @@ spec:
     protocol: TCP
     targetPort: 7681
   selector:
-    worker.cloudtty.io/owner-name: {{ .Owner }}
+    worker.cloudtty.io/name: {{ .Worker }}
   type: {{ .Type }}
 `
 

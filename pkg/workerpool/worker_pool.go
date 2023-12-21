@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -24,11 +25,13 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	cloudshellv1alpha2 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha2"
+	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
 	"github.com/cloudtty/cloudtty/pkg/constants"
 	"github.com/cloudtty/cloudtty/pkg/manifests"
 	util "github.com/cloudtty/cloudtty/pkg/utils"
+	"github.com/cloudtty/cloudtty/pkg/utils/gclient"
 )
 
 var (
@@ -47,6 +50,7 @@ type WorkerPool struct {
 	maxWorkerLimit     int
 	workerQueue        Interface
 	requestQueue       Interface
+	scheme             *runtime.Scheme
 	matchRequestSignal chan struct{}
 
 	scaleInQueueDuration time.Duration
@@ -74,6 +78,7 @@ func New(client client.Client, coreWorkerLimit, maxWorkerLimit int, podInformer 
 		coreWorkerLimit:      coreWorkerLimit,
 		maxWorkerLimit:       maxWorkerLimit,
 		matchRequestSignal:   make(chan struct{}),
+		scheme:               gclient.NewSchema(),
 		scaleInQueueDuration: DefaultScaleInWorkerQueueDuration,
 
 		queue: workqueue.NewRateLimitingQueue(
@@ -257,7 +262,7 @@ func (w *WorkerPool) handlerandleRequestQueue() {
 				}
 			}
 		} else {
-			cloudshell := &cloudshellv1alpha2.CloudShell{}
+			cloudshell := &cloudshellv1alpha1.CloudShell{}
 			if err = w.Get(context.TODO(), client.ObjectKey{Namespace: req.Namespace, Name: req.Cloudshell}, cloudshell); err != nil {
 				if apierrors.IsNotFound(err) {
 					w.requestQueue.Remove(req)
@@ -471,7 +476,7 @@ func (w *WorkerPool) createWorker(req *Request) error {
 	podBytes, err := util.ParseTemplate(manifests.PodTmplV1, struct {
 		Name, Namespace, Image string
 	}{
-		Name:      fmt.Sprintf("cloudshell-worker-%s", rand.String(5)),
+		Name:      fmt.Sprintf("cloudshell-worker-%s", rand.String(10)),
 		Namespace: req.Namespace,
 		Image:     req.Image,
 	})
@@ -488,12 +493,50 @@ func (w *WorkerPool) createWorker(req *Request) error {
 	pod := obj.(*corev1.Pod)
 
 	pod.SetLabels(map[string]string{
-		constants.WorkerOwnerLabelKey: "", constants.WorkerRequestLabelKey: req.Cloudshell,
+		constants.WorkerOwnerLabelKey: "", constants.WorkerRequestLabelKey: req.Cloudshell, constants.WorkerNameLabelKey: pod.GetName(),
 	})
 
 	controllerutil.AddFinalizer(pod, ControllerFinalizer)
 
-	return w.Create(context.TODO(), pod)
+	if err := w.Create(context.TODO(), pod); err != nil {
+		return err
+	}
+
+	return w.CreateServiceFor(context.TODO(), pod)
+}
+
+func (w *WorkerPool) CreateServiceFor(ctx context.Context, worker *corev1.Pod) error {
+	serviceBytes, err := util.ParseTemplate(manifests.ServiceTmplV1, struct {
+		Name      string
+		Namespace string
+		Worker    string
+		Type      string
+	}{
+		Name:      worker.GetName(),
+		Namespace: worker.GetNamespace(),
+		Worker:    worker.GetName(),
+		Type:      string(corev1.ServiceTypeClusterIP),
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to parse service manifest")
+	}
+
+	decoder := scheme.Codecs.UniversalDeserializer()
+	obj, _, err := decoder.Decode(serviceBytes, nil, nil)
+	if err != nil {
+		klog.ErrorS(err, "failed to decode service manifest", "worker", klog.KObj(worker))
+		return err
+	}
+
+	svc := obj.(*corev1.Service)
+	svc.SetLabels(map[string]string{constants.WorkerOwnerLabelKey: worker.Name})
+
+	// set reference for service, once the cloudshell is deleted, the service is alse deleted.
+	if err := ctrlutil.SetControllerReference(worker, svc, w.scheme); err != nil {
+		return err
+	}
+
+	return util.CreateOrUpdateService(w.Client, svc)
 }
 
 func (w *WorkerPool) deleteWorker(worker *corev1.Pod) error {

@@ -51,15 +51,9 @@ spec:
           {{- end }}
           {{- if .Values.livenessProbe.enabled}}
           livenessProbe: {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
-            httpGet:
-              path: /healthz
-              port: 10357
           {{- end }}
           {{- if .Values.readinessProbe.enabled}}
           readinessProbe: {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
-            httpGet:
-              path: /readyz
-              port: 10357
           {{- end }}
       {{- if .Values.affinity }}
       affinity: {{- include "common.tplvalues.render" (dict "value" .Values.affinity "context" $) | nindent 8 }}

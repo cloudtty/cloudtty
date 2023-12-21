@@ -5,13 +5,14 @@ const (
 	DefaultIngressName        = "cloudshell-ingress"
 	DefaultVirtualServiceName = "cloudshell-virtualService"
 	DefaultServicePort        = 7681
-	DefaultTtydImage          = "ghcr.io/cloudtty/cloudshell:v0.5.8"
+	DefaultTtydImage          = "ghcr.io/cloudtty/cloudshell:v0.6.0"
 
 	CloudshellPodLabelKey = "cloudshell.cloudtty.io/pod-name"
 
 	WorkerOwnerLabelKey        = "worker.cloudtty.io/owner-name"
 	WorkerRequestLabelKey      = "worker.cloudtty.io/request"
 	WorkerBindingCountLabelKey = "worker.cloudtty.io/binding-count"
+	WorkerNameLabelKey         = "worker.cloudtty.io/name"
 
 	PodTemplatePath = "/etc/cloudtty/pod-temp.yaml"
 )

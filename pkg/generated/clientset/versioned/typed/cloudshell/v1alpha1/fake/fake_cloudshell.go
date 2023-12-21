@@ -20,7 +20,7 @@ package fake
 import (
 	"context"
 
-	v1alpha2 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha2"
+	v1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
@@ -30,29 +30,29 @@ import (
 
 // FakeCloudShells implements CloudShellInterface
 type FakeCloudShells struct {
-	Fake *FakeCloudshellV1alpha2
+	Fake *FakeCloudshellV1alpha1
 	ns   string
 }
 
-var cloudshellsResource = v1alpha2.SchemeGroupVersion.WithResource("cloudshells")
+var cloudshellsResource = v1alpha1.SchemeGroupVersion.WithResource("cloudshells")
 
-var cloudshellsKind = v1alpha2.SchemeGroupVersion.WithKind("CloudShell")
+var cloudshellsKind = v1alpha1.SchemeGroupVersion.WithKind("CloudShell")
 
 // Get takes name of the cloudShell, and returns the corresponding cloudShell object, and an error if there is any.
-func (c *FakeCloudShells) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.CloudShell, err error) {
+func (c *FakeCloudShells) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.CloudShell, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(cloudshellsResource, c.ns, name), &v1alpha2.CloudShell{})
+		Invokes(testing.NewGetAction(cloudshellsResource, c.ns, name), &v1alpha1.CloudShell{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.CloudShell), err
+	return obj.(*v1alpha1.CloudShell), err
 }
 
 // List takes label and field selectors, and returns the list of CloudShells that match those selectors.
-func (c *FakeCloudShells) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.CloudShellList, err error) {
+func (c *FakeCloudShells) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.CloudShellList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(cloudshellsResource, cloudshellsKind, c.ns, opts), &v1alpha2.CloudShellList{})
+		Invokes(testing.NewListAction(cloudshellsResource, cloudshellsKind, c.ns, opts), &v1alpha1.CloudShellList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (c *FakeCloudShells) List(ctx context.Context, opts v1.ListOptions) (result
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1alpha2.CloudShellList{ListMeta: obj.(*v1alpha2.CloudShellList).ListMeta}
-	for _, item := range obj.(*v1alpha2.CloudShellList).Items {
+	list := &v1alpha1.CloudShellList{ListMeta: obj.(*v1alpha1.CloudShellList).ListMeta}
+	for _, item := range obj.(*v1alpha1.CloudShellList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -79,43 +79,43 @@ func (c *FakeCloudShells) Watch(ctx context.Context, opts v1.ListOptions) (watch
 }
 
 // Create takes the representation of a cloudShell and creates it.  Returns the server's representation of the cloudShell, and an error, if there is any.
-func (c *FakeCloudShells) Create(ctx context.Context, cloudShell *v1alpha2.CloudShell, opts v1.CreateOptions) (result *v1alpha2.CloudShell, err error) {
+func (c *FakeCloudShells) Create(ctx context.Context, cloudShell *v1alpha1.CloudShell, opts v1.CreateOptions) (result *v1alpha1.CloudShell, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(cloudshellsResource, c.ns, cloudShell), &v1alpha2.CloudShell{})
+		Invokes(testing.NewCreateAction(cloudshellsResource, c.ns, cloudShell), &v1alpha1.CloudShell{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.CloudShell), err
+	return obj.(*v1alpha1.CloudShell), err
 }
 
 // Update takes the representation of a cloudShell and updates it. Returns the server's representation of the cloudShell, and an error, if there is any.
-func (c *FakeCloudShells) Update(ctx context.Context, cloudShell *v1alpha2.CloudShell, opts v1.UpdateOptions) (result *v1alpha2.CloudShell, err error) {
+func (c *FakeCloudShells) Update(ctx context.Context, cloudShell *v1alpha1.CloudShell, opts v1.UpdateOptions) (result *v1alpha1.CloudShell, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(cloudshellsResource, c.ns, cloudShell), &v1alpha2.CloudShell{})
+		Invokes(testing.NewUpdateAction(cloudshellsResource, c.ns, cloudShell), &v1alpha1.CloudShell{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.CloudShell), err
+	return obj.(*v1alpha1.CloudShell), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeCloudShells) UpdateStatus(ctx context.Context, cloudShell *v1alpha2.CloudShell, opts v1.UpdateOptions) (*v1alpha2.CloudShell, error) {
+func (c *FakeCloudShells) UpdateStatus(ctx context.Context, cloudShell *v1alpha1.CloudShell, opts v1.UpdateOptions) (*v1alpha1.CloudShell, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(cloudshellsResource, "status", c.ns, cloudShell), &v1alpha2.CloudShell{})
+		Invokes(testing.NewUpdateSubresourceAction(cloudshellsResource, "status", c.ns, cloudShell), &v1alpha1.CloudShell{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.CloudShell), err
+	return obj.(*v1alpha1.CloudShell), err
 }
 
 // Delete takes name of the cloudShell and deletes it. Returns an error if one occurs.
 func (c *FakeCloudShells) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(cloudshellsResource, c.ns, name, opts), &v1alpha2.CloudShell{})
+		Invokes(testing.NewDeleteActionWithOptions(cloudshellsResource, c.ns, name, opts), &v1alpha1.CloudShell{})
 
 	return err
 }
@@ -124,17 +124,17 @@ func (c *FakeCloudShells) Delete(ctx context.Context, name string, opts v1.Delet
 func (c *FakeCloudShells) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(cloudshellsResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &v1alpha2.CloudShellList{})
+	_, err := c.Fake.Invokes(action, &v1alpha1.CloudShellList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched cloudShell.
-func (c *FakeCloudShells) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.CloudShell, err error) {
+func (c *FakeCloudShells) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.CloudShell, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(cloudshellsResource, c.ns, name, pt, data, subresources...), &v1alpha2.CloudShell{})
+		Invokes(testing.NewPatchSubresourceAction(cloudshellsResource, c.ns, name, pt, data, subresources...), &v1alpha1.CloudShell{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha2.CloudShell), err
+	return obj.(*v1alpha1.CloudShell), err
 }
