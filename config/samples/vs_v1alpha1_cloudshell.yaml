@@ -10,7 +10,7 @@ spec:
  commandAction: "bash"
  exposureMode: "VirtualService"
  pathPrefix: "/apis/cloudtty.io/"
- ttl: 500
+ ttlSecondsAfterStarted: 500
  once: false
  virtualServiceConfig:
     virtualServiceName: "cloudshell-vs-demo"

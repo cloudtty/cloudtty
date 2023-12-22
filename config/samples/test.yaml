@@ -1,4 +1,4 @@
-apiVersion: cloudshell.cloudtty.io/v1alpha2
+apiVersion: cloudshell.cloudtty.io/v1alpha1
 kind: CloudShell
 metadata:
   name: cloudshell-sample1
@@ -7,14 +7,4 @@ spec:
   secretRef:
     name: "my-kubeconfig"
   commandAction: "bash"
-  ttlSecondsAfterStarted: 10000
-  once: false
   cleanup: true
-  image: release-ci.daocloud.io/cloudtty/cloudshell:v0.5.9
-  env:
-  - name: POD_NAMESPACE
-    value: aaa
-  - name: POD_NAME
-    value: bbb
-  - name: CONTAINER
-    value: bbb

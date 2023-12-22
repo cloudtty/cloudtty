@@ -4,5 +4,5 @@ metadata:
   name: local-cluster-sample
 spec:
   commandAction: "bash"
-  ttl: 500
+  ttlSecondsAfterStarted: 500
   once: false

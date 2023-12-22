@@ -6,6 +6,6 @@ spec:
   secretRef:
     name: "my-kubeconfig"
   commandAction: "bash"
-  ttl: 500
+  ttlSecondsAfterStarted: 500
   once: false
-  image: release-ci.daocloud.io/cloudtty/cloudshell:v0.6.0
+  image: ghcr.io/cloudtty/cloudshell:v0.6.0
