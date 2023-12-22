@@ -36,7 +36,7 @@ maxWorkerLimit:
 image:
   registry: ghcr.io
   repository: cloudtty/cloudshell-operator
-  tag: "v0.6.0"
+  tag: "v0.6.1"
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -71,19 +71,16 @@ tolerations: {}
 ## @param livenessProbe.periodSeconds Period seconds for livenessProbe
 ##
 livenessProbe:
-  enabled: true
-  initialDelaySeconds: 15
-  periodSeconds: 20
+  enabled: false
+
 ## @param readinessProbe.enabled Enable readinessProbe on Kafka containers
 ## @param readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
 ## @param readinessProbe.periodSeconds Period seconds for readinessProbe
 ##
 readinessProbe:
-  enabled: true
-  initialDelaySeconds: 5
-  periodSeconds: 10
+  enabled: false
 
 cloudshellImage:
   registry: ghcr.io
   repository: cloudtty/cloudshell
-  tag: "v0.6.0"
+  tag: "v0.6.1"
