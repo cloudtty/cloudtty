@@ -73,7 +73,7 @@ The following table lists the configurable parameters of the CloudTTY chart and 
 | podLabels | dict | {} | Controller Manager pod labels |
 | image.registry | string | ghcr.io | Cloudtty image registry |
 | image.repository | string | cloudtty/cloudshell-operator | Cloudtty image repository |
-| image.tag | string | v0.6.1 | Cloudtty image tag (immutable tags are recommended) |
+| image.tag | string | v0.6.2 | Cloudtty image tag (immutable tags are recommended) |
 | image.pullPolicy | string | IfNotPresent | Cloudtty image pull policy |
 | image.pullSecrets | list | [] | Specify Docker-registry secret names as an array |
 | resources | dict | {} | Resources |
