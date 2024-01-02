@@ -278,9 +278,12 @@ func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv
 		return nil, err
 	}
 
-	now := metav1.Now()
 	cloudshell.Status.AccessURL = url
-	cloudshell.Status.LastScheduleTime = &now
+
+	if cloudshell.Status.LastScheduleTime == nil {
+		now := metav1.Now()
+		cloudshell.Status.LastScheduleTime = &now
+	}
 
 	return t, c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseReady)
 }
@@ -695,7 +698,7 @@ func (c *Controller) removeCloudshell(ctx context.Context, cloudshell *cloudshel
 	}
 
 	if worker != nil {
-		if err = c.resetWorker(ctx, cloudshell); err != nil {
+		if err = c.ResetWorker(ctx, cloudshell); err != nil {
 			klog.ErrorS(err, "failed reset worker")
 		}
 		if err := c.workerPool.Back(worker); err != nil {
@@ -714,8 +717,8 @@ func (c *Controller) removeCloudshell(ctx context.Context, cloudshell *cloudshel
 	return c.removeFinalizer(cloudshell)
 }
 
-// resetWorker cleanup the kubeConfig and kill ttyd
-func (c *Controller) resetWorker(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
+// ResetWorker cleanup the kubeConfig and kill ttyd
+func (c *Controller) ResetWorker(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	return execCommand(cloudshell, []string{resetScriptPath}, c.config)
 }
 
