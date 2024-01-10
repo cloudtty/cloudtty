@@ -540,15 +540,16 @@ message LoadBalancerSettings {
       uint64 table_size = 1;
     };
     // Describes a HTTP cookie that will be used as the hash key for the
-    // Consistent Hash load balancer. If the cookie is not present, it will
-    // be generated.
+    // Consistent Hash load balancer.
     message HTTPCookie {
       // Name of the cookie.
       string name = 1 [(google.api.field_behavior) = REQUIRED];
       // Path to set for the cookie.
       string path = 2;
-      // Lifetime of the cookie.
-      google.protobuf.Duration ttl = 3 [(google.api.field_behavior) = REQUIRED];
+      // Lifetime of the cookie. If specified, a cookie with the TTL will be
+      // generated if the cookie is not present. If the TTL is present and zero, 
+      // the generated cookie will be a session cookie.
+      google.protobuf.Duration ttl = 3;
     };
 
     // The hash key to use.
@@ -1023,7 +1024,7 @@ message ClientTLSSettings {
 
   // Indicates whether connections to this port should be secured
   // using TLS. The value of this field determines how TLS is enforced.
-  TLSmode mode = 1 [(google.api.field_behavior) = REQUIRED];
+  TLSmode mode = 1;
 
   // REQUIRED if mode is `MUTUAL`. The path to the file holding the
   // client-side TLS certificate to use.
@@ -1078,16 +1079,16 @@ message ClientTLSSettings {
   // environmental variable is set to `true`.
   string sni = 6;
 
-  // InsecureSkipVerify specifies whether the proxy should skip verifying the
+  // `insecureSkipVerify` specifies whether the proxy should skip verifying the
   // CA signature and SAN for the server certificate corresponding to the host.
   // This flag should only be set if global CA signature verification is
-  // enabled, `VerifyCertAtClient` environmental variable is set to `true`,
+  // enabled, `VERIFY_CERTIFICATE_AT_CLIENT` environmental variable is set to `true`,
   // but no verification is desired for a specific host. If enabled with or
-  // without `VerifyCertAtClient` enabled, verification of the CA signature and
+  // without `VERIFY_CERTIFICATE_AT_CLIENT` enabled, verification of the CA signature and
   // SAN will be skipped.
   //
-  // `InsecureSkipVerify` is `false` by default.
-  // `VerifyCertAtClient` is `false` by default in Istio version 1.9 but will
+  // `insecureSkipVerify` is `false` by default.
+  // `VERIFY_CERTIFICATE_AT_CLIENT` is `false` by default in Istio version 1.9 but will
   // be `true` by default in a later version where, going forward, it will be
   // enabled by default.
   google.protobuf.BoolValue insecure_skip_verify = 8;
