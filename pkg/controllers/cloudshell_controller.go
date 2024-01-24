@@ -546,22 +546,32 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 		return c.Create(ctx, ingress)
 	}
 
-	// there is an ingress in the cluster, add a rule to the ingress.
-	IngressRule := ingress.Spec.Rules[0].IngressRuleValue.HTTP
-	pathType := networkingv1.PathTypePrefix
-	IngressRule.Paths = append(IngressRule.Paths, networkingv1.HTTPIngressPath{
-		PathType: &pathType,
-		Path:     SetRouteRulePath(cloudshell),
-		Backend: networkingv1.IngressBackend{
-			Service: &networkingv1.IngressServiceBackend{
-				Name: service,
-				Port: networkingv1.ServiceBackendPort{
-					Number: 7681,
-				},
+	ingressRule := ingress.Spec.Rules[0].IngressRuleValue.HTTP
+	ingressBackend := networkingv1.IngressBackend{
+		Service: &networkingv1.IngressServiceBackend{
+			Name: service,
+			Port: networkingv1.ServiceBackendPort{
+				Number: 7681,
 			},
 		},
-	})
-
+	}
+	// if the path already exists in ingress, then update it
+	found := false
+	for i := 0; i < len(ingressRule.Paths); i++ {
+		if ingressRule.Paths[i].Path == cloudshell.Status.AccessURL {
+			ingressRule.Paths[i].Backend = ingressBackend
+			found = true
+		}
+	}
+	// if the path not exists in ingress, then add it
+	if !found {
+		pathType := networkingv1.PathTypePrefix
+		ingressRule.Paths = append(ingressRule.Paths, networkingv1.HTTPIngressPath{
+			PathType: &pathType,
+			Path:     SetRouteRulePath(cloudshell),
+			Backend:  ingressBackend,
+		})
+	}
 	// TODO: All paths will be rewritten here
 	ans := ingress.GetAnnotations()
 	if ans == nil {
@@ -655,13 +665,27 @@ func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, serv
 
 		return c.Create(ctx, virtualService)
 	}
+	found := false
+	httpRoute := virtualService.Spec.Http
+	// if the path already exists in the virtualService, update Destination.Host
+	for i := 0; i < len(httpRoute); i++ {
+		match := httpRoute[i].Match
+		if len(match) > 0 && match[0].Uri != nil {
+			if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok &&
+				prefix.Prefix == cloudshell.Status.AccessURL {
+				httpRoute[i].Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
+				found = true
+			}
+		}
+	}
+	// if the path not exists, add a route in the virtualService
+	if !found {
+		newHttpRoute := virtualService.Spec.Http[0].DeepCopy()
+		newHttpRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: SetRouteRulePath(cloudshell)}
+		newHttpRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
+		virtualService.Spec.Http = append(virtualService.Spec.Http, newHttpRoute)
+	}
 
-	// there is a virtualService in the cluster, add a destination to it.
-	newHttpRoute := virtualService.Spec.Http[0].DeepCopy()
-	newHttpRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: SetRouteRulePath(cloudshell)}
-	newHttpRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
-
-	virtualService.Spec.Http = append(virtualService.Spec.Http, newHttpRoute)
 	return c.Update(ctx, virtualService)
 }
 
