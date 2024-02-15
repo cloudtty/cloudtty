@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"github.com/cloudtty/cloudtty/pkg/constants"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -26,10 +25,6 @@ func SetObjectDefaultsCloudShell(in *CloudShell) {
 func setDefaultsCloudShell(obj *CloudShell) {
 	if len(obj.Spec.CommandAction) == 0 {
 		obj.Spec.CommandAction = "bash"
-	}
-
-	if obj.Spec.TTLSecondsAfterStarted == nil {
-		obj.Spec.TTLSecondsAfterStarted = pointer.Int64(3600)
 	}
 
 	if len(obj.Spec.ExposeMode) == 0 {
