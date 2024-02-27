@@ -27,7 +27,7 @@ spec:
   containers:
   - name: web-tty
     image: {{ .Image }}
-    imagePullPolicy: Always
+    imagePullPolicy: IfNotPresent
     command:
     - /bin/bash
     - -ec
