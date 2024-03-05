@@ -8,18 +8,25 @@ KUBECONFIG=${1:-}
 ONCE=${2:-}
 URLARG=${3:-}
 COMMAND=${4:-"bash"}
-POD_NAME=${5:-"_pod_name_"}
-POD_NAMESPACE=${6:-"_namespace_"}
-CONTAINER=${7:-"_container_"}
+POD_NAME=${5:-}
+POD_NAMESPACE=${6:-"default"}
+CONTAINER=${7:-}
 
 ## Generate config to the path `/root/.kube/config`.
 if [[ -n "${KUBECONFIG}"  ]]; then
   echo "${KUBECONFIG}" > /root/.kube/config
 fi
 
-echo "export POD_NAME='${POD_NAME}'" > /root/.env
-echo "export POD_NAMESPACE='${POD_NAMESPACE}'" >> /root/.env
-echo "export CONTAINER='${CONTAINER}'" >> /root/.env
+echo "export POD_NAMESPACE='${POD_NAMESPACE}'" > /root/.env
+
+if [[ -n "${POD_NAME}" ]]; then
+  echo "export POD_NAME='${POD_NAME}'" >> /root/.env
+fi
+
+if [[ -n "${CONTAINER}" ]]; then
+  echo "export CONTAINER='${CONTAINER}'" >> /root/.env
+fi
+
 source /root/.bashrc
 
 once=""
