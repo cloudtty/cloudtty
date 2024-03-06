@@ -946,7 +946,7 @@ func execCommand(cloudshell *cloudshellv1alpha1.CloudShell, command []string, co
 	}
 
 	if err := options.Run(); err != nil {
-		klog.ErrorS(err, "failed to run command")
+		klog.ErrorS(err, "failed to run command", "command", command)
 		return err
 	}
 	return nil
