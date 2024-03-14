@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Issue Opened
-        uses: cloudtty-io/gh-ci-bot@master
+        uses: cloudtty/gh-ci-bot@master
         if: ${{ github.event_name == 'issues' }}
         env:
           LOGIN: ${{ github.event.issue.user.login }}
@@ -112,7 +112,7 @@ jobs:
             We will look into it as soon as possible.
 
       - name: PR Opened
-        uses: cloudtty-io/gh-ci-bot@master
+        uses: cloudtty/gh-ci-bot@master
         if: ${{ github.event_name == 'pull_request_target' }}
         env:
           LOGIN: ${{ github.event.pull_request.user.login }}
@@ -129,7 +129,7 @@ jobs:
             We will review it shortly.
 
       - name: Issue Commented
-        uses: cloudtty-io/gh-ci-bot@master
+        uses: cloudtty/gh-ci-bot@master
         if: ${{ github.event_name == 'issue_comment' && !github.event.issue.pull_request }}
         env:
           LOGIN: ${{ github.event.comment.user.login }}
@@ -141,7 +141,7 @@ jobs:
           TYPE: comment
 
       - name: PR Review Commented
-        uses: cloudtty-io/gh-ci-bot@master
+        uses: cloudtty/gh-ci-bot@master
         if: ${{ github.event_name == 'pull_request_review_comment' }}
         env:
           LOGIN: ${{ github.event.comment.user.login }}
@@ -153,7 +153,7 @@ jobs:
           TYPE: comment
 
       - name: PR Commented
-        uses: cloudtty-io/gh-ci-bot@master
+        uses: cloudtty/gh-ci-bot@master
         if: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request }}
         env:
           LOGIN: ${{ github.event.comment.user.login }}
