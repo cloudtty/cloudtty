@@ -15,6 +15,7 @@
 syntax = "proto3";
 
 import "google/api/field_behavior.proto";
+import "networking/v1beta1/destination_rule.proto";
 import "networking/v1beta1/gateway.proto";
 import "networking/v1beta1/virtual_service.proto";
 
@@ -404,6 +405,81 @@ import "networking/v1beta1/virtual_service.proto";
 // {{</tab>}}
 // {{</tabset>}}
 //
+// In addition to configuring traffic capture and how traffic is forwarded to the app,
+// it's possible to control inbound connection pool settings. By default, Istio pushes
+// connection pool settings from `DestinationRules` to both clients (for outbound
+// connections to the service) as well as servers (for inbound connections to a service
+// instance). Using the `InboundConnectionPool` and per-port `ConnectionPool` settings
+// in a `Sidecar` allow you to control those connection pools for the server separately
+// from the settings pushed to all clients.
+//
+// {{<tabset category-name="example">}}
+// {{<tab name="v1alpha3" category-value="v1alpha3">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1alpha3
+// kind: Sidecar
+// metadata:
+//   name: connection-pool-settings
+//   namespace: prod-us1
+// spec:
+//   workloadSelector:
+//     labels:
+//       app: productpage
+//   inboundConnectionPool:
+//       http:
+//         http1MaxPendingRequests: 1024
+//         http2MaxRequests: 1024
+//         maxRequestsPerConnection: 1024
+//         maxRetries: 100
+//   ingress:
+//   - port:
+//       number: 80
+//       protocol: HTTP
+//       name: somename
+//     connectionPool:
+//       http:
+//         http1MaxPendingRequests: 1024
+//         http2MaxRequests: 1024
+//         maxRequestsPerConnection: 1024
+//         maxRetries: 100
+//       tcp:
+//         maxConnections: 100
+// ```
+// {{</tab>}}
+//
+// {{<tab name="v1beta1" category-value="v1beta1">}}
+// ```yaml
+// apiVersion: networking.istio.io/v1beta1
+// kind: Sidecar
+// metadata:
+//   name: connection-pool-settings
+//   namespace: prod-us1
+// spec:
+//   workloadSelector:
+//     labels:
+//       app: productpage
+//   inboundConnectionPool:
+//       http:
+//         http1MaxPendingRequests: 1024
+//         http2MaxRequests: 1024
+//         maxRequestsPerConnection: 1024
+//         maxRetries: 100
+//   ingress:
+//   - port:
+//       number: 80
+//       protocol: HTTP
+//       name: somename
+//     connectionPool:
+//       http:
+//         http1MaxPendingRequests: 1024
+//         http2MaxRequests: 1024
+//         maxRequestsPerConnection: 1024
+//         maxRetries: 100
+//       tcp:
+//         maxConnections: 100
+// ```
+// {{</tab>}}
+// {{</tabset>}}
 package istio.networking.v1beta1;
 
 option go_package = "istio.io/api/networking/v1beta1";
@@ -452,6 +528,32 @@ message Sidecar {
   // detected defaults from the namespace-wide or the global default Sidecar.
   repeated IstioEgressListener egress = 3;
 
+  // Settings controlling the volume of connections Envoy will accept from the network.
+  // This default will apply for all inbound listeners and can be overridden per-port
+  // in the `Ingress` field. This configuration mirrors the `DestinationRule`'s
+  // [`connectionPool`](https://istio.io/latest/docs/reference/config/networking/destination-rule/#ConnectionPoolSettings) field.
+  //
+  // By default, Istio applies a service's `DestinationRule` to client sidecars
+  // for outbound traffic directed at the service -- the usual case folks think
+  // of when configuring a `DestinationRule` -- but also to the server's inbound
+  // sidecar. The `Sidecar`'s connection pool configures the server's inbound
+  // sidecar directly, so its settings can be different than clients'. This is
+  // valuable, for example, when you have many clients calling few servers: a
+  // `DestinationRule` can limit the concurrency of any single client, while
+  // the `Sidecar` allows you to configure much higher concurrency on the server
+  // side.
+  //
+  // Connection pool settings for a server's inbound sidecar are configured in the
+  // following precedence, highest to lowest:
+  // - per-port `ConnectionPool` from the `Sidecar`
+  // - top level `InboundConnectionPool` from the `Sidecar`
+  // - per-port `TrafficPolicy.ConnectionPool` from the `DestinationRule`
+  // - top level `TrafficPolicy.ConnectionPool` from the `DestinationRule`
+  // - default connection pool settings (essentially unlimited)
+  //
+  // In every case, the connection pool settings are overriden, not merged.
+  ConnectionPoolSettings inbound_connection_pool = 7;
+
   // Configuration for the outbound traffic policy.  If your
   // application uses one or more external services that are not known
   // apriori, setting the policy to `ALLOW_ANY` will cause the
@@ -469,7 +571,7 @@ message Sidecar {
 // traffic listener on the sidecar proxy attached to a workload instance.
 message IstioIngressListener {
   // The port associated with the listener.
-  Port port = 1 [(google.api.field_behavior) = REQUIRED];
+  SidecarPort port = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The IP(IPv4 or IPv6) to which the listener should be bound.
   // Unix domain socket addresses are not allowed in
@@ -491,7 +593,7 @@ message IstioIngressListener {
   // `127.0.0.1:PORT`, `[::1]:PORT` (forward to localhost),
   // `0.0.0.0:PORT`, `[::]:PORT` (forward to the instance IP),
   // or `unix:///path/to/socket` (forward to Unix domain socket).
-  string default_endpoint = 4 [(google.api.field_behavior) = REQUIRED];
+  string default_endpoint = 4;
 
   reserved "localhost_client_tls";
   reserved 5, 6;
@@ -500,6 +602,15 @@ message IstioIngressListener {
   // sidecar for requests originating from outside the mesh.
   // Currently supports only SIMPLE and MUTUAL TLS modes.
   ServerTLSSettings tls = 7;
+
+  // Settings controlling the volume of connections Envoy will accept from the network.
+  // This setting overrides the top-level default `inboundConnectionPool` to configure
+  // specific settings for this port. This configuration mirrors the `DestinationRule`'s
+  // [`PortTrafficPolicy.connectionPool`](https://istio.io/latest/docs/reference/config/networking/destination-rule/#TrafficPolicy-PortTrafficPolicy) field.
+  // This port level connection pool has the highest precedence in configuration,
+  // overriding both the `Sidecar`'s top level `InboundConnectionPool` as well as any
+  // connection pooling settings from the `DestinationRule`.
+  ConnectionPoolSettings connection_pool = 8;
 }
 
 // `IstioEgressListener` specifies the properties of an outbound traffic
@@ -514,7 +625,7 @@ message IstioEgressListener {
   // specific ports while others have no port, the hosts exposed on a
   // listener port will be based on the listener with the most specific
   // port.
-  Port port = 1;
+  SidecarPort port = 1;
 
   // The IP(IPv4 or IPv6) or the Unix domain socket to which the listener should be bound
   // to. Port MUST be specified if bind is not empty. Format: IPv4 or IPv6 address formats or
@@ -577,7 +688,7 @@ message WorkloadSelector {
   // on which the configuration should be applied. The scope of
   // label search is restricted to the configuration namespace in which the
   // the resource is present.
-  map<string, string> labels = 1 [(google.api.field_behavior) = REQUIRED];
+  map<string, string> labels = 1;
 
   // $hide_from_docs
   // other forms of identification supplied by the proxy
@@ -638,4 +749,24 @@ enum CaptureMode {
   // to ensure that the listener port is not in use by other processes on
   // the host.
   NONE = 2;
+}
+
+// Port describes the properties of a specific port of a service.
+message SidecarPort {
+  // A valid non-negative integer port number.
+  uint32 number = 1;
+
+  // The protocol exposed on the port.
+  // MUST BE one of HTTP|HTTPS|GRPC|HTTP2|MONGO|TCP|TLS.
+  // TLS can be either used to terminate non-HTTP based connections on a specific port
+  // or to route traffic based on SNI header to the destination without terminating the TLS connection.
+  string protocol = 2;
+
+  // Label assigned to the port.
+  string name = 3;
+
+  // Has no effect, only for backwards compatibility
+  // received. Applicable only when used with ServiceEntries.
+  // $hide_from_docs
+  uint32 target_port = 4 [deprecated=true];
 }
