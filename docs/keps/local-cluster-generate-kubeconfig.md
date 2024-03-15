@@ -25,7 +25,7 @@ This document proposes a mechanism to generate kubeconfig by serviceaccount whil
 
 ## Motivation
 
-If we want to create a cloud shell for cluster that the `cloudshell-operator` is depoly on it. this is what we called local cluster. it's not friendly for users to generate kubeconfig and mount to pod of cloudshell manually. all of actions can be done by `cloudshell-operator` for users.
+If we want to create a cloud shell for cluster that the `cloudshell-operator` is depoly on it. this is what we called local cluster. it's not friendly for users to generate kubeconfig and mount to pod of cloudshell manually. all actions can be done by `cloudshell-operator` for users.
 
 ### Goals
 
@@ -34,7 +34,7 @@ If we want to create a cloud shell for cluster that the `cloudshell-operator` is
 
 ## Implementation details
 
-User can not support configmap info to field `spec.configmap` of cloudshell cr. If this field is empty and we assume that the user want to created cloudshell in the local cluster. `cloudshell-operator` will complete the following steps:
+User can not support configmap info to field `spec.configmap` of cloudshell cr. If this field is empty and we assume that the user want to create cloudshell in the local cluster. `cloudshell-operator` will complete the following steps:
 
 ### Grant operator to admin permission
 
