@@ -9,7 +9,7 @@ You can easily open a terminal on your own browser via cloudtty.
 The community is always open for any contributor and those who want to have a try.
 
 Literally, cloudtty herein refers to a virtual console, shell, or terminal running on web and clouds.
-You can use it anywhere with an internet conneciton and it will be automatically connected to the cloud.
+You can use it anywhere with an internet connection and it will be automatically connected to the cloud.
 
 > Early user terminals connected to computers were electromechanical teleprinters or teletypewriters (TeleTYpewriter, TTY), which might be the origin of TTY.
 > Gradually, TTY has continued to be used as the name for a text-only console although now this text-only console is a virtual console not a physical console.
