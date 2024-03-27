@@ -97,7 +97,7 @@ type CloudShellSpec struct {
 
 	// UrlArg allow client to send command line arguments in URL (eg: http://localhost:7681?arg=foo&arg=bar)
 	// +optional
-	UrlArg bool `json:"urlArg,omitempty"`
+	UrlArg bool `json:"urlArg,omitempty"` //nolint:all
 
 	// List of environment variables to set in the container.
 	// Cannot be updated.
@@ -164,14 +164,14 @@ type CloudShellStatus struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name=User,type="string",JSONPath=".spec.runAsUser",description="User"
-//+kubebuilder:printcolumn:name=Command,type="string",JSONPath=".spec.commandAction",description="Command"
-//+kubebuilder:printcolumn:name=Type,type="string",JSONPath=".spec.exposureMode",description="Expose mode"
-//+kubebuilder:printcolumn:name=URL,type="string",JSONPath=".status.accessUrl",description="Access Url"
-//+kubebuilder:printcolumn:name=Phase,type="string",JSONPath=".status.phase",description="Phase"
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name=User,type="string",JSONPath=".spec.runAsUser",description="User"
+// +kubebuilder:printcolumn:name=Command,type="string",JSONPath=".spec.commandAction",description="Command"
+// +kubebuilder:printcolumn:name=Type,type="string",JSONPath=".spec.exposureMode",description="Expose mode"
+// +kubebuilder:printcolumn:name=URL,type="string",JSONPath=".status.accessUrl",description="Access Url"
+// +kubebuilder:printcolumn:name=Phase,type="string",JSONPath=".status.phase",description="Phase"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // CloudShell is the Schema for the cloudshells API
 type CloudShell struct {
@@ -190,7 +190,7 @@ type CloudShell struct {
 	Status CloudShellStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CloudShellList contains a list of CloudShell
