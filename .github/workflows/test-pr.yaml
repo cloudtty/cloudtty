@@ -7,16 +7,60 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - docs/**
+
+env:
+  GO_VERSION: "1.20.4"
+  GOLANGCI_VERSION: 'v1.52.2'
 
 jobs:
-  build:
+  get_ref:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.result.outputs.ref }}
+    steps:
+      - name: Get Ref
+        id: result
+        run: |
+          echo ref=${{ github.event.pull_request.head.sha }} >> $GITHUB_OUTPUT
+
+  static-check:
+    needs: get_ref
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.get_ref.outputs.ref }}
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Run static check
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: ${{ env.GOLANGCI_VERSION }}
+          args: --timeout=10m
+  unit-test:
+    needs: [ static-check,get_ref ]
+    permissions:
+      packages: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.get_ref.outputs.ref }}
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: ${{ env.GO_VERSION }}
       - name: Run unit tests
         run: make test

@@ -39,7 +39,7 @@ var (
 	DefaultScaleInWorkerQueueDuration = time.Hour * 3
 	ScaleInQueueThreshold             = 0.75
 	ControllerFinalizer               = "cloudshell.cloudtty.io/worker-pool"
-	NotWorkerErr                      = errors.New("There is no worker in pool")
+	ErrNotWorker                      = errors.New("There is no worker in pool")
 )
 
 type WorkerPool struct {
@@ -188,7 +188,7 @@ func (w *WorkerPool) processNextCluster() (continued bool) {
 	}
 
 	w.queue.Forget(key)
-	return
+	return true
 }
 
 func (w *WorkerPool) reconcile(worker *corev1.Pod) error {
@@ -245,7 +245,7 @@ func (w *WorkerPool) handlerandleRequestQueue() {
 	for _, item := range w.requestQueue.All() {
 		req := item.(Request)
 		if _, err := w.matchWorkerFor(&req); err != nil {
-			if err != NotWorkerErr {
+			if err != ErrNotWorker {
 				klog.ErrorS(err, "failed to create worker for cloudshell", req.Cloudshell)
 			}
 
@@ -334,9 +334,9 @@ func (w *WorkerPool) scaleInWorkerQueue() {
 		})
 
 		scaleNumber := float64(len(idelWorkers)-w.coreWorkerLimit) * ScaleInQueueThreshold
-		len := int(math.Floor(scaleNumber + 0.5))
+		l := int(math.Floor(scaleNumber + 0.5))
 
-		for i := 0; i < len; i++ {
+		for i := 0; i < l; i++ {
 			worker := idelWorkers[i]
 			if err := w.deleteWorker(worker); err != nil {
 				klog.ErrorS(err, "failed to delete worker that needs to be scaled in", klog.KObjs(worker))
@@ -353,7 +353,7 @@ func (w *WorkerPool) scaleInWorkerQueue() {
 func (w *WorkerPool) Borrow(req *Request) (*corev1.Pod, error) {
 	worker, err := w.matchWorkerFor(req)
 	if err != nil {
-		if err == NotWorkerErr {
+		if err == ErrNotWorker {
 			// add the request to the request queue.
 			w.requestQueue.Add(*req)
 		}
@@ -413,7 +413,7 @@ func (w *WorkerPool) matchWorkerFor(req *Request) (*corev1.Pod, error) {
 		return worker, nil
 	}
 
-	return nil, NotWorkerErr
+	return nil, ErrNotWorker
 }
 
 func (w *WorkerPool) matchRequestFor(worker *corev1.Pod) *Request {
@@ -505,7 +505,7 @@ func (w *WorkerPool) createWorker(req *Request) error {
 	return w.CreateServiceFor(context.TODO(), pod)
 }
 
-func (w *WorkerPool) CreateServiceFor(ctx context.Context, worker *corev1.Pod) error {
+func (w *WorkerPool) CreateServiceFor(_ context.Context, worker *corev1.Pod) error {
 	serviceBytes, err := util.ParseTemplate(manifests.ServiceTmplV1, struct {
 		Name      string
 		Namespace string
@@ -531,7 +531,7 @@ func (w *WorkerPool) CreateServiceFor(ctx context.Context, worker *corev1.Pod) e
 	svc := obj.(*corev1.Service)
 	svc.SetLabels(map[string]string{constants.WorkerOwnerLabelKey: worker.Name})
 
-	// set reference for service, once the cloudshell is deleted, the service is alse deleted.
+	// set reference for service, once the cloudshell is deleted, the service is else deleted.
 	if err := ctrlutil.SetControllerReference(worker, svc, w.scheme); err != nil {
 		return err
 	}

@@ -79,7 +79,8 @@ type Controller struct {
 }
 
 func New(client client.Client, config *rest.Config, wp *worerkpool.WorkerPool, cloudshellImage string,
-	cloudshellInformer cloudshellinformers.CloudShellInformer, podInformer informercorev1.PodInformer) *Controller {
+	cloudshellInformer cloudshellinformers.CloudShellInformer, podInformer informercorev1.PodInformer,
+) *Controller {
 	controller := &Controller{
 		Client:     client,
 		config:     config,
@@ -252,7 +253,7 @@ func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv
 
 		worker, err = c.workerPool.Borrow(req)
 		if err != nil {
-			if err == worerkpool.NotWorkerErr {
+			if err == worerkpool.ErrNotWorker {
 				klog.InfoS("wait worker poll to create worker", "cloudshell", klog.KObj(cloudshell))
 				return nil, nil
 			}
@@ -346,7 +347,7 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 	return c.StartupWorker(ctx, cloudshell, kubeConfigByte)
 }
 
-func (c *Controller) StartupWorker(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell, kubeConfigByte []byte) error {
+func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1alpha1.CloudShell, kubeConfigByte []byte) error {
 	// TODO: Some extra logic in order to upload and download files.
 	var podName, namespace, container string
 	for _, env := range cloudshell.Spec.Env {
@@ -378,7 +379,7 @@ func (c *Controller) removeFinalizer(cloudshell *cloudshellv1alpha1.CloudShell) 
 	return nil
 }
 
-func (c *Controller) ensureCloudShell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
+func (c *Controller) ensureCloudShell(_ context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	updated := ctrlutil.AddFinalizer(cloudshell, CloudshellControllerFinalizer)
 
 	older := cloudshell.DeepCopy()
@@ -491,7 +492,7 @@ func (c *Controller) CreateCloudShellService(cloudshell *cloudshellv1alpha1.Clou
 	svc := obj.(*corev1.Service)
 	svc.SetLabels(map[string]string{constants.WorkerOwnerLabelKey: cloudshell.Name})
 
-	// set reference for service, once the cloudshell is deleted, the service is alse deleted.
+	// set reference for service, once the cloudshell is deleted, the service is else deleted.
 	if err := ctrlutil.SetControllerReference(cloudshell, svc, c.Scheme); err != nil {
 		return nil, err
 	}
@@ -582,7 +583,7 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 	return c.Update(ctx, ingress)
 }
 
-func (c *Controller) CreateServiceFor(ctx context.Context, worker *corev1.Pod) error {
+func (c *Controller) CreateServiceFor(_ context.Context, worker *corev1.Pod) error {
 	serviceBytes, err := util.ParseTemplate(manifests.ServiceTmplV1, struct {
 		Name      string
 		Namespace string
@@ -608,7 +609,7 @@ func (c *Controller) CreateServiceFor(ctx context.Context, worker *corev1.Pod) e
 	svc := obj.(*corev1.Service)
 	svc.SetLabels(map[string]string{constants.WorkerOwnerLabelKey: worker.Name})
 
-	// set reference for service, once the cloudshell is deleted, the service is alse deleted.
+	// set reference for service, once the cloudshell is deleted, the service is else deleted.
 	if err := ctrlutil.SetControllerReference(worker, svc, c.Scheme); err != nil {
 		return err
 	}
@@ -680,10 +681,10 @@ func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, serv
 	}
 	// if the path not exists, add a route in the virtualService
 	if !found {
-		newHttpRoute := virtualService.Spec.Http[0].DeepCopy()
-		newHttpRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: SetRouteRulePath(cloudshell)}
-		newHttpRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
-		virtualService.Spec.Http = append(virtualService.Spec.Http, newHttpRoute)
+		newHTTPRoute := virtualService.Spec.Http[0].DeepCopy()
+		newHTTPRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: SetRouteRulePath(cloudshell)}
+		newHTTPRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
+		virtualService.Spec.Http = append(virtualService.Spec.Http, newHTTPRoute)
 	}
 
 	return c.Update(ctx, virtualService)
@@ -742,7 +743,7 @@ func (c *Controller) removeCloudshell(ctx context.Context, cloudshell *cloudshel
 }
 
 // ResetWorker cleanup the kubeConfig and kill ttyd
-func (c *Controller) ResetWorker(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
+func (c *Controller) ResetWorker(_ context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	return execCommand(cloudshell, []string{resetScriptPath}, c.config)
 }
 
@@ -793,7 +794,6 @@ func (c *Controller) removeCloudshellRoute(ctx context.Context, cloudshell *clou
 			if len(match) > 0 && match[0].Uri != nil {
 				if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok &&
 					prefix.Prefix == cloudshell.Status.AccessURL {
-
 					httpRoute = append(httpRoute[:i], httpRoute[i+1:]...)
 					break
 				}
@@ -829,7 +829,7 @@ func SetRouteRulePath(cloudshell *cloudshellv1alpha1.CloudShell) string {
 	return fmt.Sprintf("%s/%s", pathPrefix, cloudshell.Name)
 }
 
-// IngressNamespacedName return a namespacedName accroding to ingressConfig.
+// IngressNamespacedName return a namespacedName according to ingressConfig.
 func IngressNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.NamespacedName {
 	// set custom name and namespace to ingress.
 	config := cloudshell.Spec.IngressConfig
@@ -846,7 +846,7 @@ func IngressNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.Name
 	return types.NamespacedName{Name: ingressName, Namespace: namespace}
 }
 
-// VsNamespacedName return a namespacedName accroding to virtaulServiceConfig.
+// VsNamespacedName return a namespacedName according to virtaulServiceConfig.
 func VsNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.NamespacedName {
 	// set custom name and namespace to ingress.
 	config := cloudshell.Spec.VirtualServiceConfig
