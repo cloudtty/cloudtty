@@ -14,11 +14,18 @@ SHELL [ "/bin/bash", "-c" ]
 
 ARG TTYD_VERSION=1.7.4
 
-RUN echo "https://mirrors.aliyun.com/alpine/edge/testing/" >> /etc/apk/repositories \
+RUN echo "https://mirrors.aliyun.com/alpine/v3.18/main/" >> /etc/apk/repositories \
     && apk update \
-    && apk add --no-cache ca-certificates lrzsz \
-    && ln -s /usr/bin/lrz	/usr/bin/rz \
-    && ln -s /usr/bin/lsz	/usr/bin/sz \
+    && apk add wget gcc g++ make \
+    && wget https://ohse.de/uwe/releases/lrzsz-0.12.20.tar.gz \
+    && tar -xf lrzsz-0.12.20.tar.gz \
+    && cd lrzsz-0.12.20 \
+    && ./configure \
+    && make \
+    && make install \
+    && apk add --no-cache ca-certificates \
+    && ln -s /usr/local/bin/lrz	/usr/bin/rz \
+    && ln -s /usr/local/bin/lsz	/usr/bin/sz \
     && apk add bash-completion \
     && source /usr/share/bash-completion/bash_completion \
     && echo 'source <(kubectl completion bash)' >>~/.bashrc \
