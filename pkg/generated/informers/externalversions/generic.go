@@ -52,6 +52,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=cloudshell.cloudtty.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("cloudproxies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloudshell().V1alpha1().CloudProxies().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("cloudshells"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloudshell().V1alpha1().CloudShells().Informer()}, nil
 

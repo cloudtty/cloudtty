@@ -10,6 +10,10 @@ If release name contains chart name it will be used as a full name.
 {{- printf "%s-%s-%s" (include "common.names.fullname" .) "controller" "manager" | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
+{{- define "cloudtty.sshproxy.fullname" -}}
+{{- printf "%s-%s" (include "common.names.fullname" .) "sshproxy" | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
 {{- define "jobTemplate.config.fullname" -}}
 {{- printf "%s-%s-%s" (include "common.names.fullname" .) "job" "template" | trunc 63 | trimSuffix "-" -}}
 {{- end }}
@@ -30,6 +34,14 @@ Return the proper image Registry Secret Names
 
 {{- define "cloudtty.cloudshell.image" -}}
 {{ include "common.images.image" (dict "imageRoot" .Values.cloudshellImage "global" .Values.global) }}
+{{- end -}}
+
+{{- define "cloudtty.sshproxy.imagePullSecrets" -}}
+{{ include "common.images.pullSecrets" (dict "images" (list .Values.sshproxy.image) "global" .Values.global) }}
+{{- end -}}
+
+{{- define "cloudtty.sshproxy.image" -}}
+{{ include "common.images.image" (dict "imageRoot" .Values.sshproxy.image "global" .Values.global) }}
 {{- end -}}
 
 {{- define "cloudtty.operator.featureGates" -}}

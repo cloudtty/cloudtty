@@ -5,6 +5,7 @@ REVISION ?= $(shell git describe --tags --dirty 2>/dev/null)
 
 OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:$(REVISION)
 TTY_IMG ?= ghcr.io/cloudtty/cloudshell:$(REVISION)
+SSH_PROXY_IMG ?= ghcr.io/cloudtty/sshproxy:$(REVISION)
 #NOTE: job.yaml.tmpl image should align with above
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
@@ -71,6 +72,10 @@ test: fmt vet envtest ## Run tests.
 build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager cmd/main.go
 
+.PHONY: build-sshproxy
+build-sshproxy:  ## Build sshproxy binary.
+	go build -ldflags="-s -w" -a -o sshproxy cmd/sshproxy/main.go
+
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run cmd/main.go
@@ -82,11 +87,13 @@ release: build-chart docker-build docker-push
 docker-build: test ## Build docker image with the manager.
 	docker build -t ${OPERATOR_IMG} . -f docker/operator/Dockerfile
 	docker build -t ${TTY_IMG} . -f docker/cloudshell/Dockerfile
+	docker build -t ${SSH_PROXY_IMG} . -f docker/sshproxy/Dockerfile
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${OPERATOR_IMG}
 	docker push ${TTY_IMG}
+	docker push ${SSH_PROXY_IMG}
 ##@ Deployment
 
 ifndef ignore-not-found
@@ -163,3 +170,7 @@ endif
 
 helm-doc-gen: helmdoc
 	readme-generator -v charts/cloudtty/values.yaml -r charts/cloudtty/README.md
+
+.PHONY: docker-build-sshproxy
+docker-build-sshproxy:
+	 docker build -t ${SSH_PROXY_IMG} . -f docker/sshproxy/Dockerfile

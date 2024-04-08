@@ -17,6 +17,10 @@ limitations under the License.
 
 package v1alpha1
 
+// CloudProxyListerExpansion allows custom methods to be added to
+// CloudProxyLister.
+type CloudProxyListerExpansion interface{}
+
 // CloudShellListerExpansion allows custom methods to be added to
 // CloudShellLister.
 type CloudShellListerExpansion interface{}

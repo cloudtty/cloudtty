@@ -19,7 +19,7 @@ deepcopy-gen \
   --input-dirs=github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1 \
   --output-package=github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1 \
   --output-file-base=zz_generated.deepcopy \
-  
+
 echo "Generating with register-gen"
 GO111MODULE=on go install k8s.io/code-generator/cmd/register-gen
 register-gen \

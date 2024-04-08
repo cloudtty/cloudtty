@@ -27,12 +27,17 @@ import (
 
 type CloudshellV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	CloudProxiesGetter
 	CloudShellsGetter
 }
 
 // CloudshellV1alpha1Client is used to interact with features provided by the cloudshell.cloudtty.io group.
 type CloudshellV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *CloudshellV1alpha1Client) CloudProxies() CloudProxyInterface {
+	return newCloudProxies(c)
 }
 
 func (c *CloudshellV1alpha1Client) CloudShells(namespace string) CloudShellInterface {

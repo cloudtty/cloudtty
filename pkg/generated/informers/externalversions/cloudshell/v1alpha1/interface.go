@@ -23,6 +23,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// CloudProxies returns a CloudProxyInformer.
+	CloudProxies() CloudProxyInformer
 	// CloudShells returns a CloudShellInformer.
 	CloudShells() CloudShellInformer
 }
@@ -36,6 +38,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// CloudProxies returns a CloudProxyInformer.
+func (v *version) CloudProxies() CloudProxyInformer {
+	return &cloudProxyInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // CloudShells returns a CloudShellInformer.

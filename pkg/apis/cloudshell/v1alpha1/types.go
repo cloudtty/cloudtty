@@ -202,3 +202,50 @@ type CloudShellList struct {
 
 	Items []CloudShell `json:"items"`
 }
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// CloudProxySpec defines the desired state of CloudProxy
+type CloudProxySpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	KubeconRef KubeconfigRef `json:"kubeconfRef,omitempty"`
+}
+
+type KubeconfigRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+// CloudProxyStatus defines the observed state of CloudProxy
+type CloudProxyStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+}
+
+// +genclient
+// +genclient:nonNamespaced
+//+kubebuilder:object:root=true
+// +kubebuilder:resource:scope="Cluster"
+//+kubebuilder:subresource:status
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// CloudProxy is the Schema for the cloudproxies API
+type CloudProxy struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   CloudProxySpec   `json:"spec,omitempty"`
+	Status CloudProxyStatus `json:"status,omitempty"`
+}
+
+//+kubebuilder:object:root=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// CloudProxyList contains a list of CloudProxy
+type CloudProxyList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []CloudProxy `json:"items"`
+}
