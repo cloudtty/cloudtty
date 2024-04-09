@@ -633,9 +633,6 @@ message HTTPRoute {
   // destination.
   Destination mirror = 9;
 
-  // $hide_from_docs
-  // Hide this from doc until implemented.
-  //
   // Specifies the destinations to mirror HTTP traffic in addition
   // to the original destination. Mirrored traffic is on a
   // best effort basis where the sidecar/gateway will not wait for the
@@ -648,6 +645,7 @@ message HTTPRoute {
   // Use of integer `mirror_percent` value is deprecated. Use the
   // double `mirror_percentage` field instead
   // $hide_from_docs
+  // +kubebuilder:altName=mirror_percent
   google.protobuf.UInt32Value mirror_percent = 18 [deprecated=true];
 
   // Percentage of the traffic to be mirrored by the `mirror` field.
@@ -1034,7 +1032,7 @@ message HTTPMatchRequest {
   // - `regex: "value"` for RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
   //
   // **Note:** Case-insensitive matching could be enabled via the
-  // `ignore_uri_case` flag.
+  // `ignoreUriCase` flag.
   StringMatch uri = 1;
 
   // URI Scheme
@@ -1796,8 +1794,9 @@ message HTTPRetry {
   // between retries will be determined automatically (25ms+). When request
   // `timeout` of the [HTTP route](https://istio.io/docs/reference/config/networking/virtual-service/#HTTPRoute)
   // or `per_try_timeout` is configured, the actual number of retries attempted also depends on
-  // the specified request `timeout` and `per_try_timeout` values.
-  int32 attempts = 1 [(google.api.field_behavior) = REQUIRED];
+  // the specified request `timeout` and `per_try_timeout` values. MUST BE >= 0. If `0`, retries will be disabled.
+  // The maximum possible number of requests made will be 1 + `attempts`.
+  int32 attempts = 1;
 
   // Timeout per attempt for a given request, including the initial call and any retries. Format: 1h/1m/1s/1ms. MUST BE >=1ms.
   // Default is same value as request
@@ -2001,7 +2000,7 @@ message HTTPFaultInjection {
     oneof http_delay_type {
       // Add a fixed delay before forwarding the request. Format:
       // 1h/1m/1s/1ms. MUST be >=1ms.
-      google.protobuf.Duration fixed_delay = 2 [(google.api.field_behavior) = REQUIRED];
+      google.protobuf.Duration fixed_delay = 2;
 
       // $hide_from_docs
       google.protobuf.Duration exponential_delay = 3 ;
@@ -2072,7 +2071,7 @@ message HTTPFaultInjection {
 
     oneof error_type {
       // HTTP status code to use to abort the Http request.
-      int32 http_status = 2 [(google.api.field_behavior) = REQUIRED];
+      int32 http_status = 2;
 
       // GRPC status code to use to abort the request. The supported
       // codes are documented in https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
@@ -2090,9 +2089,6 @@ message HTTPFaultInjection {
   }
 }
 
-// $hide_from_docs
-// Hide this from doc until implemented.
-//
 // HTTPMirrorPolicy can be used to specify the destinations to mirror HTTP traffic in addition
 // to the original destination. Mirrored traffic is on a
 // best effort basis where the sidecar/gateway will not wait for the
@@ -2100,15 +2096,9 @@ message HTTPFaultInjection {
 // original destination. Statistics will be generated for the mirrored
 // destination.
 message HTTPMirrorPolicy {
-  // $hide_from_docs
-  // Hide this from doc until implemented.
-  //
   // Destination specifies the target of the mirror operation.
   Destination destination = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // $hide_from_docs
-  // Hide this from doc until implemented.
-  //
   // Percentage of the traffic to be mirrored by the `destination` field.
   // If this field is absent, all the traffic (100%) will be mirrored.
   // Max value is 100.
