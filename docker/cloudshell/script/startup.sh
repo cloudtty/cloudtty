@@ -12,6 +12,10 @@ POD_NAME=${5:-}
 POD_NAMESPACE=${6:-"default"}
 CONTAINER=${7:-}
 
+if [ -d /root -a "`ls /root`" != "" ]; then         
+  rm -rf /root/*                                    
+fi
+
 ## Generate config to the path `/root/.kube/config`.
 if [[ -n "${KUBECONFIG}"  ]]; then
   echo "${KUBECONFIG}" > /root/.kube/config
