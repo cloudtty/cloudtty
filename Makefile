@@ -150,3 +150,16 @@ GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
 endef
+
+.PHONY: helmdoc
+helmdoc:
+ifeq (, $(shell which readme-generator))
+	@{ \
+	set -e ;\
+	echo 'installing readme-generator-for-helm' ;\
+	npm install -g @bitnami/readme-generator-for-helm ;\
+	}
+endif
+
+helm-doc-gen: helmdoc
+	readme-generator -v charts/cloudtty/values.yaml -r charts/cloudtty/README.md
