@@ -2,37 +2,45 @@
 ## This is a YAML-formatted file.
 ## Declare variables to be passed into your templates.
 
-## @param global cloudtty global config
+## @section Global configuration
+## @param global.imageRegistry Global Docker image registry
+## @param global.imagePullSecrets Global Docker image pull secrets
 global:
   ## @param global.imageRegistry Global Docker image registry
   imageRegistry: ""
   ## E.g.
   ## imagePullSecrets:
   ##   - myRegistryKeySecretName
+  ## @param global.imagePullSecrets Global Docker image pull secrets
   imagePullSecrets: []
 
+## @section Pre-Hook configuration
 ## @param installCRDs define flag whether to install CRD resources
-##
 installCRDs: true
 
-## @param controllerManager.labels
+
+## @section controllerManager configuration
+## @param labels controllerManager labels
 labels: {}
-## @param controllerManager.replicaCount target replicas
+
+## @param replicaCount controllerManager target replica count
 replicaCount: 1
-## @param controllerManager.podAnnotations
+
+## @param podAnnotations controllerManager pod annotations
 podAnnotations: {}
-## @param controllerManager.podLabels
+
+## @param podLabels controllerManager pod labels
 podLabels: {}
-## @param controllerManager.coreWorkerLimit defines the core limit of worker pool
-coreWorkerLimit: 
-## @param controllerManager.coreWorkerLimit defines the max limit of worker pool
-maxWorkerLimit:
+
+## @param coreWorkerLimit defines the core limit of worker pool
+coreWorkerLimit: 5
+## @param maxWorkerLimit defines the max limit of worker pool
+maxWorkerLimit: 10
 ## @param image.registry cloudtty image registry
 ## @param image.repository cloudtty image repository
 ## @param image.tag cloudtty image tag (immutable tags are recommended)
 ## @param image.pullPolicy cloudtty image pull policy
 ## @param image.pullSecrets Specify docker-registry secret names as an array
-##
 image:
   registry: ghcr.io
   repository: cloudtty/cloudshell-operator
@@ -49,9 +57,9 @@ image:
   ##   - myRegistryKeySecretName
   ##
   pullSecrets: []
-## @param controllerManager.resources
-resources:
-  {}
+
+## @param resources controllerManager resource requests and limits
+resources: {}
   # If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:
@@ -60,26 +68,26 @@ resources:
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
-## @param controllerManager.nodeSelector
+## @param nodeSelector controllerManager node labels for pod assignment
 nodeSelector: {}
-## @param controllerManager.affinity
+
+## @param affinity controllerManager affinity settings
 affinity: {}
-## @param controllerManager.tolerations
+
+## @param tolerations controllerManager tolerations for pod assignment
 tolerations: {}
+
 ## @param livenessProbe.enabled Enable livenessProbe on Kafka containers
-## @param livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
-## @param livenessProbe.periodSeconds Period seconds for livenessProbe
-##
 livenessProbe:
   enabled: false
 
 ## @param readinessProbe.enabled Enable readinessProbe on Kafka containers
-## @param readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
-## @param readinessProbe.periodSeconds Period seconds for readinessProbe
-##
 readinessProbe:
   enabled: false
 
+## @param cloudshellImage.registry cloudshell image registry
+## @param cloudshellImage.repository cloudshell image repository
+## @param cloudshellImage.tag cloudshell image tag (immutable tags are recommended)
 cloudshellImage:
   registry: ghcr.io
   repository: cloudtty/cloudshell

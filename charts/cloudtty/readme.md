@@ -60,36 +60,42 @@ $ kubectl delete crd clusteroperations.kubean.io
 
 ## Parameters
 
-The following table lists the configurable parameters of the CloudTTY chart and their default values.
+### Global configuration
 
-| Key | Type | Default                      | Describe |
-| --- | ---- |------------------------------| -------- |
-| global.imageRegistry | string | ""                           | Global Docker image registry |
-| global.imagePullSecrets | list | []                           | Specify Docker-registry secret names as an array |
-| installCRDs | bool | true                         | Define flag whether to install CRD resources |
-| labels | dict | {}                           | Controller Manager labels |
-| replicaCount | int | 1                            | Target replicas |
-| podAnnotations | dict | {}                           | Controller Manager pod annotations |
-| podLabels | dict | {}                           | Controller Manager pod labels |
-| image.registry | string | ghcr.io                      | Cloudtty image registry |
-| image.repository | string | cloudtty/cloudshell-operator | Cloudtty image repository |
-| image.tag | string | v0.7.2                       | Cloudtty image tag (immutable tags are recommended) |
-| image.pullPolicy | string | IfNotPresent                 | Cloudtty image pull policy |
-| image.pullSecrets | list | []                           | Specify Docker-registry secret names as an array |
-| resources | dict | {}                           | Resources |
-| nodeSelector | dict | {}                           | Controller Manager node selector |
-| affinity | dict | {}                           | Controller Manager affinity |
-| tolerations | list | {}                           | Controller Manager tolerations |
-| livenessProbe.enabled | bool | true                         | Enable liveness Probe on Kafka containers |
-| livenessProbe.initialDelaySeconds | int | 15                           | Initial delay seconds for liveness Probe |
-| livenessProbe.periodSeconds | int | 20                           | Period seconds for liveness Probe |
-| readinessProbe.enabled | bool | true                         | Enable readiness Probe on Kafka containers |
-| readinessProbe.initialDelaySeconds | int | 5                            | Initial delay seconds for readiness Probe |
-| readinessProbe.periodSeconds | int | 10                           | Period seconds for readiness Probe |
-| featureGates.AllowSecretStoreKubeconfig | bool | false                        | Allow Secret Store Kubeconfig is a feature gate for the cloudshell to store kubeconfig in secret |
-| jobTemplate.labels | dict | {}                           | Job Template labels |
-| jobTemplate.image.registry | string | ghcr.io                      | Cloudtty Job image registry |
-| jobTemplate.image.repository | string | cloudtty/cloudshell          | Cloudtty Job image repository |
-| jobTemplate.image.tag | string | v0.7.2                       | Cloudtty Job image tag (immutable tags are recommended) |
-| jobTemplate.image.pullPolicy | string | IfNotPresent                 | Cloudtty Job image pull policy |
-| jobTemplate.image.pullSecrets | list | []                           | Specify Docker-registry secret names as an array |
+| Name                      | Description                      | Value |
+| ------------------------- | -------------------------------- | ----- |
+| `global.imageRegistry`    | Global Docker image registry     | `""`  |
+| `global.imagePullSecrets` | Global Docker image pull secrets | `[]`  |
+| `global.imageRegistry`    | Global Docker image registry     | `""`  |
+| `global.imagePullSecrets` | Global Docker image pull secrets | `[]`  |
+
+### Pre-Hook configuration
+
+| Name          | Description                                  | Value  |
+| ------------- | -------------------------------------------- | ------ |
+| `installCRDs` | define flag whether to install CRD resources | `true` |
+
+### controllerManager configuration
+
+| Name                         | Description                                           | Value                          |
+| ---------------------------- | ----------------------------------------------------- | ------------------------------ |
+| `labels`                     | controllerManager labels                              | `{}`                           |
+| `replicaCount`               | controllerManager target replica count                | `1`                            |
+| `podAnnotations`             | controllerManager pod annotations                     | `{}`                           |
+| `podLabels`                  | controllerManager pod labels                          | `{}`                           |
+| `coreWorkerLimit`            | defines the core limit of worker pool                 | `nil`                          |
+| `maxWorkerLimit`             | defines the max limit of worker pool                  | `nil`                          |
+| `image.registry`             | cloudtty image registry                               | `ghcr.io`                      |
+| `image.repository`           | cloudtty image repository                             | `cloudtty/cloudshell-operator` |
+| `image.tag`                  | cloudtty image tag (immutable tags are recommended)   | `v0.7.2`                       |
+| `image.pullPolicy`           | cloudtty image pull policy                            | `IfNotPresent`                 |
+| `image.pullSecrets`          | Specify docker-registry secret names as an array      | `[]`                           |
+| `resources`                  | controllerManager resource requests and limits        | `{}`                           |
+| `nodeSelector`               | controllerManager node labels for pod assignment      | `{}`                           |
+| `affinity`                   | controllerManager affinity settings                   | `{}`                           |
+| `tolerations`                | controllerManager tolerations for pod assignment      | `{}`                           |
+| `livenessProbe.enabled`      | Enable livenessProbe on Kafka containers              | `false`                        |
+| `readinessProbe.enabled`     | Enable readinessProbe on Kafka containers             | `false`                        |
+| `cloudshellImage.registry`   | cloudshell image registry                             | `ghcr.io`                      |
+| `cloudshellImage.repository` | cloudshell image repository                           | `cloudtty/cloudshell`          |
+| `cloudshellImage.tag`        | cloudshell image tag (immutable tags are recommended) | `v0.7.2`                       |
