@@ -38,7 +38,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ needs.get_ref.outputs.ref }}
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Run static check
