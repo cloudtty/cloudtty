@@ -114,8 +114,8 @@ message ProxyConfig {
   istio.type.v1beta1.WorkloadSelector selector = 1;
 
   // The number of worker threads to run.
-  // If unset, defaults to 2. If set to 0, this will be configured to use all cores on the machine using
-  // CPU requests and limits to choose a value, with limits taking precedence over requests.
+  // If unset, this will be automatically determined based on CPU requests/limits.
+  // If set to 0, all cores on the machine will be used.
   google.protobuf.Int32Value concurrency = 2;
 
   // Additional environment variables for the proxy.
