@@ -62,7 +62,7 @@ const (
 	resetScriptPath   = "/usr/lib/ttyd/reset.sh"
 )
 
-// Controller reconciles a CloudShell object
+// Controller reconciles a CloudShell object.
 type Controller struct {
 	client.Client
 	config     *rest.Config
@@ -532,7 +532,7 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 			Path:             SetRouteRulePath(cloudshell),
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to parse cloudshell ingress manifest")
+			return errors.Wrap(err, "failed to parse cloudshell ingress manifest.")
 		}
 
 		decoder := scheme.Codecs.UniversalDeserializer()
