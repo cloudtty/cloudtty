@@ -21,12 +21,12 @@ const (
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: {{ .Namespace }}
-  name: {{ .Name }}
+  namespace: "{{ .Namespace }}"
+  name: "{{ .Name }}"
 spec:
   containers:
   - name: web-tty
-    image: {{ .Image }}
+    image: "{{ .Image }}"
     imagePullPolicy: IfNotPresent
     command:
     - /bin/bash
@@ -44,8 +44,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Name }}
-  namespace: {{ .Namespace }}
+  name: "{{ .Name }}"
+  namespace: "{{ .Namespace }}"
 spec:
   ports:
   - name: ttyd
@@ -53,7 +53,7 @@ spec:
     protocol: TCP
     targetPort: 7681
   selector:
-    worker.cloudtty.io/name: {{ .Worker }}
+    worker.cloudtty.io/name: "{{ .Worker }}"
   type: {{ .Type }}
 `
 
@@ -61,20 +61,20 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ .Name }}
-  namespace: {{ .Namespace }}
+  name: "{{ .Name }}"
+  namespace: "{{ .Namespace }}"
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  ingressClassName: {{ .IngressClassName }}
+  ingressClassName: "{{ .IngressClassName }}"
   rules:
   - http:
       paths:
-      - path: {{ .Path }}
+      - path: "{{ .Path }}"
         pathType: Prefix
         backend:
           service:
-            name: {{ .ServiceName }}
+            name: "{{ .ServiceName }}"
             port:
               number: 7681
 `
@@ -83,24 +83,24 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: {{ .Name }}
-  namespace: {{ .Namespace }}
+  name: "{{ .Name }}"
+  namespace: "{{ .Namespace }}"
 spec:
   exportTo:
-  - {{ .ExportTo }}
+  - "{{ .ExportTo }}"
   gateways:
-  - {{ .Gateway }}
+  - "{{ .Gateway }}"
   hosts:
   - '*'
   http:
   - match:
     - uri:
-        prefix: {{ .Path }}
+        prefix: "{{ .Path }}"
     rewrite:
       uri: /
     route:
     - destination:
-        host: {{ .ServiceName }}.{{ .Namespace }}.svc.cluster.local
+        host: "{{ .ServiceName }}.{{ .Namespace }}.svc.cluster.local"
         port:
           number: 7681
 `
@@ -109,7 +109,7 @@ spec:
 apiVersion: v1
 clusters:
 - cluster:
-    certificate-authority-data: {{ .CAData }}
+    certificate-authority-data: "{{ .CAData }}"
     server: {{ .Server }}
   name: kubernetes
 contexts:
@@ -122,6 +122,6 @@ kind: Config
 users:
 - name: cloudtty-controller-manager
   user: 
-    token: {{ .Token }}
+    token: "{{ .Token }}"
 `
 )
