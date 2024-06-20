@@ -38,42 +38,6 @@ import "networking/v1beta1/workload_entry.proto";
 // will be associated with the workload group and use service account `default`.
 // `app.kubernetes.io/version` is just an arbitrary example of a label.
 //
-// {{<tabset category-name="example">}}
-// {{<tab name="v1alpha3" category-value="v1alpha3">}}
-// ```yaml
-// apiVersion: networking.istio.io/v1alpha3
-// kind: WorkloadGroup
-// metadata:
-//   name: reviews
-//   namespace: bookinfo
-// spec:
-//   metadata:
-//     labels:
-//       app.kubernetes.io/name: reviews
-//       app.kubernetes.io/version: "1.3.4"
-//   template:
-//     ports:
-//       grpc: 3550
-//       http: 8080
-//     serviceAccount: default
-//   probe:
-//     initialDelaySeconds: 5
-//     timeoutSeconds: 3
-//     periodSeconds: 4
-//     successThreshold: 3
-//     failureThreshold: 3
-//     httpGet:
-//      path: /foo/bar
-//      host: 127.0.0.1
-//      port: 3100
-//      scheme: HTTPS
-//      httpHeaders:
-//      - name: Lit-Header
-//        value: Im-The-Best
-// ```
-// {{</tab>}}
-//
-// {{<tab name="v1beta1" category-value="v1beta1">}}
 // ```yaml
 // apiVersion: networking.istio.io/v1beta1
 // kind: WorkloadGroup
@@ -105,9 +69,6 @@ import "networking/v1beta1/workload_entry.proto";
 //      - name: Lit-Header
 //        value: Im-The-Best
 // ```
-// {{</tab>}}
-// {{</tabset>}}
-//
 package istio.networking.v1beta1;
 
 option go_package = "istio.io/api/networking/v1beta1";
@@ -121,6 +82,7 @@ option go_package = "istio.io/api/networking/v1beta1";
 // <!-- crd generation tags
 // +cue-gen:WorkloadGroup:groupName:networking.istio.io
 // +cue-gen:WorkloadGroup:version:v1beta1
+// +cue-gen:WorkloadGroup:storageVersion
 // +cue-gen:WorkloadGroup:labels:app=istio-pilot,chart=istio,heritage=Tiller,release=istio
 // +cue-gen:WorkloadGroup:subresource:status
 // +cue-gen:WorkloadGroup:scope:Namespaced
