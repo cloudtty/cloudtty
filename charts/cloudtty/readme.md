@@ -78,7 +78,7 @@ $ kubectl delete crd clusteroperations.kubean.io
 ### controllerManager configuration
 
 | Name                         | Description                                           | Value                          |
-| ---------------------------- | ----------------------------------------------------- | ------------------------------ |
+| ---------------------------- | ----------------------------------------------------- |--------------------------------|
 | `labels`                     | controllerManager labels                              | `{}`                           |
 | `replicaCount`               | controllerManager target replica count                | `1`                            |
 | `podAnnotations`             | controllerManager pod annotations                     | `{}`                           |
@@ -87,7 +87,7 @@ $ kubectl delete crd clusteroperations.kubean.io
 | `maxWorkerLimit`             | defines the max limit of worker pool                  | `nil`                          |
 | `image.registry`             | cloudtty image registry                               | `ghcr.io`                      |
 | `image.repository`           | cloudtty image repository                             | `cloudtty/cloudshell-operator` |
-| `image.tag`                  | cloudtty image tag (immutable tags are recommended)   | `v0.7.2`                       |
+| `image.tag`                  | cloudtty image tag (immutable tags are recommended)   | `v0.7.3`                       |
 | `image.pullPolicy`           | cloudtty image pull policy                            | `IfNotPresent`                 |
 | `image.pullSecrets`          | Specify docker-registry secret names as an array      | `[]`                           |
 | `resources`                  | controllerManager resource requests and limits        | `{}`                           |
@@ -98,4 +98,4 @@ $ kubectl delete crd clusteroperations.kubean.io
 | `readinessProbe.enabled`     | Enable readinessProbe on Kafka containers             | `false`                        |
 | `cloudshellImage.registry`   | cloudshell image registry                             | `ghcr.io`                      |
 | `cloudshellImage.repository` | cloudshell image repository                           | `cloudtty/cloudshell`          |
-| `cloudshellImage.tag`        | cloudshell image tag (immutable tags are recommended) | `v0.7.2`                       |
+| `cloudshellImage.tag`        | cloudshell image tag (immutable tags are recommended) | `v0.7.3`                       |
