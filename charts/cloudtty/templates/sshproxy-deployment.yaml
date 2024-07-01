@@ -1,0 +1,52 @@
+{{- if .Values.sshproxy.enabled}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cloudtty.sshproxy.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.sshproxy.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "cloudtty.sshproxy.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "cloudtty.sshproxy.fullname" . }}
+    spec:
+      {{- include "cloudtty.sshproxy.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - image: {{ include "cloudtty.sshproxy.image" . }}
+          imagePullPolicy: {{ .Values.sshproxy.image.pullPolicy }}
+          name: {{ include "cloudtty.sshproxy.fullname" . }}
+          ports:
+            - containerPort: {{ .Values.sshproxy.sshpiperPort }}
+              protocol: TCP
+            - containerPort: {{ .Values.sshproxy.proxyServerPort }}
+              protocol: TCP
+          command:
+            - /bin/sshpiperd
+            - --port={{ .Values.sshproxy.sshpiperPort }}
+            - /bin/sshproxy
+            - --port={{ .Values.sshproxy.proxyServerPort }}
+            - --hostkey-secret-namespace={{ .Release.Namespace }}
+            - --hostkey-secret-name={{ printf "%s-private-key" (include "cloudtty.sshproxy.fullname" .)}}
+          volumeMounts:
+            - mountPath: /ssh-private-key
+              name: ssh-private-key
+              readOnly: true
+          env:
+            - name: SSHPIPERD_SERVER_KEY
+              value: /ssh-private-key/ssh_host_ecdsa_key
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: {{ include "cloudtty.sshproxy.fullname" . }}
+      volumes:
+        - name: ssh-private-key
+          secret:
+            secretName: {{ printf "%s-private-key" (include "cloudtty.sshproxy.fullname" .) }}
+            items:
+              - key: ssh-privatekey
+                path: ssh_host_ecdsa_key
+            defaultMode: 420
+
+{{- end}}

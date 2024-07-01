@@ -27,6 +27,10 @@ type FakeCloudshellV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeCloudshellV1alpha1) CloudProxies() v1alpha1.CloudProxyInterface {
+	return &FakeCloudProxies{c}
+}
+
 func (c *FakeCloudshellV1alpha1) CloudShells(namespace string) v1alpha1.CloudShellInterface {
 	return &FakeCloudShells{c, namespace}
 }

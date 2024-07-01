@@ -92,3 +92,14 @@ cloudshellImage:
   registry: ghcr.io
   repository: cloudtty/cloudshell
   tag: "v0.7.3"
+
+sshproxy:
+  enabled: false
+  replicaCount: 1
+  image:
+    registry: ghcr.io
+    repository: cloudtty/sshproxy
+    tag: "v0.0.1"
+    pullPolicy: IfNotPresent
+  sshpiperPort: 2222
+  proxyServerPort: 2223

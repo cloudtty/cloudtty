@@ -1,0 +1,25 @@
+{{- if .Values.sshproxy.enabled}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "cloudtty.sshproxy.fullname" . }}
+rules:
+  - apiGroups:
+      - '*'
+    resources:
+      - '*'
+    verbs:
+      - '*'
+  - apiGroups:
+      - cloudshell.cloudtty.io
+    resources:
+      - cloudproxy
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+{{- end}}

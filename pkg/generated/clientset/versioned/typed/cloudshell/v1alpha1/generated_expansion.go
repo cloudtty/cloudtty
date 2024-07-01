@@ -17,4 +17,6 @@ limitations under the License.
 
 package v1alpha1
 
+type CloudProxyExpansion interface{}
+
 type CloudShellExpansion interface{}

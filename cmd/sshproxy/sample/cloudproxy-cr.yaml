@@ -1,0 +1,12 @@
+apiVersion: cloudshell.cloudtty.io/v1alpha1
+kind: CloudProxy
+metadata:
+  labels:
+    app.kubernetes.io/name: crd-op
+    app.kubernetes.io/managed-by: kustomize
+  name: cluster202
+  namespace: cloudtty-system
+spec:
+  kubeconfRef:
+    name: cluster202-secret
+    namespace: kpanda-system

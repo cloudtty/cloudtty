@@ -1,0 +1,14 @@
+{{- if .Values.sshproxy.enabled}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "cloudtty.sshproxy.fullname" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "cloudtty.sshproxy.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "cloudtty.sshproxy.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end}}
