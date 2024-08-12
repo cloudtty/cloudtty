@@ -73,6 +73,10 @@ export class Xterm extends Component<Props> {
     private reconnect = true;
     private doReconnect = true;
 
+    private startTimestamp: number;
+    private endTimestamp: number;
+    private ttl: number;
+
     constructor(props: Props) {
         super(props);
 
@@ -239,7 +243,12 @@ export class Xterm extends Component<Props> {
 
     @bind
     private connect() {
+        if (!this.startTimestamp) {
+            this.startTimestamp = new Date().getTime();
+        }
+
         this.socket = new WebSocket(this.props.wsUrl, ['tty']);
+
         const { socket } = this;
 
         socket.binaryType = 'arraybuffer';
@@ -247,6 +256,19 @@ export class Xterm extends Component<Props> {
         socket.onmessage = this.onSocketData;
         socket.onclose = this.onSocketClose;
         socket.onerror = this.onSocketError;
+
+        if (!this.ttl) {
+            let params = new URL(location.href).searchParams;
+            const ttlParams = params.get('ttl');
+    
+            if (ttlParams) {
+                let num = Number(ttlParams);
+        
+                this.ttl = (!isNaN(num) && ttlParams !== "") ? num : Infinity;
+            } else {
+                this.ttl = Infinity;
+            }
+        }
     }
 
     @bind
@@ -409,6 +431,18 @@ export class Xterm extends Component<Props> {
     @bind
     private onSocketClose(event: CloseEvent) {
         console.log(`[ttyd] websocket connection closed with code: ${event.code}`);
+
+        if (this.ttl !== Infinity) {
+            this.endTimestamp = new Date().getTime();
+            const durationTime = Math.floor((this.endTimestamp - this.startTimestamp) / 1000);
+
+            if ((durationTime + 10) >= this.ttl) {
+                const { overlayAddon } = this;
+                overlayAddon.showOverlay('The terminal has ended.', null);
+                return;
+            }
+
+        }
 
         const { refreshToken, connect, doReconnect, overlayAddon } = this;
         overlayAddon.showOverlay('Connection Closed', null);
