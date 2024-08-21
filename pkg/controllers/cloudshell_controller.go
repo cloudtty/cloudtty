@@ -279,6 +279,11 @@ func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv
 		return nil, err
 	}
 
+	// url add ttl param, if ttl was set
+	if cloudshell.Spec.TTLSecondsAfterStarted != nil {
+		accessURLFmtStr := "%s?ttl=%d"
+		url = fmt.Sprintf(accessURLFmtStr, url, *cloudshell.Spec.TTLSecondsAfterStarted)
+	}
 	cloudshell.Status.AccessURL = url
 
 	if cloudshell.Status.LastScheduleTime == nil {
