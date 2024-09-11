@@ -26,7 +26,7 @@ package istio.meta.v1alpha1;
 option go_package="istio.io/api/meta/v1alpha1";
 
 message IstioStatus {
-  // Current service state of pod.
+  // Current service state of the resource.
   // More info: https://istio.io/docs/reference/config/config-status/
   // +optional
   // +patchMergeKey=type
