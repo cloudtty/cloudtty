@@ -212,7 +212,7 @@ func (c *Controller) syncHandler(ctx context.Context, key string) (*time.Duratio
 		return nil, c.removeCloudshell(ctx, cloudShell)
 	}
 
-	// as we not have webhook to init some necessary feild to cloudshell.
+	// as we not have webhook to init some necessary field to cloudshell.
 	// fill this default values to cloudshell after calling "syncCloudShell".
 	if err := c.ensureCloudShell(ctx, cloudShell); err != nil {
 		return nil, err
@@ -449,13 +449,13 @@ func (c *Controller) CreateRouteRule(ctx context.Context, cloudshell *cloudshell
 // GetMasterNodeIP could find the one master node IP.
 func (c *Controller) GetMasterNodeIP(ctx context.Context) (string, error) {
 	// the label "node-role.kubernetes.io/master" be removed in k8s 1.24, and replace with
-	// "node-role.kubernetes.io/cotrol-plane".
+	// "node-role.kubernetes.io/control-plane".
 	nodes := &corev1.NodeList{}
 	if err := c.List(ctx, nodes, client.MatchingLabels{"node-role.kubernetes.io/master": ""}); err != nil {
 		return "", err
 	}
 	if len(nodes.Items) == 0 {
-		if err := c.List(ctx, nodes, client.MatchingLabels{"node-role.kubernetes.io/control-plane": ""}); err != nil || len(nodes.Items) == 0 {
+		if err := c.List(ctx, nodes, client.MatchingLabels{"node-role.kubernetes.io/control-plane": ""}); err != nil {
 			return "", err
 		}
 	}
@@ -497,7 +497,7 @@ func (c *Controller) CreateCloudShellService(cloudshell *cloudshellv1alpha1.Clou
 	svc := obj.(*corev1.Service)
 	svc.SetLabels(map[string]string{constants.WorkerOwnerLabelKey: cloudshell.Name})
 
-	// set reference for service, once the cloudshell is deleted, the service is else deleted.
+	// set reference for service, once the cloudshell is deleted, the service is also deleted.
 	if err := ctrlutil.SetControllerReference(cloudshell, svc, c.Scheme); err != nil {
 		return nil, err
 	}
