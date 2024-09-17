@@ -463,11 +463,18 @@ func (c *Controller) GetMasterNodeIP(ctx context.Context) (string, error) {
 		}
 	}
 
+	var internalIP string
 	for _, addr := range nodes.Items[0].Status.Addresses {
 		// Using External IP as first priority
-		if addr.Type == corev1.NodeExternalIP || addr.Type == corev1.NodeInternalIP {
+		if addr.Type == corev1.NodeExternalIP {
 			return addr.Address, nil
 		}
+		if addr.Type == corev1.NodeInternalIP {
+			internalIP = addr.Address
+		}
+	}
+	if len(internalIP) != 0 {
+		return internalIP, nil
 	}
 	return "", nil
 }
