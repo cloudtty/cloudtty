@@ -67,7 +67,7 @@ After the cloudtty is intergated to your own UI, it would look like:
   ```
 
   By default, it will create a cloudtty pod and expose the `NodePort` service.
-  Alternatively, `Cluster-IP`, `Ingress`, and `Virtual Service`(for Istio) are all supported as `exposureMode`, please refer to `config/samples/` for more examples.
+  Alternatively, `ClusterIP`, `Ingress`, and `VirtualService`(for Istio) are all supported as `exposureMode`, please refer to `config/samples/` for more examples.
 
 - Step 3: Observe CR status to obtain its web access url, such as:
 
@@ -213,7 +213,7 @@ You can use the field `spec.secretRef.name` to difine where kubeconfig is. Curre
 ## Rationale
 
 1. Operator creates a job and a service with the same name in the proper namespace.
-   If Ingress or VitualService is used, it also creates the routing information.
+   If `Ingress` or `VirtualService` is used, it also creates the routing information.
 
 2. When the pod status is `Ready`, it will show the access url to the cloudshell status.
 
@@ -222,7 +222,7 @@ You can use the field `spec.secretRef.name` to difine where kubeconfig is. Curre
    You can set cloudshell to delete associated resources when the status is `Completed`.
 
 4. When cloudshell is deleted, the corresponding job and service (through 'ownerReference') are automatically deleted.
-   If Ingress or VitualService mode is used, the corresponding routing information will be deleted too.
+   If Ingress or VirtualService mode is used, the corresponding routing information will be deleted too.
 
 ## Developer Guide
 

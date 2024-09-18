@@ -218,7 +218,7 @@ AllowSecretStoreKubeconfig：使用 secret 的方式存储 kubeconfig 文件，�
 CloudTTY 的工作原理如下：
 
 1. Operator 会在对应的命名空间（Namespace）下创建同名的 `job` 和 `service`。
-   如果使用 Ingress 或者 VitualService 模式，还会创建对应的路由信息。
+   如果使用 Ingress 或者 VirtualService 模式，还会创建对应的路由信息。
 
 2. 当 Pod 运行状态为 `Ready` 之后，就将访问点写入 cloudshell 的 status 里。
 
@@ -227,7 +227,7 @@ CloudTTY 的工作原理如下：
    我们可以设置当 cloudshell 的状态为 `Completed` 时，同时删除相关联的资源。
 
 4. 当 cloudshell 被删除时，会自动删除对应的 Job 和 Service (通过 `ownerReference`)。
-   如果使用 Ingress 或者 VitualService 模式时，还会删除对应的路由信息。
+   如果使用 Ingress 或者 VirtualService 模式时，还会删除对应的路由信息。
 
 ## 开发者模式
 
