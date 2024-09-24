@@ -19,6 +19,7 @@ package controllers
 import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
 )
@@ -47,4 +48,14 @@ func IsCloudshellFinished(cloudsehll *cloudshellv1alpha1.CloudShell) bool {
 
 func IsCloudShellReady(cloudshell *cloudshellv1alpha1.CloudShell) bool {
 	return cloudshell.Status.Phase == cloudshellv1alpha1.PhaseReady
+}
+
+func AddLabel(o metav1.Object, key, value string) {
+	labels := o.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
+	labels[key] = value
+	o.SetLabels(labels)
 }

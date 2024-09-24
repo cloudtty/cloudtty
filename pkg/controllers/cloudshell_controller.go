@@ -262,7 +262,7 @@ func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv
 			return nil, err
 		}
 
-		cloudshell.SetLabels(map[string]string{constants.CloudshellPodLabelKey: worker.Name})
+		AddLabel(cloudshell, constants.CloudshellPodLabelKey, worker.Name)
 		if err := c.Update(context.TODO(), cloudshell); err != nil {
 			return nil, err
 		}
