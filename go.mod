@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.1
 	istio.io/api v1.19.3
 	istio.io/client-go v1.19.3
 	k8s.io/api v0.28.2
