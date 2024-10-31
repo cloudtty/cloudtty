@@ -231,6 +231,10 @@ spec:
                     description: Name is the name of resource being referenced.
                     type: string
                 type: object
+              serverBufferSize:
+                description: ServerBufferSize specified service buffer size.
+                format: int64
+                type: integer
               ttlSecondsAfterStarted:
                 format: int64
                 type: integer

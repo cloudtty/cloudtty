@@ -116,6 +116,11 @@ func (in *CloudShellSpec) DeepCopyInto(out *CloudShellSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.ServerBufferSize != nil {
+		in, out := &in.ServerBufferSize, &out.ServerBufferSize
+		*out = new(int64)
+		**out = **in
+	}
 	return
 }
 

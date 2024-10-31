@@ -12,7 +12,7 @@ RUN yarn run build
 FROM ghcr.io/dtzar/helm-kubectl:3.15.4
 SHELL [ "/bin/bash", "-c" ]
 
-ARG TTYD_VERSION=1.7.4
+ARG TTYD_VERSION=1.7.8
 
 RUN echo "https://mirrors.aliyun.com/alpine/v3.18/main/" >> /etc/apk/repositories \
     && apk update \
@@ -33,8 +33,9 @@ RUN echo "https://mirrors.aliyun.com/alpine/v3.18/main/" >> /etc/apk/repositorie
     && echo 'alias k=kubectl' >>~/.bashrc \
     && echo 'complete -o default -F __start_kubectl k' >>~/.bashrc
 
+# https://github.com/flpanbin/ttyd/releases/download/1.7.8/ttyd.i686
 RUN ttydArch="$(uname -m)" && echo "Building arch of $ttydArch.." \
-    && curl -LO https://github.com/tsl0922/ttyd/releases/download/$TTYD_VERSION/ttyd.${ttydArch} \
+    && curl -LO https://github.com/cloudtty/ttyd/releases/download/$TTYD_VERSION/ttyd.${ttydArch} \
     && chmod +x ttyd.${ttydArch} \
     && mv ttyd.${ttydArch} /usr/local/bin/ttyd \
     && which ttyd

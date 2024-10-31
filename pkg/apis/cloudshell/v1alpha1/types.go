@@ -105,6 +105,10 @@ type CloudShellSpec struct {
 	// +patchMergeKey=name
 	// +patchStrategy=merge
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// ServerBufferSize specified service buffer size.
+	// +optional
+	ServerBufferSize *int64 `json:"serverBufferSize,omitempty"`
 }
 
 // VirtualServiceConfig specifies some of the parameters necessary to create the virtaulService.

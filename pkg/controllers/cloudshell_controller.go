@@ -373,6 +373,9 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 		string(kubeConfigByte), fmt.Sprint(cloudshell.Spec.Once), fmt.Sprint(cloudshell.Spec.UrlArg),
 		cloudshell.Spec.CommandAction, podName, namespace, container,
 	}
+	if cloudshell.Spec.ServerBufferSize != nil {
+		ttydCommand = append(ttydCommand, fmt.Sprint(*cloudshell.Spec.ServerBufferSize))
+	}
 	return execCommand(cloudshell, ttydCommand, c.config)
 }
 
