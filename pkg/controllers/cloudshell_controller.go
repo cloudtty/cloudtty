@@ -60,11 +60,14 @@ const (
 
 	startupScriptPath = "/usr/lib/ttyd/startup.sh"
 	resetScriptPath   = "/usr/lib/ttyd/reset.sh"
+
+	CloudshellConfigMapLabel = "cloudtty.io/cloudshell-config"
 )
 
 // Controller reconciles a CloudShell object
 type Controller struct {
 	client.Client
+	kubeClient kubernetes.Interface
 	config     *rest.Config
 	Scheme     *runtime.Scheme
 	workerPool *worerkpool.WorkerPool
@@ -75,14 +78,17 @@ type Controller struct {
 	podInformer        cache.SharedIndexInformer
 	podLister          listerscorev1.PodLister
 
+	ttydServiceBufferSize string
+
 	cloudshellImage string
 }
 
-func New(client client.Client, config *rest.Config, wp *worerkpool.WorkerPool, cloudshellImage string,
+func New(client client.Client, kubeClient kubernetes.Interface, config *rest.Config, wp *worerkpool.WorkerPool, cloudshellImage string,
 	cloudshellInformer cloudshellinformers.CloudShellInformer, podInformer informercorev1.PodInformer,
 ) *Controller {
 	controller := &Controller{
 		Client:     client,
+		kubeClient: kubeClient,
 		config:     config,
 		Scheme:     gclient.NewSchema(),
 		workerPool: wp,
@@ -170,6 +176,15 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 	}
 	if !cache.WaitForCacheSync(stopCh, c.podInformer.HasSynced) {
 		klog.Errorf("cloudshell manager: wait for pod informer factory failed")
+	}
+	currentNS := util.GetCurrentNSOrDefault()
+	configs, err := c.kubeClient.CoreV1().ConfigMaps(currentNS).List(context.TODO(), metav1.ListOptions{LabelSelector: CloudshellConfigMapLabel})
+	if err != nil {
+		klog.ErrorS(err, "failed to list CloudShell ConfigMap")
+	} else {
+		if len(configs.Items) > 0 {
+			c.ttydServiceBufferSize = configs.Items[0].Data["TTYD_SERVER_BUFFER_SIZE"]
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -354,7 +369,8 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 
 func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1alpha1.CloudShell, kubeConfigByte []byte) error {
 	// TODO: Some extra logic in order to upload and download files.
-	var podName, namespace, container string
+	var podName, namespace, container, serverBufferSize string
+	serverBufferSize = c.ttydServiceBufferSize
 	for _, env := range cloudshell.Spec.Env {
 		switch env.Name {
 		case "POD_NAME":
@@ -363,9 +379,11 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 			namespace = env.Value
 		case "CONTAINER":
 			container = env.Value
+		case "TTYD_SERVER_BUFFER_SIZE":
+			serverBufferSize = env.Value
 		}
 	}
-
+	klog.InfoS("Cloudshell config", "cloudshell.name", cloudshell.Name, "serverBufferSize", serverBufferSize)
 	// start ttyd, ttyd args passed as shell parameter
 	// case: ttydCommand := []string{"/usr/lib/ttyd/startup.sh", "${KUBECONFIG}" "${ONCE}", "${URLARG}", "${COMMAND}"}
 	ttydCommand := []string{
@@ -373,8 +391,8 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 		string(kubeConfigByte), fmt.Sprint(cloudshell.Spec.Once), fmt.Sprint(cloudshell.Spec.UrlArg),
 		cloudshell.Spec.CommandAction, podName, namespace, container,
 	}
-	if cloudshell.Spec.ServerBufferSize != nil {
-		ttydCommand = append(ttydCommand, fmt.Sprint(*cloudshell.Spec.ServerBufferSize))
+	if serverBufferSize != "" {
+		ttydCommand = append(ttydCommand, serverBufferSize)
 	}
 	return execCommand(cloudshell, ttydCommand, c.config)
 }

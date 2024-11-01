@@ -19,7 +19,10 @@ package utils
 import (
 	"bytes"
 	"os"
+	"strings"
 	"text/template"
+
+	"k8s.io/klog/v2"
 
 	"github.com/pkg/errors"
 )
@@ -45,4 +48,19 @@ func ParseTemplate(strtmpl string, obj interface{}) ([]byte, error) {
 		return nil, errors.Wrap(err, "error when executing template")
 	}
 	return buf.Bytes(), nil
+}
+
+// GetCurrentNS fetch namespace the current pod running in.
+func GetCurrentNSOrDefault() string {
+	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
+		return ns
+	}
+	if data, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
+		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
+			return ns
+		}
+	} else {
+		klog.ErrorS(err, "Failed to get namespace where pods running in")
+	}
+	return "default"
 }

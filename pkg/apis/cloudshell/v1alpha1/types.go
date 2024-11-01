@@ -100,15 +100,12 @@ type CloudShellSpec struct {
 	UrlArg bool `json:"urlArg,omitempty"` //nolint:all
 
 	// List of environment variables to set in the container.
+	// If it begins with "TTYD", that means it's a parameter configured for ttyd, eg: TTYD_SERVER_BUFFER_SIZE.
 	// Cannot be updated.
 	// +optional
 	// +patchMergeKey=name
 	// +patchStrategy=merge
 	Env []corev1.EnvVar `json:"env,omitempty"`
-
-	// ServerBufferSize specified service buffer size.
-	// +optional
-	ServerBufferSize *int64 `json:"serverBufferSize,omitempty"`
 }
 
 // VirtualServiceConfig specifies some of the parameters necessary to create the virtaulService.
