@@ -5,7 +5,7 @@ const (
 	DefaultIngressName        = "cloudshell-ingress"
 	DefaultVirtualServiceName = "cloudshell-virtualService"
 	DefaultServicePort        = 7681
-	DefaultTtydImage          = "ghcr.io/cloudtty/cloudshell:v0.7.7"
+	DefaultTtydImage          = "ghcr.io/cloudtty/cloudshell:v0.7.8"
 
 	CloudshellPodLabelKey = "cloudshell.cloudtty.io/pod-name"
 
