@@ -32,5 +32,9 @@ func (o *Options) Validate() field.ErrorList {
 		errs = append(errs, field.Invalid(newPath.Child("MaxWorkerLimit"), o.MaxWorkerLimit, "max-worker-limit must be greater than or equals 0"))
 	}
 
+	if o.ScaleInWorkerQueueDuration <= 0 {
+		errs = append(errs, field.Invalid(newPath.Child("ScaleInWorkerQueueDuration"), o.ScaleInWorkerQueueDuration, "scale-in-worker-queue-duration must be greater than 0"))
+	}
+
 	return errs
 }
