@@ -449,9 +449,6 @@ export class Xterm extends Component<Props> {
 
         // 1000: CLOSE_NORMAL
         if (event.code !== 1000 && doReconnect) {
-            overlayAddon.showOverlay('Reconnecting...', null);
-            refreshToken().then(connect);
-        } else {
             const { terminal } = this;
             const keyDispose = terminal.onKey(e => {
                 const event = e.domEvent;
