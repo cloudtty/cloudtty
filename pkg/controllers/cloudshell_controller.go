@@ -216,7 +216,7 @@ func (c *Controller) syncHandler(ctx context.Context, key string) (*time.Duratio
 	cloudShell, err := c.lister.CloudShells(ns).Get(name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			klog.V(2).Infof("fetching object with key %s from store failed with %v", key, err)
+			klog.V(2).InfoS("Skip syncing, cloudshell not found", "cloudshell", key)
 			return nil, nil
 		}
 
@@ -592,7 +592,7 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 	// if the path already exists in ingress, then update it
 	found := false
 	for i := 0; i < len(ingressRule.Paths); i++ {
-		if ingressRule.Paths[i].Path == cloudshell.Status.AccessURL {
+		if strings.HasPrefix(cloudshell.Status.AccessURL, ingressRule.Paths[i].Path) {
 			ingressRule.Paths[i].Backend = ingressBackend
 			found = true
 		}
@@ -706,7 +706,7 @@ func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, serv
 		match := httpRoute[i].Match
 		if len(match) > 0 && match[0].Uri != nil {
 			if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok &&
-				prefix.Prefix == cloudshell.Status.AccessURL {
+				strings.HasPrefix(cloudshell.Status.AccessURL, prefix.Prefix) {
 				httpRoute[i].Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
 				found = true
 			}
@@ -757,9 +757,10 @@ func (c *Controller) removeCloudshell(ctx context.Context, cloudshell *cloudshel
 
 	if worker != nil {
 		if err = c.ResetWorker(ctx, cloudshell); err != nil {
-			klog.ErrorS(err, "failed reset worker")
+			klog.ErrorS(err, "Failed to reset worker", "cloudshell", cloudshell.Name)
 		}
 		if err := c.workerPool.Back(worker); err != nil {
+			klog.ErrorS(err, "Failed to back worker", "cloudshell", cloudshell.Name)
 			return err
 		}
 
@@ -767,7 +768,7 @@ func (c *Controller) removeCloudshell(ctx context.Context, cloudshell *cloudshel
 		delete(cloudshell.Labels, constants.CloudshellPodLabelKey)
 	}
 
-	klog.V(4).InfoS("delete cloudshell", "cloudshell", klog.KObj(cloudshell))
+	klog.V(4).InfoS("Delete cloudshell", "cloudshell", klog.KObj(cloudshell))
 	if err := c.removeCloudshellRoute(ctx, cloudshell); err != nil {
 		return err
 	}
@@ -801,7 +802,7 @@ func (c *Controller) removeCloudshellRoute(ctx context.Context, cloudshell *clou
 
 		// remove rule from ingress. if the length of ingressRule is zero, delete it directly.
 		for i := 0; i < len(ingressRule.Paths); i++ {
-			if ingressRule.Paths[i].Path == cloudshell.Status.AccessURL {
+			if strings.HasPrefix(cloudshell.Status.AccessURL, ingressRule.Paths[i].Path) {
 				ingressRule.Paths = append(ingressRule.Paths[:i], ingressRule.Paths[i+1:]...)
 				break
 			}
@@ -826,7 +827,7 @@ func (c *Controller) removeCloudshellRoute(ctx context.Context, cloudshell *clou
 			match := httpRoute[i].Match
 			if len(match) > 0 && match[0].Uri != nil {
 				if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok &&
-					prefix.Prefix == cloudshell.Status.AccessURL {
+					strings.HasPrefix(cloudshell.Status.AccessURL, prefix.Prefix) {
 					httpRoute = append(httpRoute[:i], httpRoute[i+1:]...)
 					break
 				}
@@ -979,7 +980,7 @@ func execCommand(cloudshell *cloudshellv1alpha1.CloudShell, command []string, co
 	}
 
 	if err := options.Run(); err != nil {
-		klog.ErrorS(err, "failed to run command", "command", command)
+		klog.ErrorS(err, "Failed to run command", "cloudshell", cloudshell.Name, "command", command)
 		return err
 	}
 	return nil
