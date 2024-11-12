@@ -17,11 +17,19 @@ limitations under the License.
 package controllers
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
+)
+
+const (
+	LabelMaxLength = 63
+	MD5Length      = 32
 )
 
 // IsJobFinished checks whether the given Job has finished execution.
@@ -56,6 +64,16 @@ func AddLabel(o metav1.Object, key, value string) {
 		labels = make(map[string]string)
 	}
 
-	labels[key] = value
+	labels[key] = truncateAndHashIfExceed(value)
 	o.SetLabels(labels)
+}
+
+func truncateAndHashIfExceed(input string) string {
+	if len(input) <= LabelMaxLength {
+		return input
+	}
+	prefix := input[:LabelMaxLength-MD5Length]
+	suffix := input[LabelMaxLength-MD5Length:]
+	hash := md5.Sum([]byte(suffix))
+	return prefix + hex.EncodeToString(hash[:])
 }
