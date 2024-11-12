@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
@@ -62,6 +63,8 @@ const (
 	resetScriptPath   = "/usr/lib/ttyd/reset.sh"
 
 	CloudshellConfigMapLabel = "cloudtty.io/cloudshell-config"
+
+	randomLength = 5
 )
 
 // Controller reconciles a CloudShell object
@@ -867,7 +870,7 @@ func SetRouteRulePath(cloudshell *cloudshellv1alpha1.CloudShell) string {
 func IngressNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.NamespacedName {
 	// set custom name and namespace to ingress.
 	config := cloudshell.Spec.IngressConfig
-	ingressName := constants.DefaultIngressName
+	ingressName := constants.DefaultIngressName + rand.String(randomLength)
 	if config != nil && len(config.IngressName) > 0 {
 		ingressName = config.IngressName
 	}
@@ -884,7 +887,7 @@ func IngressNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.Name
 func VsNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.NamespacedName {
 	// set custom name and namespace to ingress.
 	config := cloudshell.Spec.VirtualServiceConfig
-	vsName := constants.DefaultVirtualServiceName
+	vsName := constants.DefaultVirtualServiceName + rand.String(randomLength)
 	if config != nil && len(config.VirtualServiceName) > 0 {
 		vsName = config.VirtualServiceName
 	}
