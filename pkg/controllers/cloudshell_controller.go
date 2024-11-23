@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/rand"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
@@ -63,8 +62,6 @@ const (
 	resetScriptPath   = "/usr/lib/ttyd/reset.sh"
 
 	CloudshellConfigMapLabel = "cloudtty.io/cloudshell-config"
-
-	randomLength = 5
 )
 
 // Controller reconciles a CloudShell object
@@ -593,9 +590,10 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 		},
 	}
 	// if the path already exists in ingress, then update it
+	routePath := SetRouteRulePath(cloudshell)
 	found := false
 	for i := 0; i < len(ingressRule.Paths); i++ {
-		if strings.HasPrefix(cloudshell.Status.AccessURL, ingressRule.Paths[i].Path) {
+		if routePath == ingressRule.Paths[i].Path {
 			ingressRule.Paths[i].Backend = ingressBackend
 			found = true
 		}
@@ -605,7 +603,7 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 		pathType := networkingv1.PathTypePrefix
 		ingressRule.Paths = append(ingressRule.Paths, networkingv1.HTTPIngressPath{
 			PathType: &pathType,
-			Path:     SetRouteRulePath(cloudshell),
+			Path:     routePath,
 			Backend:  ingressBackend,
 		})
 	}
@@ -703,14 +701,15 @@ func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, serv
 		return c.Create(ctx, virtualService)
 	}
 	found := false
-	httpRoute := virtualService.Spec.Http
+	httpRoutes := virtualService.Spec.Http
+	routePath := SetRouteRulePath(cloudshell)
 	// if the path already exists in the virtualService, update Destination.Host
-	for i := 0; i < len(httpRoute); i++ {
-		match := httpRoute[i].Match
+	for i := 0; i < len(httpRoutes); i++ {
+		match := httpRoutes[i].Match
 		if len(match) > 0 && match[0].Uri != nil {
 			if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok &&
-				strings.HasPrefix(cloudshell.Status.AccessURL, prefix.Prefix) {
-				httpRoute[i].Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
+				routePath == prefix.Prefix {
+				httpRoutes[i].Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
 				found = true
 			}
 		}
@@ -718,7 +717,7 @@ func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, serv
 	// if the path not exists, add a route in the virtualService
 	if !found {
 		newHTTPRoute := virtualService.Spec.Http[0].DeepCopy()
-		newHTTPRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: SetRouteRulePath(cloudshell)}
+		newHTTPRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: routePath}
 		newHTTPRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
 		virtualService.Spec.Http = append(virtualService.Spec.Http, newHTTPRoute)
 	}
@@ -802,14 +801,16 @@ func (c *Controller) removeCloudshellRoute(ctx context.Context, cloudshell *clou
 		}
 
 		ingressRule := ingress.Spec.Rules[0].IngressRuleValue.HTTP
-
 		// remove rule from ingress. if the length of ingressRule is zero, delete it directly.
+		newIngressPaths := []networkingv1.HTTPIngressPath{}
+		routePath := SetRouteRulePath(cloudshell)
 		for i := 0; i < len(ingressRule.Paths); i++ {
-			if strings.HasPrefix(cloudshell.Status.AccessURL, ingressRule.Paths[i].Path) {
-				ingressRule.Paths = append(ingressRule.Paths[:i], ingressRule.Paths[i+1:]...)
-				break
+			if routePath != ingressRule.Paths[i].Path {
+				newIngressPaths = append(newIngressPaths, ingressRule.Paths[i])
 			}
 		}
+		klog.V(4).InfoS("ingress rule remove result", "cloudshell", cloudshell.Name, "old paths count", len(ingressRule.Paths), "new paths count", len(newIngressPaths))
+		ingressRule.Paths = newIngressPaths
 
 		if len(ingressRule.Paths) == 0 {
 			return c.Delete(ctx, ingress)
@@ -824,24 +825,30 @@ func (c *Controller) removeCloudshellRoute(ctx context.Context, cloudshell *clou
 			return err
 		}
 
+		routePath := SetRouteRulePath(cloudshell)
 		// remove rule from virtualService. if the length of virtualService is zero, delete it directly.
-		httpRoute := virtualService.Spec.Http
-		for i := 0; i < len(httpRoute); i++ {
-			match := httpRoute[i].Match
+		httpRoutes := virtualService.Spec.Http
+		newHTTPRoute := []*networkingv1beta1.HTTPRoute{}
+		for i := 0; i < len(httpRoutes); i++ {
+			match := httpRoutes[i].Match
 			if len(match) > 0 && match[0].Uri != nil {
-				if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok &&
-					strings.HasPrefix(cloudshell.Status.AccessURL, prefix.Prefix) {
-					httpRoute = append(httpRoute[:i], httpRoute[i+1:]...)
-					break
+				if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok {
+					if routePath != prefix.Prefix {
+						newHTTPRoute = append(newHTTPRoute, httpRoutes[i])
+					}
+				} else {
+					newHTTPRoute = append(newHTTPRoute, httpRoutes[i])
 				}
+			} else {
+				newHTTPRoute = append(newHTTPRoute, httpRoutes[i])
 			}
 		}
-
-		if len(httpRoute) == 0 {
+		klog.InfoS("virtual service rule remove result", "cloudshell", cloudshell.Name, "old paths count", len(httpRoutes), "new paths count", len(newHTTPRoute))
+		if len(newHTTPRoute) == 0 {
 			return c.Delete(ctx, virtualService)
 		}
 
-		virtualService.Spec.Http = httpRoute
+		virtualService.Spec.Http = newHTTPRoute
 		return c.Update(ctx, virtualService)
 	}
 	return nil
@@ -870,7 +877,7 @@ func SetRouteRulePath(cloudshell *cloudshellv1alpha1.CloudShell) string {
 func IngressNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.NamespacedName {
 	// set custom name and namespace to ingress.
 	config := cloudshell.Spec.IngressConfig
-	ingressName := constants.DefaultIngressName + rand.String(randomLength)
+	ingressName := constants.DefaultIngressName
 	if config != nil && len(config.IngressName) > 0 {
 		ingressName = config.IngressName
 	}
@@ -887,7 +894,7 @@ func IngressNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.Name
 func VsNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.NamespacedName {
 	// set custom name and namespace to ingress.
 	config := cloudshell.Spec.VirtualServiceConfig
-	vsName := constants.DefaultVirtualServiceName + rand.String(randomLength)
+	vsName := constants.DefaultVirtualServiceName
 	if config != nil && len(config.VirtualServiceName) > 0 {
 		vsName = config.VirtualServiceName
 	}
