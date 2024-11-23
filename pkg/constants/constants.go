@@ -2,8 +2,8 @@ package constants
 
 const (
 	DefaultPathPrefix         = "/apis/v1alpha1/cloudshell"
-	DefaultIngressName        = "cloudshell-ingress-"
-	DefaultVirtualServiceName = "cloudshell-virtualService-"
+	DefaultIngressName        = "cloudshell-ingress"
+	DefaultVirtualServiceName = "cloudshell-virtualService"
 	DefaultServicePort        = 7681
 	DefaultTtydImage          = "ghcr.io/cloudtty/cloudshell:v0.7.9"
 
