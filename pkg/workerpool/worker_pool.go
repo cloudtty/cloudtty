@@ -229,19 +229,21 @@ func (w *WorkerPool) tryHandleRequestQueue(stop <-chan struct{}) {
 	for {
 		select {
 		case <-t.C:
-			w.handlerandleRequestQueue()
+			klog.V(4).InfoS("time ticker trigger")
+			w.handleRequestQueue()
 		case <-w.matchRequestSignal:
-			w.handlerandleRequestQueue()
+			klog.InfoS("received request signal")
+			w.handleRequestQueue()
 		case <-stop:
 			return
 		}
 	}
 }
 
-func (w *WorkerPool) handlerandleRequestQueue() {
+func (w *WorkerPool) handleRequestQueue() {
 	w.Lock()
 	defer w.Unlock()
-
+	klog.V(4).InfoS("handle request queue")
 	for _, item := range w.requestQueue.All() {
 		req := item.(Request)
 		if _, err := w.matchWorkerFor(&req); err != nil {
@@ -257,6 +259,7 @@ func (w *WorkerPool) handlerandleRequestQueue() {
 			// TODO: pod is failed?
 
 			if len(pods) == 0 {
+				klog.InfoS("start to create worker", "cloudshell", req.Cloudshell)
 				if err := w.createWorker(&req); err != nil {
 					klog.ErrorS(err, "failed to create worker for cloudshell", req.Cloudshell)
 				}
@@ -356,6 +359,7 @@ func (w *WorkerPool) Borrow(req *Request) (*corev1.Pod, error) {
 		if err == ErrNotWorker {
 			// add the request to the request queue.
 			w.requestQueue.Add(*req)
+			w.matchRequestSignal <- struct{}{}
 		}
 
 		return nil, err
@@ -501,7 +505,7 @@ func (w *WorkerPool) createWorker(req *Request) error {
 	if err := w.Create(context.TODO(), pod); err != nil {
 		return err
 	}
-
+	klog.InfoS("worker created", "cloudshell", req.Cloudshell)
 	return w.CreateServiceFor(context.TODO(), pod)
 }
 
