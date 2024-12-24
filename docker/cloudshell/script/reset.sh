@@ -12,4 +12,12 @@ if [[ -f /root/.env ]]; then
   rm  /root/.env -f
 fi
 
+if [[ -f /root/.ash_history ]]; then
+  rm  /root/.ash_history -f
+fi
+
+if [[ -f /root/.bash_history ]]; then
+  rm  /root/.bash_history -f
+fi
+
 ps aux | grep 'ttyd -W' | awk '{print $1}' | xargs kill -9 > /dev/null 2>&1
