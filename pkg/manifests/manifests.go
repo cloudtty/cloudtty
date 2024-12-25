@@ -38,6 +38,20 @@ spec:
       name: tty-ui
       protocol: TCP
   restartPolicy: Never
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  tolerations:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/control-plane
+    operator: Exists
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
 `
 
 	ServiceTmplV1 = `
@@ -86,18 +100,16 @@ metadata:
   name: "{{ .Name }}"
   namespace: "{{ .Namespace }}"
 spec:
-  exportTo:
-  - "{{ .ExportTo }}"
   gateways:
   - "{{ .Gateway }}"
   hosts:
-  - '*'
+  - "{{ .Host }}"
   http:
   - match:
-    - uri:
-        prefix: "{{ .Path }}"
-    rewrite:
-      uri: /
+    - authority:
+        prefix: "{{ .Host }}"
+    - gateways:
+      - "{{ .Gateway }}"
     route:
     - destination:
         host: "{{ .ServiceName }}.{{ .Namespace }}.svc.cluster.local"

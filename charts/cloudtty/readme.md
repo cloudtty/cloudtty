@@ -1,10 +1,18 @@
 ## Introduction
 
-cloudtty is an easy-to-use operator to run web terminal and cloud shell intended for a kubernetes-native environment. more information [CloudTTY](https://github.com/cloudtty/cloudtty/blob/main/README.md)
+cloudtty is an easy-to-use operator to run web terminal and cloud shell intended for a kubernetes-native environment.
+more information [CloudTTY](https://github.com/cloudtty/cloudtty/blob/main/README.md)
 
 ## Install
 
+Local install
+
+```bash
+helm install cloudtty-operator ./cloudtty --create-namespace -n cloudtty
+```
+
 First, add the CloudTTY chart repo to your local repository.
+
 ``` bash
 $ helm repo add cloudtty https://release.daocloud.io/chartrepo/cloudtty
 
@@ -14,32 +22,40 @@ cloudtty        https://cloudtty.github.io/cloudtty
 ```
 
 With the repo added, available charts and versions can be viewed.
+
 ``` bash
 $ helm search repo cloudtty
 ```
 
 You can run the following command to install the CloudTTY Operator and CRDs
+
 ``` bash
 $ export version=0.5.0
 $ helm install cloudtty-operator --version ${version} cloudtty/cloudtty 
 ```
 
 Wait for the operator pod until it is running.
+
 ``` bash
 kubectl wait deployment cloudtty-operator-controller-manager --for=condition=Available=True
 ```
 
 ## Usage
+
 Create a CloudTTY instance by applying CR, and then monitor its status
+
 ``` bash
 kubectl apply -f https://raw.githubusercontent.com/cloudtty/cloudtty/v${version}/config/samples/local_cluster_v1alpha1_cloudshell.yaml
 ```
 
 Observe CR status to obtain its web access url, such as:
+
 ``` bash
 kubectl get cloudshell -w
 ```
+
 You can see the following information:
+
 ``` bash
   NAME                 USER   COMMAND  TYPE        URL                 PHASE   AGE
   cloudshell-sample    root   bash     NodePort    192.168.4.1:30167   Ready   31s
@@ -48,11 +64,13 @@ You can see the following information:
 ## Uninstall
 
 If CloudTTY related custom resources already exist, you need to clear.
+
 ``` bash
 kubectl delete cloudshells.cloudshell.cloudtty.io --all
 ```
 
 Uninstall CloudTTY components via helm.
+
 ``` bash
 $ helm uninstall cloudtty-operator 
 $ kubectl delete crd clusteroperations.kubean.io
@@ -63,22 +81,20 @@ $ kubectl delete crd clusteroperations.kubean.io
 ### Global configuration
 
 | Name                      | Description                      | Value |
-| ------------------------- | -------------------------------- | ----- |
-| `global.imageRegistry`    | Global Docker image registry     | `""`  |
-| `global.imagePullSecrets` | Global Docker image pull secrets | `[]`  |
+|---------------------------|----------------------------------|-------|
 | `global.imageRegistry`    | Global Docker image registry     | `""`  |
 | `global.imagePullSecrets` | Global Docker image pull secrets | `[]`  |
 
 ### Pre-Hook configuration
 
 | Name          | Description                                  | Value  |
-| ------------- | -------------------------------------------- | ------ |
+|---------------|----------------------------------------------|--------|
 | `installCRDs` | define flag whether to install CRD resources | `true` |
 
 ### controllerManager configuration
 
 | Name                         | Description                                           | Value                          |
-| ---------------------------- | ----------------------------------------------------- |--------------------------------|
+|------------------------------|-------------------------------------------------------|--------------------------------|
 | `labels`                     | controllerManager labels                              | `{}`                           |
 | `replicaCount`               | controllerManager target replica count                | `1`                            |
 | `podAnnotations`             | controllerManager pod annotations                     | `{}`                           |

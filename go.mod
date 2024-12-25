@@ -5,7 +5,6 @@ go 1.21
 require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.7.0
-	istio.io/api v1.19.3
 	istio.io/client-go v1.19.3
 	k8s.io/api v0.28.2
 	k8s.io/apimachinery v0.28.2
@@ -121,6 +120,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	istio.io/api v1.19.3 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect

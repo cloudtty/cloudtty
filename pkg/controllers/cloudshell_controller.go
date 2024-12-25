@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	networkingv1beta1 "istio.io/api/networking/v1beta1"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -219,7 +218,6 @@ func (c *Controller) syncHandler(ctx context.Context, key string) (*time.Duratio
 			klog.V(2).InfoS("Skip syncing, cloudshell not found", "cloudshell", key)
 			return nil, nil
 		}
-
 		return nil, err
 	}
 
@@ -673,16 +671,14 @@ func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, serv
 		vitualServiceBytes, err := util.ParseTemplate(manifests.VirtualServiceV1Beta1, struct {
 			Name        string
 			Namespace   string
-			ExportTo    string
+			Host        string
 			Gateway     string
-			Path        string
 			ServiceName string
 		}{
 			Name:        objectKey.Name,
 			Namespace:   objectKey.Namespace,
-			ExportTo:    config.ExportTo,
+			Host:        config.ExportTo,
 			Gateway:     config.Gateway,
-			Path:        SetRouteRulePath(cloudshell),
 			ServiceName: service,
 		})
 		if err != nil {
@@ -698,31 +694,37 @@ func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, serv
 		virtualService = obj.(*istionetworkingv1beta1.VirtualService)
 		virtualService.SetLabels(map[string]string{constants.WorkerOwnerLabelKey: cloudshell.Name})
 
-		return c.Create(ctx, virtualService)
-	}
-	found := false
-	httpRoutes := virtualService.Spec.Http
-	routePath := SetRouteRulePath(cloudshell)
-	// if the path already exists in the virtualService, update Destination.Host
-	for i := 0; i < len(httpRoutes); i++ {
-		match := httpRoutes[i].Match
-		if len(match) > 0 && match[0].Uri != nil {
-			if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok &&
-				routePath == prefix.Prefix {
-				httpRoutes[i].Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
-				found = true
-			}
+		err = c.Create(ctx, virtualService)
+		if err != nil {
+			klog.ErrorS(err, "failed to create virtualservice manifest", "cloudshell", klog.KObj(cloudshell))
+			return err
 		}
 	}
-	// if the path not exists, add a route in the virtualService
-	if !found {
-		newHTTPRoute := virtualService.Spec.Http[0].DeepCopy()
-		newHTTPRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: routePath}
-		newHTTPRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
-		virtualService.Spec.Http = append(virtualService.Spec.Http, newHTTPRoute)
-	}
-
-	return c.Update(ctx, virtualService)
+	return nil
+	// todo support update
+	//found := false
+	//httpRoutes := virtualService.Spec.Http
+	//routePath := SetRouteRulePath(cloudshell)
+	//// if the path already exists in the virtualService, update Destination.Host
+	//for i := 0; i < len(httpRoutes); i++ {
+	//	match := httpRoutes[i].Match
+	//	if len(match) > 0 && match[0].Uri != nil {
+	//		if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok &&
+	//			routePath == prefix.Prefix {
+	//			httpRoutes[i].Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
+	//			found = true
+	//		}
+	//	}
+	//}
+	//// if the path not exists, add a route in the virtualService
+	//if !found {
+	//	newHTTPRoute := virtualService.Spec.Http[0].DeepCopy()
+	//	newHTTPRoute.Match[0].Uri.MatchType = &networkingv1beta1.StringMatch_Prefix{Prefix: routePath}
+	//	newHTTPRoute.Route[0].Destination.Host = fmt.Sprintf("%s.%s.svc.cluster.local", service, objectKey.Namespace)
+	//	virtualService.Spec.Http = append(virtualService.Spec.Http, newHTTPRoute)
+	//}
+	//
+	//return c.Update(ctx, virtualService)
 }
 
 // UpdateCloudshellStatus update the clodushell status.
@@ -825,31 +827,33 @@ func (c *Controller) removeCloudshellRoute(ctx context.Context, cloudshell *clou
 			return err
 		}
 
-		routePath := SetRouteRulePath(cloudshell)
-		// remove rule from virtualService. if the length of virtualService is zero, delete it directly.
-		httpRoutes := virtualService.Spec.Http
-		newHTTPRoute := []*networkingv1beta1.HTTPRoute{}
-		for i := 0; i < len(httpRoutes); i++ {
-			match := httpRoutes[i].Match
-			if len(match) > 0 && match[0].Uri != nil {
-				if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok {
-					if routePath != prefix.Prefix {
-						newHTTPRoute = append(newHTTPRoute, httpRoutes[i])
-					}
-				} else {
-					newHTTPRoute = append(newHTTPRoute, httpRoutes[i])
-				}
-			} else {
-				newHTTPRoute = append(newHTTPRoute, httpRoutes[i])
-			}
-		}
-		klog.InfoS("virtual service rule remove result", "cloudshell", cloudshell.Name, "old paths count", len(httpRoutes), "new paths count", len(newHTTPRoute))
-		if len(newHTTPRoute) == 0 {
-			return c.Delete(ctx, virtualService)
-		}
+		return c.Delete(ctx, virtualService)
 
-		virtualService.Spec.Http = newHTTPRoute
-		return c.Update(ctx, virtualService)
+		//routePath := SetRouteRulePath(cloudshell)
+		//// remove rule from virtualService. if the length of virtualService is zero, delete it directly.
+		//httpRoutes := virtualService.Spec.Http
+		//newHTTPRoute := []*networkingv1beta1.HTTPRoute{}
+		//for i := 0; i < len(httpRoutes); i++ {
+		//	match := httpRoutes[i].Match
+		//	if len(match) > 0 && match[0].Uri != nil {
+		//		if prefix, ok := match[0].Uri.MatchType.(*networkingv1beta1.StringMatch_Prefix); ok {
+		//			if routePath != prefix.Prefix {
+		//				newHTTPRoute = append(newHTTPRoute, httpRoutes[i])
+		//			}
+		//		} else {
+		//			newHTTPRoute = append(newHTTPRoute, httpRoutes[i])
+		//		}
+		//	} else {
+		//		newHTTPRoute = append(newHTTPRoute, httpRoutes[i])
+		//	}
+		//}
+		//klog.InfoS("virtual service rule remove result", "cloudshell", cloudshell.Name, "old paths count", len(httpRoutes), "new paths count", len(newHTTPRoute))
+		//if len(newHTTPRoute) == 0 {
+		//	return c.Delete(ctx, virtualService)
+		//}
+		//
+		//virtualService.Spec.Http = newHTTPRoute
+		//return c.Update(ctx, virtualService)
 	}
 	return nil
 }
