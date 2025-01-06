@@ -369,7 +369,7 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 
 func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1alpha1.CloudShell, kubeConfigByte []byte) error {
 	// TODO: Some extra logic in order to upload and download files.
-	var podName, namespace, container, serverBufferSize string
+	var podName, namespace, container, serverBufferSize, ps1 string
 	serverBufferSize = c.ttydServiceBufferSize
 	for _, env := range cloudshell.Spec.Env {
 		switch env.Name {
@@ -381,6 +381,8 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 			container = env.Value
 		case "TTYD_SERVER_BUFFER_SIZE":
 			serverBufferSize = env.Value
+		case "PS1":
+			ps1 = env.Value
 		}
 	}
 	klog.InfoS("Cloudshell config", "cloudshell.name", cloudshell.Name, "serverBufferSize", serverBufferSize)
@@ -389,7 +391,7 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 	ttydCommand := []string{
 		startupScriptPath,
 		string(kubeConfigByte), fmt.Sprint(cloudshell.Spec.Once), fmt.Sprint(cloudshell.Spec.UrlArg),
-		cloudshell.Spec.CommandAction, podName, namespace, container,
+		cloudshell.Spec.CommandAction, podName, namespace, container, ps1,
 	}
 	if serverBufferSize != "" {
 		ttydCommand = append(ttydCommand, serverBufferSize)
