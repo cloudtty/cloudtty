@@ -11,7 +11,8 @@ COMMAND=${4:-"bash"}
 POD_NAME=${5:-}
 POD_NAMESPACE=${6:-"default"}
 CONTAINER=${7:-}
-SERVER_BUFFER_SIZE=${8:-}
+PS1=${8:-}
+SERVER_BUFFER_SIZE=${9:-}
 
 if [ -d /root -a "`ls /root`" != "" ]; then         
   rm -rf /root/*                                    
@@ -30,6 +31,10 @@ fi
 
 if [[ -n "${CONTAINER}" ]]; then
   echo "export CONTAINER='${CONTAINER}'" >> /root/.env
+fi
+
+if [[ -n "${PS1}" ]]; then
+  echo "export PS1='${PS1}'" >> /root/.env
 fi
 
 source /root/.bashrc
