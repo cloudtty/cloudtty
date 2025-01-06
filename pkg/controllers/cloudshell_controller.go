@@ -361,7 +361,11 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 			return err
 		}
 
-		kubeConfigByte = secret.Data["config"]
+		configDataName := os.Getenv("KUBECONFIG_SECRET_DATA_NAME")
+		if configDataName == "" {
+			configDataName = "config"
+		}
+		kubeConfigByte = secret.Data[configDataName]
 	}
 
 	return c.StartupWorker(ctx, cloudshell, kubeConfigByte)
