@@ -153,7 +153,7 @@ func StartControllers(c *config.Config, stopCh <-chan struct{}) error {
 		}))
 
 	podInformer := factory.Core().V1().Pods()
-	pool := worerkpool.New(c.Client, c.CoreWorkerLimit, c.MaxWorkerLimit, podInformer)
+	pool := worerkpool.New(c.Client, c.CoreWorkerLimit, c.MaxWorkerLimit, c.ScaleInWorkerQueueDuration, podInformer)
 
 	informerFactory := externalversions.NewSharedInformerFactory(c.CloudShellClient, 0)
 	informer := informerFactory.Cloudshell().V1alpha1().CloudShells()

@@ -39,6 +39,9 @@ spec:
           {{- if .Values.maxWorkerLimit }}
           - --max-worker-limit={{.Values.maxWorkerLimit}}
           {{- end }}
+          {{- if .Values.scaleInWorkerQueueDuration }}
+          - --scale-in-worker-queue-duration={{.Values.scaleInWorkerQueueDuration}}
+          {{- end }}
           {{- if include "cloudtty.cloudshell.image" . }}
           - --cloudshell-image={{ include "cloudtty.cloudshell.image" . }}
           {{- end }}

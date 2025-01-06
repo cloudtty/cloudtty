@@ -36,6 +36,8 @@ podLabels: {}
 coreWorkerLimit: 5
 ## @param maxWorkerLimit defines the max limit of worker pool
 maxWorkerLimit: 10
+## @param scaleInWorkerQueueDuration define the duration (in minutes) to scale in the workers
+scaleInWorkerQueueDuration: 180
 ## @param image.registry cloudtty image registry
 ## @param image.repository cloudtty image repository
 ## @param image.tag cloudtty image tag (immutable tags are recommended)

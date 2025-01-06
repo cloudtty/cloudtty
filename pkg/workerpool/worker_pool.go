@@ -35,11 +35,9 @@ import (
 )
 
 var (
-	// DefaultScaleInWorkerQueueDuration define the duration to scale in the workers.
-	DefaultScaleInWorkerQueueDuration = time.Hour * 3
-	ScaleInQueueThreshold             = 0.75
-	ControllerFinalizer               = "cloudshell.cloudtty.io/worker-pool"
-	ErrNotWorker                      = errors.New("There is no worker in pool")
+	ScaleInQueueThreshold = 0.75
+	ControllerFinalizer   = "cloudshell.cloudtty.io/worker-pool"
+	ErrNotWorker          = errors.New("There is no worker in pool")
 )
 
 type WorkerPool struct {
@@ -70,7 +68,7 @@ type Request struct {
 	CloudShellQueue workqueue.RateLimitingInterface
 }
 
-func New(client client.Client, coreWorkerLimit, maxWorkerLimit int, podInformer informercorev1.PodInformer) *WorkerPool {
+func New(client client.Client, coreWorkerLimit, maxWorkerLimit, scaleInWorkerQueueDuration int, podInformer informercorev1.PodInformer) *WorkerPool {
 	workerPool := &WorkerPool{
 		Client:               client,
 		workerQueue:          newQueue(),
@@ -79,7 +77,7 @@ func New(client client.Client, coreWorkerLimit, maxWorkerLimit int, podInformer 
 		maxWorkerLimit:       maxWorkerLimit,
 		matchRequestSignal:   make(chan struct{}),
 		scheme:               gclient.NewSchema(),
-		scaleInQueueDuration: DefaultScaleInWorkerQueueDuration,
+		scaleInQueueDuration: time.Duration(scaleInWorkerQueueDuration) * time.Minute,
 
 		queue: workqueue.NewRateLimitingQueue(
 			workqueue.NewItemExponentialFailureRateLimiter(2*time.Second, 5*time.Second),

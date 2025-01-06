@@ -50,12 +50,13 @@ type Options struct {
 	LeaderElection   componentbaseconfig.LeaderElectionConfiguration
 	ClientConnection componentbaseconfig.ClientConnectionConfiguration
 
-	Master          string
-	Kubeconfig      string
-	CoreWorkerLimit int
-	MaxWorkerLimit  int
-	ClouShellImage  string
-	Logs            *logs.Options
+	Master                     string
+	Kubeconfig                 string
+	CoreWorkerLimit            int
+	MaxWorkerLimit             int
+	ScaleInWorkerQueueDuration int
+	ClouShellImage             string
+	Logs                       *logs.Options
 }
 
 func NewOptions() (*Options, error) {
@@ -96,6 +97,7 @@ func (o *Options) Flags() cliflag.NamedFlagSets {
 	genericfs.Int32Var(&o.ClientConnection.Burst, "kube-api-burst", o.ClientConnection.Burst, "Burst to use while talking with kubernetes apiserver.")
 	genericfs.IntVar(&o.CoreWorkerLimit, "core-worker-limit", 5, "The core limit of worker pool.")
 	genericfs.IntVar(&o.MaxWorkerLimit, "max-worker-limit", 10, "The max limit of worker pool.")
+	genericfs.IntVar(&o.ScaleInWorkerQueueDuration, "scale-in-worker-queue-duration", 180, "The duration (in minutes) to scale in the workers.")
 	genericfs.StringVar(&o.ClouShellImage, "cloudshell-image", "", "The cloudshell image")
 
 	fs := nfs.FlagSet("misc")
@@ -152,14 +154,15 @@ func (o *Options) Config() (*config.Config, error) {
 	}
 
 	return &config.Config{
-		KubeClient:       client,
-		CloudShellClient: cloudshellClient,
-		Client:           runtimeClient,
-		Kubeconfig:       kubeconfig,
-		EventRecorder:    eventRecorder,
-		CoreWorkerLimit:  o.CoreWorkerLimit,
-		MaxWorkerLimit:   o.MaxWorkerLimit,
-		CloudShellImage:  o.ClouShellImage,
+		KubeClient:                 client,
+		CloudShellClient:           cloudshellClient,
+		Client:                     runtimeClient,
+		Kubeconfig:                 kubeconfig,
+		EventRecorder:              eventRecorder,
+		CoreWorkerLimit:            o.CoreWorkerLimit,
+		MaxWorkerLimit:             o.MaxWorkerLimit,
+		ScaleInWorkerQueueDuration: o.ScaleInWorkerQueueDuration,
+		CloudShellImage:            o.ClouShellImage,
 
 		LeaderElection: o.LeaderElection,
 	}, nil
