@@ -35,6 +35,7 @@ import (
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/cloudtty/cloudtty/cmd/app/config"
+	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
 	"github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned"
 	"github.com/cloudtty/cloudtty/pkg/utils/gclient"
 )
@@ -55,6 +56,8 @@ type Options struct {
 	CoreWorkerLimit int
 	MaxWorkerLimit  int
 	ClouShellImage  string
+	NodeSelector    map[string]string
+	Resources       cloudshellv1alpha1.ResourceSetting
 	Logs            *logs.Options
 }
 
@@ -96,7 +99,9 @@ func (o *Options) Flags() cliflag.NamedFlagSets {
 	genericfs.Int32Var(&o.ClientConnection.Burst, "kube-api-burst", o.ClientConnection.Burst, "Burst to use while talking with kubernetes apiserver.")
 	genericfs.IntVar(&o.CoreWorkerLimit, "core-worker-limit", 5, "The core limit of worker pool.")
 	genericfs.IntVar(&o.MaxWorkerLimit, "max-worker-limit", 10, "The max limit of worker pool.")
-	genericfs.StringVar(&o.ClouShellImage, "cloudshell-image", "", "The cloudshell image")
+	genericfs.StringVar(&o.ClouShellImage, "cloudshell-image", "", "The cloudshell image.")
+	genericfs.StringToStringVar(&o.NodeSelector, "cloudshell-node-selector", o.NodeSelector, "The cloudshell node selector.")
+	genericfs.Var(&o.Resources, "cloudshell-resources", "The cloudshell resources.")
 
 	fs := nfs.FlagSet("misc")
 	fs.StringVar(&o.Master, "master", o.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig).")
@@ -160,6 +165,8 @@ func (o *Options) Config() (*config.Config, error) {
 		CoreWorkerLimit:  o.CoreWorkerLimit,
 		MaxWorkerLimit:   o.MaxWorkerLimit,
 		CloudShellImage:  o.ClouShellImage,
+		NodeSelector:     o.NodeSelector,
+		Resources:        &o.Resources,
 
 		LeaderElection: o.LeaderElection,
 	}, nil

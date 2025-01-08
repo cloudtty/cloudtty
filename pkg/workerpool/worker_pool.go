@@ -67,6 +67,8 @@ type Request struct {
 	Cloudshell      string
 	Namespace       string
 	Image           string
+	NodeSelector    string
+	Resources       *cloudshellv1alpha1.ResourceSetting
 	CloudShellQueue workqueue.RateLimitingInterface
 }
 
@@ -477,12 +479,22 @@ func (w *WorkerPool) Back(worker *corev1.Pod) error {
 }
 
 func (w *WorkerPool) createWorker(req *Request) error {
+	nodeSelector, err := util.JSONStringToMap(req.NodeSelector)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal node selector for cloudshell, err: %v", err)
+	}
 	podBytes, err := util.ParseTemplate(manifests.PodTmplV1, struct {
-		Name, Namespace, Image string
+		Name         string
+		Namespace    string
+		Image        string
+		NodeSelector map[string]string
+		Resources    *cloudshellv1alpha1.ResourceSetting
 	}{
-		Name:      fmt.Sprintf("cloudshell-worker-%s", rand.String(10)),
-		Namespace: req.Namespace,
-		Image:     req.Image,
+		Name:         fmt.Sprintf("cloudshell-worker-%s", rand.String(10)),
+		Namespace:    req.Namespace,
+		Image:        req.Image,
+		NodeSelector: nodeSelector,
+		Resources:    req.Resources,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed create cloudshell job")

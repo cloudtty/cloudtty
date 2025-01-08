@@ -18,6 +18,7 @@ package utils
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"strings"
 	"text/template"
@@ -63,4 +64,21 @@ func GetCurrentNSOrDefault() string {
 		klog.ErrorS(err, "Failed to get namespace where pods running in")
 	}
 	return "default"
+}
+
+func MapToJSONString(m map[string]string) (string, error) {
+	result, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	return string(result), nil
+}
+
+func JSONStringToMap(jsonString string) (map[string]string, error) {
+	var result map[string]string
+	err := json.Unmarshal([]byte(jsonString), &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }

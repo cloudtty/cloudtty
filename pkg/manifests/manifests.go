@@ -37,6 +37,23 @@ spec:
     - containerPort: 7681
       name: tty-ui
       protocol: TCP
+    {{- if .Resources }}
+    resources:
+      {{- if .Resources.Requests }}
+      requests:
+        cpu: {{ .Resources.Requests.Cpu}}
+        memory: {{ .Resources.Requests.Memory}}
+      {{- end }}
+      {{- if .Resources.Limits }}
+      limits:
+        cpu: {{ .Resources.Limits.Cpu}}
+        memory: {{ .Resources.Limits.Memory}}
+      {{- end }}
+    {{- end }}
+  nodeSelector:
+  {{range $key, $value := .NodeSelector}}
+    {{ $key }}: "{{ $value }}"
+  {{end}}
   restartPolicy: Never
 `
 

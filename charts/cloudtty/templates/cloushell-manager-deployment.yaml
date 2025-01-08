@@ -42,6 +42,15 @@ spec:
           {{- if include "cloudtty.cloudshell.image" . }}
           - --cloudshell-image={{ include "cloudtty.cloudshell.image" . }}
           {{- end }}
+          {{- if .Values.cloudshell.nodeSelector }}
+          {{- range $key, $value := .Values.cloudshell.nodeSelector}}
+          - --cloudshell-node-selector 
+          - {{ $key }}={{ $value }}
+          {{- end}}
+          {{- end }}
+          {{- if .Values.cloudshell.resources }}
+          - --cloudshell-resources={{- toJson .Values.cloudshell.resources }}
+          {{- end }}
           - --v=2
           {{- with (include "cloudtty.operator.featureGates" .) }}
           - {{ . }}

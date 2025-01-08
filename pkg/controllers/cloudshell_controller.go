@@ -81,9 +81,12 @@ type Controller struct {
 	ttydServiceBufferSize string
 
 	cloudshellImage string
+	nodeSelector    map[string]string
+	resources       *cloudshellv1alpha1.ResourceSetting
 }
 
 func New(client client.Client, kubeClient kubernetes.Interface, config *rest.Config, wp *worerkpool.WorkerPool, cloudshellImage string,
+	nodeSelector map[string]string, resources *cloudshellv1alpha1.ResourceSetting,
 	cloudshellInformer cloudshellinformers.CloudShellInformer, podInformer informercorev1.PodInformer,
 ) *Controller {
 	controller := &Controller{
@@ -101,6 +104,8 @@ func New(client client.Client, kubeClient kubernetes.Interface, config *rest.Con
 		podInformer:        podInformer.Informer(),
 		podLister:          podInformer.Lister(),
 		cloudshellImage:    cloudshellImage,
+		nodeSelector:       nodeSelector,
+		resources:          resources,
 	}
 
 	_, err := cloudshellInformer.Informer().AddEventHandler(
@@ -259,10 +264,16 @@ func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv
 	// TODO: when cloudshell image be changed, the image of binding worker is different with the spce.image
 
 	if worker == nil {
+		nodeSelectorString, err := util.MapToJSONString(c.nodeSelector)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal node selector for cloudshell, err: %v", err)
+		}
 		req := &worerkpool.Request{
 			Cloudshell:      cloudshell.GetName(),
 			Namespace:       cloudshell.GetNamespace(),
 			Image:           cloudshell.Spec.Image,
+			NodeSelector:    nodeSelectorString,
+			Resources:       c.resources,
 			CloudShellQueue: c.queue,
 		}
 

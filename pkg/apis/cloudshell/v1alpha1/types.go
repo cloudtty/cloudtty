@@ -17,6 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"encoding/json"
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -106,6 +109,32 @@ type CloudShellSpec struct {
 	// +patchMergeKey=name
 	// +patchStrategy=merge
 	Env []corev1.EnvVar `json:"env,omitempty"`
+}
+
+type ResourceSetting struct {
+	Limits   corev1.ResourceList `json:"limits,omitempty"`
+	Requests corev1.ResourceList `json:"requests,omitempty"`
+}
+
+func (r *ResourceSetting) String() string {
+	resources, err := json.Marshal(*r)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return string(resources)
+}
+
+func (r *ResourceSetting) Set(value string) error {
+	err := json.Unmarshal([]byte(value), &r)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	return nil
+}
+
+func (r *ResourceSetting) Type() string {
+	return "ResourceSetting"
 }
 
 // VirtualServiceConfig specifies some of the parameters necessary to create the virtaulService.
