@@ -29,7 +29,7 @@ Return the proper image Registry Secret Names
 {{- end -}}
 
 {{- define "cloudtty.cloudshell.image" -}}
-{{ include "common.images.image" (dict "imageRoot" .Values.cloudshellImage "global" .Values.global) }}
+{{ include "common.images.image" (dict "imageRoot" .Values.cloudshell.image "global" .Values.global) }}
 {{- end -}}
 
 {{- define "cloudtty.operator.featureGates" -}}

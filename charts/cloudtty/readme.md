@@ -96,6 +96,8 @@ $ kubectl delete crd clusteroperations.kubean.io
 | `tolerations`                | controllerManager tolerations for pod assignment      | `{}`                           |
 | `livenessProbe.enabled`      | Enable livenessProbe on Kafka containers              | `false`                        |
 | `readinessProbe.enabled`     | Enable readinessProbe on Kafka containers             | `false`                        |
-| `cloudshellImage.registry`   | cloudshell image registry                             | `ghcr.io`                      |
-| `cloudshellImage.repository` | cloudshell image repository                           | `cloudtty/cloudshell`          |
-| `cloudshellImage.tag`        | cloudshell image tag (immutable tags are recommended) | `v0.8.2`                       |
+| `cloudshell.image.registry`  | cloudshell image registry                             | `ghcr.io`                      |
+| `cloudshell.image.repository`| cloudshell image repository                           | `cloudtty/cloudshell`          |
+| `cloudshell.image.tag`       | cloudshell image tag (immutable tags are recommended) | `v0.8.2`                       |
+| `cloudshell.resources`       | cloudshell resource requests and limits               | `{}`                           |
+| `cloudshell.nodeSelector`    | cloudshell node labels for pod assignment             | `{}`                           |

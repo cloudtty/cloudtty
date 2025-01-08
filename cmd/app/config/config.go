@@ -1,13 +1,13 @@
 package config
 
 import (
+	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
+	"github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned"
 	clientset "k8s.io/client-go/kubernetes"
 	rest "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	componentbaseconfig "k8s.io/component-base/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned"
 )
 
 type Config struct {
@@ -19,6 +19,8 @@ type Config struct {
 	CoreWorkerLimit  int
 	MaxWorkerLimit   int
 	CloudShellImage  string
+	NodeSelector     map[string]string
+	Resources        *cloudshellv1alpha1.ResourceSetting
 
 	LeaderElection componentbaseconfig.LeaderElectionConfiguration
 }

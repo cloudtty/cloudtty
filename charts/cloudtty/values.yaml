@@ -85,10 +85,24 @@ livenessProbe:
 readinessProbe:
   enabled: false
 
-## @param cloudshellImage.registry cloudshell image registry
-## @param cloudshellImage.repository cloudshell image repository
-## @param cloudshellImage.tag cloudshell image tag (immutable tags are recommended)
-cloudshellImage:
-  registry: ghcr.io
-  repository: cloudtty/cloudshell
-  tag: "v0.8.2"
+
+cloudshell:
+  ## @param image.registry cloudshell image registry
+  ## @param image.repository cloudshell image repository
+  ## @param image.tag cloudshell image tag (immutable tags are recommended)
+  image:
+    registry: ghcr.io
+    repository: cloudtty/cloudshell
+    tag: "v0.8.2"
+  ## @param resources cloudshell resource requests and limits
+  resources: {}
+  # If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  ## @param nodeSelector cloudshell node labels for pod assignment
+  nodeSelector: {}

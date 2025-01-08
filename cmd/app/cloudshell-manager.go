@@ -157,7 +157,7 @@ func StartControllers(c *config.Config, stopCh <-chan struct{}) error {
 
 	informerFactory := externalversions.NewSharedInformerFactory(c.CloudShellClient, 0)
 	informer := informerFactory.Cloudshell().V1alpha1().CloudShells()
-	controller := controllers.New(c.Client, c.KubeClient, c.Kubeconfig, pool, c.CloudShellImage, informer, podInformer)
+	controller := controllers.New(c.Client, c.KubeClient, c.Kubeconfig, pool, c.CloudShellImage, c.NodeSelector, c.Resources, informer, podInformer)
 
 	factory.Start(stopCh)
 	informerFactory.Start(stopCh)
