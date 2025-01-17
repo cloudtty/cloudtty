@@ -20,6 +20,7 @@ fi
 ## Generate config to the path `/root/.kube/config`.
 if [[ -n "${KUBECONFIG}"  ]]; then
   echo "${KUBECONFIG}" > /root/.kube/config
+  chmod 600 /root/.kube/config # By default, it will warn: `Kubernetes configuration file is group-readable. This is insecure. Location: /root/.kube/config`
 fi
 
 echo "export POD_NAMESPACE='${POD_NAMESPACE}'" > /root/.env
