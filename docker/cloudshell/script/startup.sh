@@ -13,6 +13,7 @@ POD_NAMESPACE=${6:-"default"}
 CONTAINER=${7:-}
 PS1=${8:-}
 SERVER_BUFFER_SIZE=${9:-}
+PING_INTERVAL=${10:-}
 
 if [ -d /root -a "`ls /root`" != "" ]; then         
   rm -rf /root/*                                    
@@ -43,6 +44,7 @@ once=""
 index=""
 urlarg=""
 server_buffer_size=""
+ping_interval=""
 
 if [[ "${ONCE}" == "true" ]];then
   once=" --once "
@@ -60,5 +62,9 @@ if [[ -n "${SERVER_BUFFER_SIZE}" ]]; then
   server_buffer_size=" --serv_buffer_size ${SERVER_BUFFER_SIZE} "
 fi
 
-nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
+if [[ -n "${PING_INTERVAL}" ]]; then
+  ping_interval=" --ping_interval ${PING_INTERVAL} "
+fi
+
+nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
 echo "Start ttyd successully."
