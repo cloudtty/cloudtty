@@ -79,6 +79,7 @@ type Controller struct {
 	podLister          listerscorev1.PodLister
 
 	ttydServiceBufferSize string
+	ttydPingInterval      string
 
 	cloudshellImage string
 	nodeSelector    map[string]string
@@ -189,6 +190,7 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 	} else {
 		if len(configs.Items) > 0 {
 			c.ttydServiceBufferSize = configs.Items[0].Data["TTYD_SERVER_BUFFER_SIZE"]
+			c.ttydPingInterval = configs.Items[0].Data["TTYD_PING_INTERVAL"]
 		}
 	}
 
@@ -384,8 +386,9 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 
 func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1alpha1.CloudShell, kubeConfigByte []byte) error {
 	// TODO: Some extra logic in order to upload and download files.
-	var podName, namespace, container, serverBufferSize, ps1 string
+	var podName, namespace, container, serverBufferSize, ps1, pingInterval string
 	serverBufferSize = c.ttydServiceBufferSize
+	pingInterval = c.ttydPingInterval
 	for _, env := range cloudshell.Spec.Env {
 		switch env.Name {
 		case "POD_NAME":
@@ -396,6 +399,8 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 			container = env.Value
 		case "TTYD_SERVER_BUFFER_SIZE":
 			serverBufferSize = env.Value
+		case "TTYD_PING_INTERVAL":
+			pingInterval = env.Value
 		case "PS1":
 			ps1 = env.Value
 		}
@@ -410,6 +415,9 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 	}
 	if serverBufferSize != "" {
 		ttydCommand = append(ttydCommand, serverBufferSize)
+	}
+	if pingInterval != "" {
+		ttydCommand = append(ttydCommand, pingInterval)
 	}
 	return execCommand(cloudshell, ttydCommand, c.config)
 }
