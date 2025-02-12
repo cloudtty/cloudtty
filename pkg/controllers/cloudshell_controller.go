@@ -411,13 +411,7 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 	ttydCommand := []string{
 		startupScriptPath,
 		string(kubeConfigByte), fmt.Sprint(cloudshell.Spec.Once), fmt.Sprint(cloudshell.Spec.UrlArg),
-		cloudshell.Spec.CommandAction, podName, namespace, container, ps1,
-	}
-	if serverBufferSize != "" {
-		ttydCommand = append(ttydCommand, serverBufferSize)
-	}
-	if pingInterval != "" {
-		ttydCommand = append(ttydCommand, pingInterval)
+		cloudshell.Spec.CommandAction, podName, namespace, container, ps1, serverBufferSize, pingInterval,
 	}
 	return execCommand(cloudshell, ttydCommand, c.config)
 }

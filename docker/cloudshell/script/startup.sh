@@ -63,7 +63,7 @@ if [[ -n "${SERVER_BUFFER_SIZE}" ]]; then
 fi
 
 if [[ -n "${PING_INTERVAL}" ]]; then
-  ping_interval=" --ping_interval ${PING_INTERVAL} "
+  ping_interval=" --ping-interval ${PING_INTERVAL} "
 fi
 
 nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
