@@ -87,7 +87,7 @@ $ kubectl delete crd clusteroperations.kubean.io
 | `maxWorkerLimit`             | defines the max limit of worker pool                  | `nil`                          |
 | `image.registry`             | cloudtty image registry                               | `ghcr.io`                      |
 | `image.repository`           | cloudtty image repository                             | `cloudtty/cloudshell-operator` |
-| `image.tag`                  | cloudtty image tag (immutable tags are recommended)   | `v0.8.3`                       |
+| `image.tag`                  | cloudtty image tag (immutable tags are recommended)   | `v0.8.4`                       |
 | `image.pullPolicy`           | cloudtty image pull policy                            | `IfNotPresent`                 |
 | `image.pullSecrets`          | Specify docker-registry secret names as an array      | `[]`                           |
 | `resources`                  | controllerManager resource requests and limits        | `{}`                           |
@@ -98,6 +98,6 @@ $ kubectl delete crd clusteroperations.kubean.io
 | `readinessProbe.enabled`     | Enable readinessProbe on Kafka containers             | `false`                        |
 | `cloudshell.image.registry`  | cloudshell image registry                             | `ghcr.io`                      |
 | `cloudshell.image.repository`| cloudshell image repository                           | `cloudtty/cloudshell`          |
-| `cloudshell.image.tag`       | cloudshell image tag (immutable tags are recommended) | `v0.8.3`                       |
+| `cloudshell.image.tag`       | cloudshell image tag (immutable tags are recommended) | `v0.8.4`                       |
 | `cloudshell.resources`       | cloudshell resource requests and limits               | `{}`                           |
 | `cloudshell.nodeSelector`    | cloudshell node labels for pod assignment             | `{}`                           |
