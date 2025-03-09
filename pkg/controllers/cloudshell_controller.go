@@ -565,8 +565,14 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 		}
 
 		var ingressClassName string
-		if cloudshell.Spec.IngressConfig != nil && len(cloudshell.Spec.IngressConfig.IngressClassName) > 0 {
-			ingressClassName = cloudshell.Spec.IngressConfig.IngressClassName
+		var annotations map[string]string
+		if cloudshell.Spec.IngressConfig != nil {
+			if len(cloudshell.Spec.IngressConfig.IngressClassName) > 0 {
+				ingressClassName = cloudshell.Spec.IngressConfig.IngressClassName
+			}
+			if cloudshell.Spec.IngressConfig.Annotations != nil {
+				annotations = cloudshell.Spec.IngressConfig.Annotations
+			}
 		}
 
 		// set default path prefix.
@@ -576,12 +582,14 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 			IngressClassName string
 			Path             string
 			ServiceName      string
+			Annotations      map[string]string
 		}{
 			Name:             objectKey.Name,
 			Namespace:        objectKey.Namespace,
 			IngressClassName: ingressClassName,
 			ServiceName:      service,
 			Path:             SetRouteRulePath(cloudshell),
+			Annotations:      annotations,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to parse cloudshell ingress manifest")
@@ -593,6 +601,8 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 			klog.ErrorS(err, "failed to decode ingress manifest", "cloudshell", klog.KObj(cloudshell))
 			return err
 		}
+		klog.InfoS("render ingress for cloudshell", "cloudshell", klog.KObj(cloudshell), "ingress info", string(ingressBytes))
+
 		ingress = obj.(*networkingv1.Ingress)
 		ingress.SetLabels(map[string]string{constants.WorkerOwnerLabelKey: cloudshell.Name})
 

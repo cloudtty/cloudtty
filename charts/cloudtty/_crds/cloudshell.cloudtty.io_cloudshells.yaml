@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: cloudshells.cloudshell.cloudtty.io
 spec:
   group: cloudshell.cloudtty.io
@@ -44,14 +44,19 @@ spec:
         description: CloudShell is the Schema for the cloudshells API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -65,9 +70,10 @@ spec:
               commandAction:
                 type: string
               env:
-                description: 'List of environment variables to set in the container.
-                  If it begins with "TTYD", that means it''s a parameter configured
-                  for ttyd, eg: TTYD_SERVER_BUFFER_SIZE. Cannot be updated.'
+                description: |-
+                  List of environment variables to set in the container.
+                  If it begins with "TTYD", that means it's a parameter configured for ttyd, eg: TTYD_SERVER_BUFFER_SIZE.
+                  Cannot be updated.
                 items:
                   description: EnvVar represents an environment variable present in
                     a Container.
@@ -76,15 +82,16 @@ spec:
                       description: Name of the environment variable. Must be a C_IDENTIFIER.
                       type: string
                     value:
-                      description: 'Variable references $(VAR_NAME) are expanded using
-                        the previously defined environment variables in the container
-                        and any service environment variables. If a variable cannot
-                        be resolved, the reference in the input string will be unchanged.
-                        Double $$ are reduced to a single $, which allows for escaping
-                        the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the
-                        string literal "$(VAR_NAME)". Escaped references will never
-                        be expanded, regardless of whether the variable exists or
-                        not. Defaults to "".'
+                      description: |-
+                        Variable references $(VAR_NAME) are expanded
+                        using the previously defined environment variables in the container and
+                        any service environment variables. If a variable cannot be resolved,
+                        the reference in the input string will be unchanged. Double $$ are reduced
+                        to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.
+                        "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".
+                        Escaped references will never be expanded, regardless of whether the variable
+                        exists or not.
+                        Defaults to "".
                       type: string
                     valueFrom:
                       description: Source for the environment variable's value. Cannot
@@ -97,8 +104,9 @@ spec:
                               description: The key to select.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: |-
+                                Name of the referent.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                               type: string
                             optional:
                               description: Specify whether the ConfigMap or its key
@@ -109,10 +117,9 @@ spec:
                           type: object
                           x-kubernetes-map-type: atomic
                         fieldRef:
-                          description: 'Selects a field of the pod: supports metadata.name,
-                            metadata.namespace, `metadata.labels[''<KEY>'']`, `metadata.annotations[''<KEY>'']`,
-                            spec.nodeName, spec.serviceAccountName, status.hostIP,
-                            status.podIP, status.podIPs.'
+                          description: |-
+                            Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`,
+                            spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
                           properties:
                             apiVersion:
                               description: Version of the schema the FieldPath is
@@ -127,10 +134,9 @@ spec:
                           type: object
                           x-kubernetes-map-type: atomic
                         resourceFieldRef:
-                          description: 'Selects a resource of the container: only
-                            resources limits and requests (limits.cpu, limits.memory,
-                            limits.ephemeral-storage, requests.cpu, requests.memory
-                            and requests.ephemeral-storage) are currently supported.'
+                          description: |-
+                            Selects a resource of the container: only resources limits and requests
+                            (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
                           properties:
                             containerName:
                               description: 'Container name: required for volumes,
@@ -159,8 +165,9 @@ spec:
                                 be a valid secret key.
                               type: string
                             name:
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              description: |-
+                                Name of the referent.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                               type: string
                             optional:
                               description: Specify whether the Secret or its key must
@@ -185,29 +192,37 @@ spec:
                 - VirtualService
                 type: string
               image:
-                description: 'Image defines the image to cloudshell, we can customize
-                  an image. Note: the image must be built on top of the officially
-                  available base image. Please see: https://github.com/cloudtty/cloudtty#how-to-build-custom-cloudshell-image'
+                description: |-
+                  Image defines the image to cloudshell, we can customize an image.
+                  Note: the image must be built on top of the officially available base image.
+                  Please see: https://github.com/cloudtty/cloudtty#how-to-build-custom-cloudshell-image
                 type: string
               ingressConfig:
-                description: Specifies a port number range 30000-32767 when using
-                  nodeport mode, if not specified, kubernetes default random rule
-                  is used. NodePort int32 `json:"NodePort,omitempty"` IngressConfig
-                  specifies necessary parameters to create ingress.
+                description: |-
+                  Specifies a port number range 30000-32767 when using nodeport mode,
+                  if not specified, kubernetes default random rule is used.
+                  NodePort int32 `json:"NodePort,omitempty"`
+                  IngressConfig specifies necessary parameters to create ingress.
                 properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations specifies a set of key-value pairs that
+                      you can attach annotations to a Ingress.
+                    type: object
                   ingressClassName:
-                    description: IngressClassName specifies a ingress controller to
-                      ingress, it must be fill when the cluster have multiple ingress
-                      controller service.
+                    description: |-
+                      IngressClassName specifies a ingress controller to ingress,
+                      it must be fill when the cluster have multiple ingress controller service.
                     type: string
                   ingressName:
                     description: IngressName specifies a name to ingress, if it's
                       empty, default "cloudshell-ingress".
                     type: string
                   namespace:
-                    description: Namespace specifies a namespace that the virtualService
-                      will be created in it. if it's empty, default the cloudshell
-                      namespace.
+                    description: |-
+                      Namespace specifies a namespace that the virtualService will be
+                      created in it. if it's empty, default the cloudshell namespace.
                     type: string
                 type: object
               once:
@@ -222,11 +237,12 @@ spec:
                   not, the default path is used.
                 type: string
               secretRef:
-                description: 'SecretRef represents the secret contains mandatory credentials
-                  to access the target cluster. The secret should hold credentials
-                  as follows: - secret.data.token - secret.data.caBundle The field
-                  is alpha phase, paleas open the featuregate AllowSecretStoreKubeconfig
-                  to use it.'
+                description: |-
+                  SecretRef represents the secret contains mandatory credentials to access the target cluster.
+                  The secret should hold credentials as follows:
+                  - secret.data.token
+                  - secret.data.caBundle
+                  The field is alpha phase, paleas open the featuregate AllowSecretStoreKubeconfig to use it.
                 properties:
                   name:
                     description: Name is the name of resource being referenced.
@@ -244,23 +260,24 @@ spec:
                   necessary to create the virtaulService.
                 properties:
                   export_to:
-                    description: The value "." is reserved and defines an export to
-                      the same namespace that the virtual service is declared in.
-                      Similarly the value "*" is reserved and defines an export to
-                      all namespaces.
+                    description: |-
+                      The value "." is reserved and defines an export to the same namespace that
+                      the virtual service is declared in. Similarly the value "*" is reserved and
+                      defines an export to all namespaces.
                     type: string
                   gateway:
                     description: Gateway must be specified and the gateway already
                       exists in the cluster.
                     type: string
                   namespace:
-                    description: Namespace specifies a namespace that the virtualService
-                      will be created in it. if it's empty, default the cloudshell
-                      namespace.
+                    description: |-
+                      Namespace specifies a namespace that the virtualService will be
+                      created in it. if it's empty, default the cloudshell namespace.
                     type: string
                   virtualServiceName:
-                    description: VirtualServiceName specifies a name to virtualService,
-                      if it's empty, default "cloudshell-VirtualService"
+                    description: |-
+                      VirtualServiceName specifies a name to virtualService, if it's
+                      empty, default "cloudshell-VirtualService"
                     type: string
                 type: object
             type: object
@@ -275,9 +292,9 @@ spec:
                 format: date-time
                 type: string
               phase:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
+                description: |-
+                  INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+                  Important: Run "make" to regenerate code after modifying this file
                 type: string
             type: object
         type: object

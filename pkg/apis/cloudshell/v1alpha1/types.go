@@ -168,6 +168,10 @@ type IngressConfig struct {
 	// IngressClassName specifies a ingress controller to ingress,
 	// it must be fill when the cluster have multiple ingress controller service.
 	IngressClassName string `json:"ingressClassName,omitempty"`
+
+	// Annotations specifies a set of key-value pairs that you can attach annotations to a Ingress.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 // LocalSecretReference is a reference to a secret within the enclosing
