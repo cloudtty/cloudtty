@@ -82,6 +82,9 @@ metadata:
   namespace: "{{ .Namespace }}"
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    {{- range $key, $value := .Annotations }}
+    {{ $key }}: "{{ $value }}"
+    {{- end }}
 spec:
   ingressClassName: "{{ .IngressClassName }}"
   rules:
