@@ -14,6 +14,7 @@ CONTAINER=${7:-}
 PS1=${8:-}
 SERVER_BUFFER_SIZE=${9:-}
 PING_INTERVAL=${10:-}
+FONT_SIZE=${11:-}
 
 if [ -d /root -a "`ls /root`" != "" ]; then         
   rm -rf /root/*                                    
@@ -45,6 +46,7 @@ index=""
 urlarg=""
 server_buffer_size=""
 ping_interval=""
+font_size=""
 
 if [[ "${ONCE}" == "true" ]];then
   once=" --once "
@@ -66,5 +68,9 @@ if [[ -n "${PING_INTERVAL}" ]]; then
   ping_interval=" --ping-interval ${PING_INTERVAL} "
 fi
 
-nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
+if [[ -n "${FONT_SIZE}" ]]; then
+  font_size=" -t fontSize=${FONT_SIZE} "
+fi
+
+nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} ${font_size} sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
 echo "Start ttyd successully."
