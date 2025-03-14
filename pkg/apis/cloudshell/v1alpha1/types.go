@@ -109,6 +109,12 @@ type CloudShellSpec struct {
 	// +patchMergeKey=name
 	// +patchStrategy=merge
 	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// ClientOptions can define some kv Pair.
+	// By passing the kv pair to the ttyd server, parameters can be passed to the browser to achieve different effects.
+	// Ttyd project called client options, Reference: https://github.com/tsl0922/ttyd/wiki/Client-Options.
+	// +optional
+	ClientOptions map[string]string `json:"clientOptions,omitempty"`
 }
 
 type ResourceSetting struct {
