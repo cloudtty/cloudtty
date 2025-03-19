@@ -62,6 +62,9 @@ const (
 	resetScriptPath   = "/usr/lib/ttyd/reset.sh"
 
 	CloudshellConfigMapLabel = "cloudtty.io/cloudshell-config"
+
+	// ClientOptionsDelimiter is the delimiter for client-options string.
+	ClientOptionsDelimiter = "|"
 )
 
 // Controller reconciles a CloudShell object
@@ -80,7 +83,6 @@ type Controller struct {
 
 	ttydServiceBufferSize string
 	ttydPingInterval      string
-	ttydFontSize          string
 
 	cloudshellImage string
 	nodeSelector    map[string]string
@@ -192,7 +194,6 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 		if len(configs.Items) > 0 {
 			c.ttydServiceBufferSize = configs.Items[0].Data["TTYD_SERVER_BUFFER_SIZE"]
 			c.ttydPingInterval = configs.Items[0].Data["TTYD_PING_INTERVAL"]
-			c.ttydFontSize = configs.Items[0].Data["TTYD_FONT_SIZE"]
 		}
 	}
 
@@ -388,10 +389,9 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 
 func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1alpha1.CloudShell, kubeConfigByte []byte) error {
 	// TODO: Some extra logic in order to upload and download files.
-	var podName, namespace, container, serverBufferSize, ps1, pingInterval, fontSize string
+	var podName, namespace, container, serverBufferSize, ps1, pingInterval, clientOptionsStr string
 	serverBufferSize = c.ttydServiceBufferSize
 	pingInterval = c.ttydPingInterval
-	fontSize = c.ttydFontSize
 	for _, env := range cloudshell.Spec.Env {
 		switch env.Name {
 		case "POD_NAME":
@@ -404,20 +404,41 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 			serverBufferSize = env.Value
 		case "TTYD_PING_INTERVAL":
 			pingInterval = env.Value
-		case "TTYD_FONT_SIZE":
-			fontSize = env.Value
 		case "PS1":
 			ps1 = env.Value
 		}
 	}
 
-	klog.InfoS("Cloudshell config", "cloudshell.name", cloudshell.Name, "CommandAction", cloudshell.Spec.CommandAction, "serverBufferSize", serverBufferSize, "pingInterval", pingInterval, "fontSize", fontSize)
+	// clientOptions is a map, convert it to string, the pattern is "k1=v1|k2=v2|..."
+	// If k or v contains a delimiter(|), return an error.
+	if clientOptions := cloudshell.Spec.TtydClientOptions; clientOptions != nil {
+		var clientOptionsSlice []string
+		for k, v := range clientOptions {
+			if strings.Contains(k, ClientOptionsDelimiter) || strings.Contains(v, ClientOptionsDelimiter) {
+				return errors.New("clientOptions key or value contains delimiter(|)")
+			}
+			clientOptionsSlice = append(clientOptionsSlice, fmt.Sprintf("%s=%s", k, v))
+		}
+		clientOptionsStr = strings.Join(clientOptionsSlice, ClientOptionsDelimiter)
+	}
+
+	klog.InfoS("Cloudshell config", "cloudshell.name", cloudshell.Name, "CommandAction", cloudshell.Spec.CommandAction,
+		"serverBufferSize", serverBufferSize, "pingInterval", pingInterval, "clientOptions", clientOptionsStr)
 	// start ttyd, ttyd args passed as shell parameter
 	// case: ttydCommand := []string{"/usr/lib/ttyd/startup.sh", "${KUBECONFIG}" "${ONCE}", "${URLARG}", "${COMMAND}"}
 	ttydCommand := []string{
-		startupScriptPath,
-		string(kubeConfigByte), fmt.Sprint(cloudshell.Spec.Once), fmt.Sprint(cloudshell.Spec.UrlArg),
-		cloudshell.Spec.CommandAction, podName, namespace, container, ps1, serverBufferSize, pingInterval, fontSize,
+		startupScriptPath,                  // $0 startup.sh
+		string(kubeConfigByte),             // $1 kubeconfig
+		fmt.Sprint(cloudshell.Spec.Once),   // $2 once
+		fmt.Sprint(cloudshell.Spec.UrlArg), // $3 urlArg
+		cloudshell.Spec.CommandAction,      // $4 command
+		podName,                            // $5 podName
+		namespace,                          // $6 namespace
+		container,                          // $7 container
+		ps1,                                // $8 ps1
+		serverBufferSize,                   // $9 serverBufferSize
+		pingInterval,                       // $10 pingInterval
+		clientOptionsStr,                   // $11 clientOptions
 	}
 	return execCommand(cloudshell, ttydCommand, c.config)
 }
