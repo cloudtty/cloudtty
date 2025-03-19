@@ -14,7 +14,7 @@ CONTAINER=${7:-}
 PS1=${8:-}
 SERVER_BUFFER_SIZE=${9:-}
 PING_INTERVAL=${10:-}
-FONT_SIZE=${11:-}
+CLIENT_OPTIONS=${11:-}
 
 if [ -d /root -a "`ls /root`" != "" ]; then         
   rm -rf /root/*                                    
@@ -46,7 +46,7 @@ index=""
 urlarg=""
 server_buffer_size=""
 ping_interval=""
-font_size=""
+client_options=()
 
 if [[ "${ONCE}" == "true" ]];then
   once=" --once "
@@ -68,9 +68,12 @@ if [[ -n "${PING_INTERVAL}" ]]; then
   ping_interval=" --ping-interval ${PING_INTERVAL} "
 fi
 
-if [[ -n "${FONT_SIZE}" ]]; then
-  font_size=" -t fontSize=${FONT_SIZE} "
+if [[ -n "${CLIENT_OPTIONS}" ]]; then
+  IFS='|' read -ra OPTIONS <<< "${CLIENT_OPTIONS}"
+  for option in "${OPTIONS[@]}"; do
+    client_options+=("--client-option" "${option}")
+  done
 fi
 
-nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} ${font_size} sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
+nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} "${client_options[@]}" sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
 echo "Start ttyd successully."
