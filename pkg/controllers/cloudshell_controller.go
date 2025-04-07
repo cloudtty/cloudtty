@@ -715,7 +715,16 @@ func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, serv
 		return errors.New("unable create virtualservice, missing configuration options")
 	}
 
-	// TODO: check the crd in the cluster.
+	crd := metav1.PartialObjectMetadata{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apiextensions.k8s.io/v1",
+			Kind:       "CustomResourceDefinition",
+		},
+	}
+	err := c.Get(ctx, types.NamespacedName{Name: "virtualservices.networking.istio.io"}, &crd)
+	if err != nil {
+		return err
+	}
 
 	objectKey := VsNamespacedName(cloudshell)
 	virtualService := &istionetworkingv1beta1.VirtualService{}
