@@ -478,7 +478,8 @@ func (c *Controller) CreateRouteRule(ctx context.Context, cloudshell *cloudshell
 		// Default(No explicit `ExposeMode` specified in CR) mode is Nodeport
 		host, err := c.GetMasterNodeIP(ctx)
 		if err != nil {
-			klog.ErrorS(err, "unable to get contro plane node IP addr", "cloudshell", klog.KObj(cloudshell))
+			klog.ErrorS(err, "unable to get control plane node IP addr", "cloudshell", klog.KObj(cloudshell))
+			return "", err
 		}
 
 		service, err := c.CreateCloudShellService(cloudshell, worker)
@@ -546,7 +547,7 @@ func (c *Controller) GetMasterNodeIP(ctx context.Context) (string, error) {
 	if len(internalIP) != 0 {
 		return internalIP, nil
 	}
-	return "", nil
+	return "", fmt.Errorf("no available node IP was found")
 }
 
 // CreateCloudShellService Create service resource for cloudshell, the service type is either ClusterIP, NodePort,
