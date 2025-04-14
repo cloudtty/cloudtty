@@ -517,15 +517,24 @@ func (c *Controller) CreateRouteRule(ctx context.Context, cloudshell *cloudshell
 // GetMasterNodeIP could find the one master node IP.
 func (c *Controller) GetMasterNodeIP(ctx context.Context) (string, error) {
 	// the label "node-role.kubernetes.io/master" be removed in k8s 1.24, and replace with
-	// "node-role.kubernetes.io/cotrol-plane".
+	// "node-role.kubernetes.io/control-plane".
 	nodes := &corev1.NodeList{}
-	if err := c.List(ctx, nodes, client.MatchingLabels{"node-role.kubernetes.io/master": ""}); err != nil {
-		return "", err
+	labels := []string{
+		"node-role.kubernetes.io/master",
+		"node-role.kubernetes.io/control-plane",
 	}
-	if len(nodes.Items) == 0 {
-		if err := c.List(ctx, nodes, client.MatchingLabels{"node-role.kubernetes.io/control-plane": ""}); err != nil || len(nodes.Items) == 0 {
+
+	for _, label := range labels {
+		if err := c.List(ctx, nodes, client.MatchingLabels{label: ""}); err != nil {
 			return "", err
 		}
+		if len(nodes.Items) > 0 {
+			break
+		}
+	}
+
+	if len(nodes.Items) == 0 {
+		return "", fmt.Errorf("no nodes found with the master node labels")
 	}
 
 	var internalIP string
