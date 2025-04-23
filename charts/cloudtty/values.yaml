@@ -44,7 +44,7 @@ maxWorkerLimit: 10
 image:
   registry: ghcr.io
   repository: cloudtty/cloudshell-operator
-  tag: "v0.8.5"
+  tag: "v0.8.6"
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -93,7 +93,7 @@ cloudshell:
   image:
     registry: ghcr.io
     repository: cloudtty/cloudshell
-    tag: "v0.8.5"
+    tag: "v0.8.6"
   ## @param resources cloudshell resource requests and limits
   resources: {}
   # If you do want to specify resources, uncomment the following
