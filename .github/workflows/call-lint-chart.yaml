@@ -18,6 +18,16 @@ jobs:
   chart-lint-test:
     runs-on: ubuntu-latest
     steps:
+      - name: Debug PR Variables
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "github.head_ref: ${{ github.head_ref }}"
+          echo "github.event.pull_request.head.ref: ${{ github.event.pull_request.head.ref }}"
+          echo "github.event.pull_request.head.sha: ${{ github.event.pull_request.head.sha }}"
+          echo "github.event.pull_request.head.repo.full_name: ${{ github.event.pull_request.head.repo.full_name }}"
+          echo "github.ref: ${{ github.ref }}"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -68,4 +78,4 @@ jobs:
           # kubectl_version: ${{ env.K8S_VERSION }}
 
       - name: Run chart-testing (install)
-        run: ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --helm-extra-args "--timeout 400s" --helm-extra-set-args "--set=image.tag=latest"
+        run: ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --helm-extra-args "--timeout 400s" --helm-extra-set-args "--set=image.tag=${{ github.head_ref }}"
