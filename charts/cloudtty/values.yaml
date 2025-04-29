@@ -106,3 +106,5 @@ cloudshell:
   #   memory: 128Mi
   ## @param nodeSelector cloudshell node labels for pod assignment
   nodeSelector: {}
+
+  testParam: 12
