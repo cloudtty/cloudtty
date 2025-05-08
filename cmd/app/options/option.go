@@ -59,6 +59,7 @@ type Options struct {
 	NodeSelector    map[string]string
 	Resources       cloudshellv1alpha1.ResourceSetting
 	Logs            *logs.Options
+	TestParam       int
 }
 
 func NewOptions() (*Options, error) {
@@ -102,6 +103,7 @@ func (o *Options) Flags() cliflag.NamedFlagSets {
 	genericfs.StringVar(&o.ClouShellImage, "cloudshell-image", "", "The cloudshell image.")
 	genericfs.StringToStringVar(&o.NodeSelector, "cloudshell-node-selector", o.NodeSelector, "The cloudshell node selector.")
 	genericfs.Var(&o.Resources, "cloudshell-resources", "The cloudshell resources.")
+	genericfs.IntVar(&o.TestParam, "test-param", 12, "test param.")
 
 	fs := nfs.FlagSet("misc")
 	fs.StringVar(&o.Master, "master", o.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig).")
