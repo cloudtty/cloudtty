@@ -10,10 +10,8 @@ env:
 
 on:
   push:
-  pull_request:
-    paths:
-      - "charts/cloudtty/**"
-
+    branches:
+      - main
 jobs:
   chart-lint-test:
     runs-on: ubuntu-latest
