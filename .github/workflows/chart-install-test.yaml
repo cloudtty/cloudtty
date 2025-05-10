@@ -1,16 +1,20 @@
 # validate any chart changes under charts directory
-name: Chart Lint
+name: Chart Installation Test
 
 env:
   HELM_VERSION: v3.12.1
+  KIND_VERSION: v0.14.0
+  KIND_NODE_IMAGE: kindest/node:v1.23.4
+  K8S_VERSION: v1.23.4
   DEFAULT_BRANCH: main
 
 on:
-  pull_request:
-    paths:
-      - "charts/cloudtty/**"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 jobs:
-  chart-lint-test:
+  chart-install-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -52,3 +56,15 @@ jobs:
 
       - name: Run chart-testing (lint)
         run: ct lint --debug --target-branch=${{ env.DEFAULT_BRANCH }} --check-version-increment=false
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.8.0
+        if: steps.list-changed.outputs.changed == 'true'
+        with:
+          wait: 120s
+          # version: ${{ env.KIND_VERSION }}
+          # node_image: ${{ env.KIND_NODE_IMAGE }}
+          # kubectl_version: ${{ env.K8S_VERSION }}
+
+      - name: Run chart-testing (install)
+        run: ct install --debug --target-branch ${{ env.DEFAULT_BRANCH }} --helm-extra-args "--timeout 400s" --helm-extra-set-args "--set=image.tag=latest"
