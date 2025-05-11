@@ -9,11 +9,13 @@ env:
   DEFAULT_BRANCH: main
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
 jobs:
   chart-lint-test:
+    needs: docker-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
