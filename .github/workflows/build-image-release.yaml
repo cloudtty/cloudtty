@@ -17,25 +17,40 @@ on:
       - main
     tags:
       - v*
+  pull_request:
+    branches:
+      - main
 
 jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Get the version
-        id: get_version
+      - name: Debug PR Variables
+        if: github.event_name == 'pull_request'
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          if [[ ${GITHUB_REF} == "refs/heads/main" ]]; then
-            VERSION=latest
-          fi
-          echo ::set-output name=VERSION::${VERSION}
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "github.head_ref: ${{ github.head_ref }}"
+          echo "github.event.pull_request.head.ref: ${{ github.event.pull_request.head.ref }}"
+          echo "github.event.pull_request.head.sha: ${{ github.event.pull_request.head.sha }}"
+          echo "github.event.pull_request.head.repo.full_name: ${{ github.event.pull_request.head.repo.full_name }}"
+          echo "github.ref: ${{ github.ref }}"
 
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Get the version
+        id: get_version
+        run: |
+          if [[ ${{ github.event_name }} == "pull_request" ]]; then
+            VERSION=${{ github.head_ref }}-${{ github.sha }}
+          elif [[ ${GITHUB_REF} == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION=latest
+          fi
+          echo ::set-output name=VERSION::${VERSION}
 
       - name: Login registry
         run: |
@@ -61,7 +76,7 @@ jobs:
           build-args: |
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: ${{ env.REGISTER }}/${{ env.IMAGE_REPO }}/cloudshell-operator:${{ steps.get_version.outputs.VERSION }}
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           provenance: false
           github-token: ${{ env.REGISTER_PASSWORD }}
 
@@ -77,6 +92,6 @@ jobs:
           build-args: |
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: ${{ env.REGISTER }}/${{ env.IMAGE_REPO }}/cloudshell:${{ steps.get_version.outputs.VERSION }}
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           provenance: false
           github-token: ${{ env.REGISTER_PASSWORD }}
