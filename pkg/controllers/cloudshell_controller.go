@@ -345,9 +345,12 @@ func nextRequeueTimeDuration(cloudshell *cloudshellv1alpha1.CloudShell) *time.Du
 func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	// if secretRef is empty, use the Incluster rest config to generate kubeconfig and restore a secret.
 	// the kubeconfig only work on current cluster.
-	var kubeConfigByte []byte
+	var (
+		kubeConfigByte []byte
+		err            error
+	)
 	if cloudshell.Spec.SecretRef == nil {
-		kubeConfigByte, err := GenerateKubeconfigInCluster()
+		kubeConfigByte, err = GenerateKubeconfigInCluster()
 		if err != nil {
 			return err
 		}
@@ -369,6 +372,9 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 		}
 		cloudshell.Spec.SecretRef = &cloudshellv1alpha1.LocalSecretReference{
 			Name: secret.Name,
+		}
+		if err := c.Update(ctx, cloudshell); err != nil {
+			return err
 		}
 	} else {
 		secret := &corev1.Secret{}
