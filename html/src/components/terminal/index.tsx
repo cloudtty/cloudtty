@@ -370,7 +370,7 @@ export class Xterm extends Component<Props> {
 
         const uploadFileToPod = (fileUrl) => {
             const { socket, textEncoder } = this;
-            const command = 'rz && ls -t | head -n 1 | xargs -i{}  kubectl cp -c "${CONTAINER}" {} ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}`;
+            const command = 'cd /tmp/ && rz && ls -t | head -n 1 | xargs -i{}  kubectl cp -c "${CONTAINER}" {} ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}`;
             socket.send(textEncoder.encode(Command.INPUT + command));
             socket.send(textEncoder.encode(Command.INPUT + '\n'));
 

@@ -20,4 +20,8 @@ if [[ -f /root/.bash_history ]]; then
   rm  /root/.bash_history -f
 fi
 
+if [[ -d /tmp/ ]]; then
+  rm /tmp/* /tmp/.* 2>/dev/null -rf || true
+fi
+
 ps aux | grep 'ttyd -W' | grep -v 'grep' | awk '{print $1}' | xargs kill -9 > /dev/null 2>&1
