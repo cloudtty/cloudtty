@@ -19,15 +19,15 @@ package aggregated
 import (
 	"net/http"
 
+	apidiscoveryv2 "k8s.io/api/apidiscovery/v2"
 	apidiscoveryv2beta1 "k8s.io/api/apidiscovery/v2beta1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/emicklei/go-restful/v3"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"k8s.io/apiserver/pkg/endpoints/handlers/negotiation"
-	genericfeatures "k8s.io/apiserver/pkg/features"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 )
 
 type WrappedHandler struct {
@@ -37,13 +37,11 @@ type WrappedHandler struct {
 }
 
 func (wrapped *WrappedHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if utilfeature.DefaultFeatureGate.Enabled(genericfeatures.AggregatedDiscoveryEndpoint) {
-		mediaType, _ := negotiation.NegotiateMediaTypeOptions(req.Header.Get("Accept"), wrapped.s.SupportedMediaTypes(), DiscoveryEndpointRestrictions)
-		// mediaType.Convert looks at the request accept headers and is used to control whether the discovery document will be aggregated.
-		if IsAggregatedDiscoveryGVK(mediaType.Convert) {
-			wrapped.aggHandler.ServeHTTP(resp, req)
-			return
-		}
+	mediaType, _ := negotiation.NegotiateMediaTypeOptions(req.Header.Get("Accept"), wrapped.s.SupportedMediaTypes(), DiscoveryEndpointRestrictions)
+	// mediaType.Convert looks at the request accept headers and is used to control whether the discovery document will be aggregated.
+	if IsAggregatedDiscoveryGVK(mediaType.Convert) {
+		wrapped.aggHandler.ServeHTTP(resp, req)
+		return
 	}
 	wrapped.handler.ServeHTTP(resp, req)
 }
@@ -69,10 +67,11 @@ func (wrapped *WrappedHandler) GenerateWebService(prefix string, returnType inte
 // WrapAggregatedDiscoveryToHandler wraps a handler with an option to
 // emit the aggregated discovery by passing in the aggregated
 // discovery type in content negotiation headers: eg: (Accept:
-// application/json;v=v2beta1;g=apidiscovery.k8s.io;as=APIGroupDiscoveryList)
+// application/json;v=v2;g=apidiscovery.k8s.io;as=APIGroupDiscoveryList)
 func WrapAggregatedDiscoveryToHandler(handler http.Handler, aggHandler http.Handler) *WrappedHandler {
 	scheme := runtime.NewScheme()
-	apidiscoveryv2beta1.AddToScheme(scheme)
+	utilruntime.Must(apidiscoveryv2.AddToScheme(scheme))
+	utilruntime.Must(apidiscoveryv2beta1.AddToScheme(scheme))
 	codecs := serializer.NewCodecFactory(scheme)
 	return &WrappedHandler{codecs, handler, aggHandler}
 }
