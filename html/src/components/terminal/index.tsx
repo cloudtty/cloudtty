@@ -411,7 +411,7 @@ export class Xterm extends Component<Props> {
             const fileUrl = downloadPathArr[downloadPathArr.length - 1]
             if (fileUrl.length > 0) {
                 console.log(`[ttyd] download fileUrl : ${fileUrl}`);
-                downLoadFileToPod(decodeURI(fileUrl));
+                downLoadFileToPod(decodeURIComponent(fileUrl));
             }
         }
 
