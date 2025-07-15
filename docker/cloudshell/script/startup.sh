@@ -17,7 +17,6 @@ PING_INTERVAL=${10:-}
 CLIENT_OPTIONS=${11:-}
 CREDENTIAL=${12:-}
 
-
 if [ -d /root -a "`ls /root`" != "" ]; then         
   rm -rf /root/*                                    
 fi
@@ -80,7 +79,7 @@ if [[ -n "${CLIENT_OPTIONS}" ]]; then
 fi
 
 if [[ -n "${CREDENTIAL}" ]]; then
-  credential = "--credential ${CREDENTIAL}"
+  credential="--credential ${CREDENTIAL} "
 fi
 
 nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} ${credential} "${client_options[@]}" sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
