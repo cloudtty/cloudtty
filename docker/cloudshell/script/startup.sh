@@ -80,8 +80,10 @@ if [[ -n "${CLIENT_OPTIONS}" ]]; then
 fi
 
 if [[ -n "${CREDENTIAL}" ]]; then
-  credential = "--credential ${CREDENTIAL}"
+  credential="--credential ${CREDENTIAL} "
 fi
+
+
 
 nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} ${credential} "${client_options[@]}" sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
 echo "Start ttyd successully."
