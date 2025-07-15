@@ -345,9 +345,12 @@ func nextRequeueTimeDuration(cloudshell *cloudshellv1alpha1.CloudShell) *time.Du
 func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
 	// if secretRef is empty, use the Incluster rest config to generate kubeconfig and restore a secret.
 	// the kubeconfig only work on current cluster.
-	var kubeConfigByte []byte
+	var (
+		kubeConfigByte []byte
+		err            error
+	)
 	if cloudshell.Spec.SecretRef == nil {
-		kubeConfigByte, err := GenerateKubeconfigInCluster()
+		kubeConfigByte, err = GenerateKubeconfigInCluster()
 		if err != nil {
 			return err
 		}
@@ -369,6 +372,9 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 		}
 		cloudshell.Spec.SecretRef = &cloudshellv1alpha1.LocalSecretReference{
 			Name: secret.Name,
+		}
+		if err := c.Update(ctx, cloudshell); err != nil {
+			return err
 		}
 	} else {
 		secret := &corev1.Secret{}
@@ -481,7 +487,8 @@ func (c *Controller) CreateRouteRule(ctx context.Context, cloudshell *cloudshell
 		// Default(No explicit `ExposeMode` specified in CR) mode is Nodeport
 		host, err := c.GetMasterNodeIP(ctx)
 		if err != nil {
-			klog.ErrorS(err, "unable to get contro plane node IP addr", "cloudshell", klog.KObj(cloudshell))
+			klog.ErrorS(err, "unable to get control plane node IP addr", "cloudshell", klog.KObj(cloudshell))
+			return "", err
 		}
 
 		service, err := c.CreateCloudShellService(cloudshell, worker)
@@ -519,31 +526,46 @@ func (c *Controller) CreateRouteRule(ctx context.Context, cloudshell *cloudshell
 // GetMasterNodeIP could find the one master node IP.
 func (c *Controller) GetMasterNodeIP(ctx context.Context) (string, error) {
 	// the label "node-role.kubernetes.io/master" be removed in k8s 1.24, and replace with
-	// "node-role.kubernetes.io/cotrol-plane".
+	// "node-role.kubernetes.io/control-plane".
 	nodes := &corev1.NodeList{}
-	if err := c.List(ctx, nodes, client.MatchingLabels{"node-role.kubernetes.io/master": ""}); err != nil {
-		return "", err
+	labels := []string{
+		"node-role.kubernetes.io/master",
+		"node-role.kubernetes.io/control-plane",
 	}
-	if len(nodes.Items) == 0 {
-		if err := c.List(ctx, nodes, client.MatchingLabels{"node-role.kubernetes.io/control-plane": ""}); err != nil || len(nodes.Items) == 0 {
+
+	for _, label := range labels {
+		if err := c.List(ctx, nodes, client.MatchingLabels{label: ""}); err != nil {
 			return "", err
+		}
+		if len(nodes.Items) > 0 {
+			break
 		}
 	}
 
+	if len(nodes.Items) == 0 {
+		return "", fmt.Errorf("no nodes found with the master node labels")
+	}
+
 	var internalIP string
-	for _, addr := range nodes.Items[0].Status.Addresses {
-		// Using External IP as first priority
-		if addr.Type == corev1.NodeExternalIP {
-			return addr.Address, nil
-		}
-		if addr.Type == corev1.NodeInternalIP {
-			internalIP = addr.Address
+	for _, node := range nodes.Items {
+		for _, condition := range node.Status.Conditions {
+			if condition.Type == corev1.NodeReady && condition.Status == corev1.ConditionTrue {
+				for _, addr := range node.Status.Addresses {
+					// Using External IP as first priority
+					if addr.Type == corev1.NodeExternalIP {
+						return addr.Address, nil
+					}
+					if addr.Type == corev1.NodeInternalIP {
+						internalIP = addr.Address
+					}
+				}
+			}
 		}
 	}
 	if len(internalIP) != 0 {
 		return internalIP, nil
 	}
-	return "", nil
+	return "", fmt.Errorf("no available node IP was found")
 }
 
 // CreateCloudShellService Create service resource for cloudshell, the service type is either ClusterIP, NodePort,

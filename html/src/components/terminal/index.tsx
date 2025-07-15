@@ -260,10 +260,10 @@ export class Xterm extends Component<Props> {
         if (!this.ttl) {
             let params = new URL(location.href).searchParams;
             const ttlParams = params.get('ttl');
-    
+
             if (ttlParams) {
                 let num = Number(ttlParams);
-        
+
                 this.ttl = (!isNaN(num) && ttlParams !== "") ? num : Infinity;
             } else {
                 this.ttl = Infinity;
@@ -370,7 +370,7 @@ export class Xterm extends Component<Props> {
 
         const uploadFileToPod = (fileUrl) => {
             const { socket, textEncoder } = this;
-            const command = 'rz && ls -t | head -n 1 | xargs -i{}  kubectl cp -c "${CONTAINER}" {} ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}`;
+            const command = 'cd /tmp/ && rz && ls -t | head -n 1 | xargs -i{}  kubectl cp -c "${CONTAINER}" {} ${POD_NAMESPACE}/${POD_NAME}:' + `${fileUrl}`;
             socket.send(textEncoder.encode(Command.INPUT + command));
             socket.send(textEncoder.encode(Command.INPUT + '\n'));
 
@@ -411,7 +411,7 @@ export class Xterm extends Component<Props> {
             const fileUrl = downloadPathArr[downloadPathArr.length - 1]
             if (fileUrl.length > 0) {
                 console.log(`[ttyd] download fileUrl : ${fileUrl}`);
-                downLoadFileToPod(fileUrl);
+                downLoadFileToPod(decodeURI(fileUrl));
             }
         }
 

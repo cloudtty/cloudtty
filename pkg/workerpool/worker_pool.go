@@ -601,8 +601,16 @@ func WorkerKeyFunc(obj interface{}) (string, error) {
 		return "", err
 	}
 
-	// TODO: the first container is ttyd?
-	ttyd := worker.Spec.Containers[0]
+	ttyd := corev1.Container{}
+	for _, container := range worker.Spec.Containers {
+		if container.Name == "web-tty" {
+			ttyd = container
+			break
+		}
+	}
+	if len(ttyd.Image) == 0 {
+		return "", fmt.Errorf("web-tty container image not found")
+	}
 
 	if len(objName.Namespace) > 0 {
 		return fmt.Sprintf("%s//%s//%s", objName.Namespace, ttyd.Image, objName.Name), nil
