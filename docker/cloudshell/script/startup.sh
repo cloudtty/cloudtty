@@ -15,6 +15,8 @@ PS1=${8:-}
 SERVER_BUFFER_SIZE=${9:-}
 PING_INTERVAL=${10:-}
 CLIENT_OPTIONS=${11:-}
+CREDENTIAL=${12:-}
+
 
 if [ -d /root -a "`ls /root`" != "" ]; then         
   rm -rf /root/*                                    
@@ -48,6 +50,7 @@ urlarg=""
 server_buffer_size=""
 ping_interval=""
 client_options=()
+credential=""
 
 if [[ "${ONCE}" == "true" ]];then
   once=" --once "
@@ -76,5 +79,9 @@ if [[ -n "${CLIENT_OPTIONS}" ]]; then
   done
 fi
 
-nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} "${client_options[@]}" sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
+if [[ -n "${CREDENTIAL}" ]]; then
+  credential = "--credential ${CREDENTIAL}"
+fi
+
+nohup ttyd -W ${index} ${once} ${urlarg} ${server_buffer_size} ${ping_interval} ${credential} "${client_options[@]}" sh -c "${COMMAND}" > /usr/lib/ttyd/nohup.log 2>&1 &
 echo "Start ttyd successully."

@@ -395,7 +395,7 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 
 func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1alpha1.CloudShell, kubeConfigByte []byte) error {
 	// TODO: Some extra logic in order to upload and download files.
-	var podName, namespace, container, serverBufferSize, ps1, pingInterval, clientOptionsStr string
+	var podName, namespace, container, serverBufferSize, ps1, pingInterval, clientOptionsStr, credential string
 	serverBufferSize = c.ttydServiceBufferSize
 	pingInterval = c.ttydPingInterval
 	for _, env := range cloudshell.Spec.Env {
@@ -410,6 +410,8 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 			serverBufferSize = env.Value
 		case "TTYD_PING_INTERVAL":
 			pingInterval = env.Value
+		case "TTYD_CREDENTIAL":
+			credential = env.Value
 		case "PS1":
 			ps1 = env.Value
 		}
@@ -429,7 +431,7 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 	}
 
 	klog.InfoS("Cloudshell config", "cloudshell.name", cloudshell.Name, "CommandAction", cloudshell.Spec.CommandAction,
-		"serverBufferSize", serverBufferSize, "pingInterval", pingInterval, "clientOptions", clientOptionsStr)
+		"serverBufferSize", serverBufferSize, "pingInterval", pingInterval, "clientOptions", clientOptionsStr, "credential", credential)
 	// start ttyd, ttyd args passed as shell parameter
 	// case: ttydCommand := []string{"/usr/lib/ttyd/startup.sh", "${KUBECONFIG}" "${ONCE}", "${URLARG}", "${COMMAND}"}
 	ttydCommand := []string{
@@ -445,6 +447,7 @@ func (c *Controller) StartupWorker(_ context.Context, cloudshell *cloudshellv1al
 		serverBufferSize,                   // $9 serverBufferSize
 		pingInterval,                       // $10 pingInterval
 		clientOptionsStr,                   // $11 clientOptions
+		credential,                         // $12 credential
 	}
 	return execCommand(cloudshell, ttydCommand, c.config)
 }
