@@ -26,7 +26,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	flowcontrol "k8s.io/api/flowcontrol/v1beta3"
+	flowcontrol "k8s.io/api/flowcontrol/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	epmetrics "k8s.io/apiserver/pkg/endpoints/metrics"
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
@@ -35,6 +35,7 @@ import (
 	fcmetrics "k8s.io/apiserver/pkg/util/flowcontrol/metrics"
 	flowcontrolrequest "k8s.io/apiserver/pkg/util/flowcontrol/request"
 	"k8s.io/klog/v2"
+	utilsclock "k8s.io/utils/clock"
 )
 
 // PriorityAndFairnessClassification identifies the results of
@@ -51,8 +52,8 @@ var waitingMark = &requestWatermark{
 	phase: epmetrics.WaitingPhase,
 }
 
-var atomicMutatingExecuting, atomicReadOnlyExecuting int32
-var atomicMutatingWaiting, atomicReadOnlyWaiting int32
+var atomicMutatingExecuting, atomicReadOnlyExecuting atomic.Int32
+var atomicMutatingWaiting, atomicReadOnlyWaiting atomic.Int32
 
 // newInitializationSignal is defined for testing purposes.
 var newInitializationSignal = utilflowcontrol.NewInitializationSignal
@@ -78,6 +79,10 @@ type priorityAndFairnessHandler struct {
 	// the purpose of computing RetryAfter header to avoid system
 	// overload.
 	droppedRequests utilflowcontrol.DroppedRequestsTracker
+
+	// newReqWaitCtxFn creates a derived context with a deadline
+	// of how long a given request can wait in its queue.
+	newReqWaitCtxFn func(context.Context) (context.Context, context.CancelFunc)
 }
 
 func (h *priorityAndFairnessHandler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -138,16 +143,16 @@ func (h *priorityAndFairnessHandler) Handle(w http.ResponseWriter, r *http.Reque
 	isMutatingRequest := !nonMutatingRequestVerbs.Has(requestInfo.Verb)
 	noteExecutingDelta := func(delta int32) {
 		if isMutatingRequest {
-			watermark.recordMutating(int(atomic.AddInt32(&atomicMutatingExecuting, delta)))
+			watermark.recordMutating(int(atomicMutatingExecuting.Add(delta)))
 		} else {
-			watermark.recordReadOnly(int(atomic.AddInt32(&atomicReadOnlyExecuting, delta)))
+			watermark.recordReadOnly(int(atomicReadOnlyExecuting.Add(delta)))
 		}
 	}
 	noteWaitingDelta := func(delta int32) {
 		if isMutatingRequest {
-			waitingMark.recordMutating(int(atomic.AddInt32(&atomicMutatingWaiting, delta)))
+			waitingMark.recordMutating(int(atomicMutatingWaiting.Add(delta)))
 		} else {
-			waitingMark.recordReadOnly(int(atomic.AddInt32(&atomicReadOnlyWaiting, delta)))
+			waitingMark.recordReadOnly(int(atomicReadOnlyWaiting.Add(delta)))
 		}
 	}
 	queueNote := func(inQueue bool) {
@@ -240,8 +245,9 @@ func (h *priorityAndFairnessHandler) Handle(w http.ResponseWriter, r *http.Reque
 				resultCh <- err
 			}()
 
-			// We create handleCtx with explicit cancelation function.
-			// The reason for it is that Handle() underneath may start additional goroutine
+			// We create handleCtx with an adjusted deadline, for two reasons.
+			// One is to limit the time the request waits before its execution starts.
+			// The other reason for it is that Handle() underneath may start additional goroutine
 			// that is blocked on context cancellation. However, from APF point of view,
 			// we don't want to wait until the whole watch request is processed (which is
 			// when it context is actually cancelled) - we want to unblock the goroutine as
@@ -249,7 +255,7 @@ func (h *priorityAndFairnessHandler) Handle(w http.ResponseWriter, r *http.Reque
 			//
 			// Note that we explicitly do NOT call the actuall handler using that context
 			// to avoid cancelling request too early.
-			handleCtx, handleCtxCancel := context.WithCancel(ctx)
+			handleCtx, handleCtxCancel := h.newReqWaitCtxFn(ctx)
 			defer handleCtxCancel()
 
 			// Note that Handle will return irrespective of whether the request
@@ -260,17 +266,23 @@ func (h *priorityAndFairnessHandler) Handle(w http.ResponseWriter, r *http.Reque
 
 		select {
 		case <-shouldStartWatchCh:
-			watchCtx := utilflowcontrol.WithInitializationSignal(ctx, watchInitializationSignal)
-			watchReq = r.WithContext(watchCtx)
-			h.handler.ServeHTTP(w, watchReq)
-			// Protect from the situation when request will not reach storage layer
-			// and the initialization signal will not be send.
-			// It has to happen before waiting on the resultCh below.
-			watchInitializationSignal.Signal()
-			// TODO: Consider finishing the request as soon as Handle call panics.
-			if err := <-resultCh; err != nil {
-				panic(err)
-			}
+			func() {
+				// TODO: if both goroutines panic, propagate the stack traces from both
+				// goroutines so they are logged properly:
+				defer func() {
+					// Protect from the situation when request will not reach storage layer
+					// and the initialization signal will not be send.
+					// It has to happen before waiting on the resultCh below.
+					watchInitializationSignal.Signal()
+					// TODO: Consider finishing the request as soon as Handle call panics.
+					if err := <-resultCh; err != nil {
+						panic(err)
+					}
+				}()
+				watchCtx := utilflowcontrol.WithInitializationSignal(ctx, watchInitializationSignal)
+				watchReq = r.WithContext(watchCtx)
+				h.handler.ServeHTTP(w, watchReq)
+			}()
 		case err := <-resultCh:
 			if err != nil {
 				panic(err)
@@ -286,7 +298,11 @@ func (h *priorityAndFairnessHandler) Handle(w http.ResponseWriter, r *http.Reque
 			h.handler.ServeHTTP(w, r)
 		}
 
-		h.fcIfc.Handle(ctx, digest, noteFn, estimateWork, queueNote, execute)
+		func() {
+			handleCtx, cancelFn := h.newReqWaitCtxFn(ctx)
+			defer cancelFn()
+			h.fcIfc.Handle(handleCtx, digest, noteFn, estimateWork, queueNote, execute)
+		}()
 	}
 
 	if !served {
@@ -309,6 +325,7 @@ func WithPriorityAndFairness(
 	longRunningRequestCheck apirequest.LongRunningRequestCheck,
 	fcIfc utilflowcontrol.Interface,
 	workEstimator flowcontrolrequest.WorkEstimatorFunc,
+	defaultRequestWaitLimit time.Duration,
 ) http.Handler {
 	if fcIfc == nil {
 		klog.Warningf("priority and fairness support not found, skipping")
@@ -322,12 +339,18 @@ func WithPriorityAndFairness(
 		waitingMark.mutatingObserver = fcmetrics.GetWaitingMutatingConcurrency()
 	})
 
+	clock := &utilsclock.RealClock{}
+	newReqWaitCtxFn := func(ctx context.Context) (context.Context, context.CancelFunc) {
+		return getRequestWaitContext(ctx, defaultRequestWaitLimit, clock)
+	}
+
 	priorityAndFairnessHandler := &priorityAndFairnessHandler{
 		handler:                 handler,
 		longRunningRequestCheck: longRunningRequestCheck,
 		fcIfc:                   fcIfc,
 		workEstimator:           workEstimator,
 		droppedRequests:         utilflowcontrol.NewDroppedRequestsTracker(),
+		newReqWaitCtxFn:         newReqWaitCtxFn,
 	}
 	return http.HandlerFunc(priorityAndFairnessHandler.Handle)
 }
@@ -355,4 +378,49 @@ func tooManyRequests(req *http.Request, w http.ResponseWriter, retryAfter string
 	// Return a 429 status indicating "Too Many Requests"
 	w.Header().Set("Retry-After", retryAfter)
 	http.Error(w, "Too many requests, please try again later.", http.StatusTooManyRequests)
+}
+
+// getRequestWaitContext returns a new context with a deadline of how
+// long the request is allowed to wait before it is removed from its
+// queue and rejected.
+// The context.CancelFunc returned must never be nil and the caller is
+// responsible for calling the CancelFunc function for cleanup.
+//   - ctx: the context associated with the request (it may or may
+//     not have a deadline).
+//   - defaultRequestWaitLimit: the default wait duration that is used
+//     if the request context does not have any deadline.
+//     (a) initialization of a watch or
+//     (b) a request whose context has no deadline
+//
+// clock comes in handy for testing the function
+func getRequestWaitContext(ctx context.Context, defaultRequestWaitLimit time.Duration, clock utilsclock.PassiveClock) (context.Context, context.CancelFunc) {
+	if ctx.Err() != nil {
+		return ctx, func() {}
+	}
+
+	reqArrivedAt := clock.Now()
+	if reqReceivedTimestamp, ok := apirequest.ReceivedTimestampFrom(ctx); ok {
+		reqArrivedAt = reqReceivedTimestamp
+	}
+
+	// a) we will allow the request to wait in the queue for one
+	// fourth of the time of its allotted deadline.
+	// b) if the request context does not have any deadline
+	// then we default to 'defaultRequestWaitLimit'
+	// in any case, the wait limit for any request must not
+	// exceed the hard limit of 1m
+	//
+	// request has deadline:
+	//   wait-limit = min(remaining deadline / 4, 1m)
+	// request has no deadline:
+	//   wait-limit = min(defaultRequestWaitLimit, 1m)
+	thisReqWaitLimit := defaultRequestWaitLimit
+	if deadline, ok := ctx.Deadline(); ok {
+		thisReqWaitLimit = deadline.Sub(reqArrivedAt) / 4
+	}
+	if thisReqWaitLimit > time.Minute {
+		thisReqWaitLimit = time.Minute
+	}
+
+	return context.WithDeadline(ctx, reqArrivedAt.Add(thisReqWaitLimit))
 }
