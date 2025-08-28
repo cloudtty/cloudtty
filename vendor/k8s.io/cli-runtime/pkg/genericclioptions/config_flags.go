@@ -27,13 +27,15 @@ import (
 	"github.com/spf13/pflag"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/discovery"
 	diskcached "k8s.io/client-go/discovery/cached/disk"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
-	utilpointer "k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 const (
@@ -122,6 +124,9 @@ type ConfigFlags struct {
 	// Allows increasing qps used for discovery, this is useful
 	// in clusters with many registered resources
 	discoveryQPS float32
+	// Allows all possible warnings are printed in a standardized
+	// format.
+	warningPrinter *printers.WarningPrinter
 }
 
 // ToRESTConfig implements RESTClientGetter.
@@ -332,7 +337,11 @@ func (f *ConfigFlags) toRESTMapper() (meta.RESTMapper, error) {
 	}
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
-	expander := restmapper.NewShortcutExpander(mapper, discoveryClient)
+	expander := restmapper.NewShortcutExpander(mapper, discoveryClient, func(a string) {
+		if f.warningPrinter != nil {
+			f.warningPrinter.Print(a)
+		}
+	})
 	return expander, nil
 }
 
@@ -405,8 +414,8 @@ func (f *ConfigFlags) AddFlags(flags *pflag.FlagSet) {
 
 // WithDeprecatedPasswordFlag enables the username and password config flags
 func (f *ConfigFlags) WithDeprecatedPasswordFlag() *ConfigFlags {
-	f.Username = utilpointer.String("")
-	f.Password = utilpointer.String("")
+	f.Username = ptr.To("")
+	f.Password = ptr.To("")
 	return f
 }
 
@@ -428,6 +437,12 @@ func (f *ConfigFlags) WithWrapConfigFn(wrapConfigFn func(*rest.Config) *rest.Con
 	return f
 }
 
+// WithWarningPrinter initializes WarningPrinter with the given IOStreams
+func (f *ConfigFlags) WithWarningPrinter(ioStreams genericiooptions.IOStreams) *ConfigFlags {
+	f.warningPrinter = printers.NewWarningPrinter(ioStreams.ErrOut, printers.WarningPrinterOptions{Color: printers.AllowsColorOutput(ioStreams.ErrOut)})
+	return f
+}
+
 // NewConfigFlags returns ConfigFlags with default values set
 func NewConfigFlags(usePersistentConfig bool) *ConfigFlags {
 	impersonateGroup := []string{}
@@ -436,22 +451,22 @@ func NewConfigFlags(usePersistentConfig bool) *ConfigFlags {
 
 	return &ConfigFlags{
 		Insecure:   &insecure,
-		Timeout:    utilpointer.String("0"),
-		KubeConfig: utilpointer.String(""),
+		Timeout:    ptr.To("0"),
+		KubeConfig: ptr.To(""),
 
-		CacheDir:           utilpointer.String(getDefaultCacheDir()),
-		ClusterName:        utilpointer.String(""),
-		AuthInfoName:       utilpointer.String(""),
-		Context:            utilpointer.String(""),
-		Namespace:          utilpointer.String(""),
-		APIServer:          utilpointer.String(""),
-		TLSServerName:      utilpointer.String(""),
-		CertFile:           utilpointer.String(""),
-		KeyFile:            utilpointer.String(""),
-		CAFile:             utilpointer.String(""),
-		BearerToken:        utilpointer.String(""),
-		Impersonate:        utilpointer.String(""),
-		ImpersonateUID:     utilpointer.String(""),
+		CacheDir:           ptr.To(getDefaultCacheDir()),
+		ClusterName:        ptr.To(""),
+		AuthInfoName:       ptr.To(""),
+		Context:            ptr.To(""),
+		Namespace:          ptr.To(""),
+		APIServer:          ptr.To(""),
+		TLSServerName:      ptr.To(""),
+		CertFile:           ptr.To(""),
+		KeyFile:            ptr.To(""),
+		CAFile:             ptr.To(""),
+		BearerToken:        ptr.To(""),
+		Impersonate:        ptr.To(""),
+		ImpersonateUID:     ptr.To(""),
 		ImpersonateGroup:   &impersonateGroup,
 		DisableCompression: &disableCompression,
 

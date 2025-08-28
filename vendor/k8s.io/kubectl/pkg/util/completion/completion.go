@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"k8s.io/utils/ptr"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -89,6 +90,36 @@ func PodResourceNameCompletionFunc(f cmdutil.Factory) func(*cobra.Command, []str
 		directive := cobra.ShellCompDirectiveNoFileComp
 		if len(args) == 0 {
 			comps, directive = doPodResourceCompletion(f, toComplete)
+		}
+		return comps, directive
+	}
+}
+
+// ResourceAndPortCompletionFunc Returns a completion function that completes, as a first argument:
+// 1- resources that match the toComplete prefix
+// 2- the ports of the specific resource. i.e: container ports for pod resources and port for services
+func ResourceAndPortCompletionFunc(f cmdutil.Factory) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+	return func(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		var comps []string
+		var resourceType string
+		directive := cobra.ShellCompDirectiveNoFileComp
+		if len(args) == 0 {
+			comps, directive = doPodResourceCompletion(f, toComplete)
+		} else if len(args) == 1 {
+			t := strings.Split(args[0], "/")
+			// if we specify directly the pod, then resource type is pod, otherwise it would be the resource type passed
+			// by the user
+			if len(t) == 1 {
+				resourceType = "pod"
+			} else {
+				resourceType = t[0]
+			}
+			if resourceType == "service" || resourceType == "services" || resourceType == "svc" {
+				comps = CompGetServicePorts(f, t[1], toComplete)
+			} else {
+				podName := convertResourceNameToPodName(f, args[0])
+				comps = CompGetPodContainerPorts(f, podName, toComplete)
+			}
 		}
 		return comps, directive
 	}
@@ -165,6 +196,30 @@ func CompGetResource(f cmdutil.Factory, resourceName string, toComplete string) 
 func CompGetContainers(f cmdutil.Factory, podName string, toComplete string) []string {
 	template := "{{ range .spec.initContainers }}{{ .name }} {{end}}{{ range .spec.containers  }}{{ .name }} {{ end }}"
 	return CompGetFromTemplate(&template, f, "", []string{"pod", podName}, toComplete)
+}
+
+// CompGetPodContainerPorts retrieves the list of ports for containers within the specified pod that start with `toComplete`.
+func CompGetPodContainerPorts(f cmdutil.Factory, podName string, toComplete string) []string {
+	var template string
+	exposedPort := strings.Split(toComplete, ":")[0]
+
+	if toComplete == "" {
+		exposedPort = "{{ .containerPort }}"
+	}
+	template = fmt.Sprintf("{{ range .spec.containers }}{{ range .ports }}%s:{{ .containerPort }} {{ end }}{{ end }}", exposedPort)
+	return CompGetFromTemplate(&template, f, "", []string{"pod", podName}, toComplete)
+}
+
+// CompGetServicePorts gets the list of ports of the specified service which begin with `toComplete`.
+func CompGetServicePorts(f cmdutil.Factory, serviceName string, toComplete string) []string {
+	var template string
+	exposedPort := strings.Split(toComplete, ":")[0]
+
+	if toComplete == "" {
+		exposedPort = "{{ .port }}"
+	}
+	template = fmt.Sprintf("{{ range .spec.ports }}%s:{{ .port }} {{ end }}", exposedPort)
+	return CompGetFromTemplate(&template, f, "", []string{"service", serviceName}, toComplete)
 }
 
 // CompGetFromTemplate executes a Get operation using the specified template and args and returns the results
@@ -267,7 +322,7 @@ func compGetResourceList(restClientGetter genericclioptions.RESTClientGetter, cm
 	o.Complete(restClientGetter, cmd, nil)
 
 	// Get the list of resources
-	o.Output = "name"
+	o.PrintFlags.OutputFormat = ptr.To("name")
 	o.Cached = true
 	o.Verbs = []string{"get"}
 	// TODO:Should set --request-timeout=5s
