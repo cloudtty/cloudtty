@@ -178,6 +178,10 @@ type IngressConfig struct {
 	// Annotations specifies a set of key-value pairs that you can attach annotations to a Ingress.
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Host specifies a host to access the ingress.
+	// +optional
+	Host string `json:"host,omitempty"`
 }
 
 // LocalSecretReference is a reference to a secret within the enclosing

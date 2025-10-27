@@ -97,6 +97,9 @@ spec:
             name: "{{ .ServiceName }}"
             port:
               number: 7681
+    {{- if .Host }}
+    host: "{{ .Host }}"
+    {{- end }}
 `
 
 	VirtualServiceV1Beta1 = `
