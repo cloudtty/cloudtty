@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	informercorev1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -618,12 +619,20 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 
 		var ingressClassName string
 		var annotations map[string]string
+		var host string
 		if cloudshell.Spec.IngressConfig != nil {
 			if len(cloudshell.Spec.IngressConfig.IngressClassName) > 0 {
 				ingressClassName = cloudshell.Spec.IngressConfig.IngressClassName
 			}
 			if cloudshell.Spec.IngressConfig.Annotations != nil {
 				annotations = cloudshell.Spec.IngressConfig.Annotations
+			}
+			if len(cloudshell.Spec.IngressConfig.Host) > 0 {
+				// host must conform to DNS-1123 subdomain rules
+				if errs := validation.IsDNS1123Subdomain(cloudshell.Spec.IngressConfig.Host); len(errs) > 0 {
+					return fmt.Errorf("invalid ingress host %q: %s", cloudshell.Spec.IngressConfig.Host, strings.Join(errs, "; "))
+				}
+				host = cloudshell.Spec.IngressConfig.Host
 			}
 		}
 
@@ -635,6 +644,7 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 			Path             string
 			ServiceName      string
 			Annotations      map[string]string
+			Host             string
 		}{
 			Name:             objectKey.Name,
 			Namespace:        objectKey.Namespace,
@@ -642,6 +652,7 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 			ServiceName:      service,
 			Path:             SetRouteRulePath(cloudshell),
 			Annotations:      annotations,
+			Host:             host,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to parse cloudshell ingress manifest")
