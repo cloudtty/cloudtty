@@ -628,8 +628,8 @@ func (c *Controller) CreateIngressForCloudshell(ctx context.Context, service str
 				annotations = cloudshell.Spec.IngressConfig.Annotations
 			}
 			if len(cloudshell.Spec.IngressConfig.Host) > 0 {
-				// host must conform to DNS-1123 subdomain rules
-				if errs := validation.IsDNS1123Subdomain(cloudshell.Spec.IngressConfig.Host); len(errs) > 0 {
+				// Host must conform to DNS-1123 subdomain rules, and may optionally start with "*." for wildcard.
+				if errs := validateIngressHost(cloudshell.Spec.IngressConfig.Host); len(errs) > 0 {
 					return fmt.Errorf("invalid ingress host %q: %s", cloudshell.Spec.IngressConfig.Host, strings.Join(errs, "; "))
 				}
 				host = cloudshell.Spec.IngressConfig.Host
@@ -997,6 +997,40 @@ func VsNamespacedName(cloudshell *cloudshellv1alpha1.CloudShell) types.Namespace
 	}
 
 	return types.NamespacedName{Name: vsName, Namespace: namespace}
+}
+
+// validateIngressHost validates an ingress host allowing optional wildcard prefix "*.".
+// Rules:
+// - Exact DNS-1123 subdomain is valid (no wildcard)
+// - Wildcard only allowed as the entire first label (prefix "*.")
+// - Wildcard matches a single label only; no additional '*' allowed elsewhere
+// - Suffix after "*." must itself be a valid DNS-1123 subdomain
+func validateIngressHost(host string) []string {
+	if len(host) == 0 {
+		return []string{"host must not be empty"}
+	}
+
+	if strings.HasPrefix(host, "*.") {
+		// Disallow any other '*'
+		if strings.Contains(host[2:], "*") {
+			return []string{"wildcard '*' is only allowed as the first label (prefix '*.')"}
+		}
+
+		suffix := host[2:]
+		if len(suffix) == 0 {
+			return []string{"wildcard host must have a suffix after '*.'"}
+		}
+		if errs := validation.IsDNS1123Subdomain(suffix); len(errs) > 0 {
+			return []string{fmt.Sprintf("invalid wildcard host suffix %q: %s", suffix, strings.Join(errs, "; "))}
+		}
+		return nil
+	}
+
+	if strings.Contains(host, "*") {
+		return []string{"wildcard '*' is only allowed as the first label (prefix '*.')"}
+	}
+
+	return validation.IsDNS1123Subdomain(host)
 }
 
 // GenerateKubeconfigInCluster load serviceaccount info under
