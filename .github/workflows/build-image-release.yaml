@@ -22,15 +22,23 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
       - name: Get the version
         id: get_version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          if [[ ${GITHUB_REF} == "refs/heads/main" ]]; then
+          REF=${GITHUB_REF}
+          VERSION=""
+          if [[ ${REF} == "refs/heads/main" ]]; then
             VERSION=latest
+          elif [[ ${REF} == refs/heads/* ]]; then
+            VERSION=${REF#refs/heads/}
+            VERSION=${VERSION//\//-}
+          elif [[ ${REF} == refs/tags/* ]]; then
+            VERSION=${REF#refs/tags/}
           fi
-          echo ::set-output name=VERSION::${VERSION}
+          if [[ -z ${VERSION} ]]; then
+            VERSION=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          fi
+          echo "VERSION=${VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout code
         uses: actions/checkout@v4
