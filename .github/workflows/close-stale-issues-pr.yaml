@@ -28,12 +28,12 @@ jobs:
           exempt-issue-labels: pinned,security,good-first-issue
 
           # reach idle days and marked as stale
-          days-before-issue-stale: 30
+          days-before-issue-stale: 90
           stale-issue-message: |
             This issue has been automatically marked as stale because it has not
             had recent activity. It will be closed if no further activity occurs.
           # after marked stale, how long will close it
-          days-before-issue-close: 14
+          days-before-issue-close: 30
           close-issue-message: |
             This issue has not seen any activity since it was marked stale.
             Closing.
