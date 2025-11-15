@@ -9,10 +9,12 @@ RUN yarn install
 COPY html/ /app/
 RUN yarn run build
 
-FROM ghcr.io/dtzar/helm-kubectl:3.17.0
+FROM ghcr.io/dtzar/helm-kubectl:3.19.1
 SHELL [ "/bin/bash", "-c" ]
 
 ARG TTYD_VERSION=1.7.8
+
+ENV CFLAGS="-std=gnu89 -Wno-implicit-int"
 
 RUN echo "https://mirrors.aliyun.com/alpine/v3.20/main/" >> /etc/apk/repositories \
     && apk update \
