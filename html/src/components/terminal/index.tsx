@@ -396,23 +396,19 @@ export class Xterm extends Component<Props> {
 
         const path = window.location.pathname.replace(/[\/]+$/, '');
 
-        const uploadPathArr = path.split("/upload")
-        if (uploadPathArr.length > 1) {
-            var fileUrl = uploadPathArr[uploadPathArr.length - 1]
-            if (fileUrl.length == 0) {
-                fileUrl = "/"
-            }
+        console.log(`[ttyd] origin path : ${path}`);
+        let match = path.match(/\/upload(\/.*|\/|$)/);
+        if (match) {
+            const fileUrl = (!match[1] || match[1] === '/') ? '/' : match[1];
             console.log(`[ttyd] upload fileUrl : ${fileUrl}`);
-            uploadFileToPod(fileUrl)
+            uploadFileToPod(fileUrl);
         }
 
-        const downloadPathArr = path.split("/download/")
-        if (downloadPathArr.length > 1) {
-            const fileUrl = downloadPathArr[downloadPathArr.length - 1]
-            if (fileUrl.length > 0) {
-                console.log(`[ttyd] download fileUrl : ${fileUrl}`);
-                downLoadFileToPod(decodeURIComponent(fileUrl));
-            }
+        match = path.match(/\/download(\/.*|\/|$)/);
+        if (match) {
+            const fileUrl = (!match[1] || match[1] === '/') ? '/' : match[1];
+            console.log(`[ttyd] download fileUrl : ${fileUrl}`);
+            downLoadFileToPod(decodeURIComponent(fileUrl));
         }
 
         if (this.opened) {
