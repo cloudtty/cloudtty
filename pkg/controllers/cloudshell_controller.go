@@ -134,12 +134,54 @@ func New(client client.Client, kubeClient kubernetes.Interface, config *rest.Con
 		klog.ErrorS(err, "error when adding event handler to informer")
 	}
 
+	_, err = podInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				controller.enqueueCloudshellForPod(obj)
+			},
+			UpdateFunc: func(_, newObj interface{}) {
+				controller.enqueueCloudshellForPod(newObj)
+			},
+			DeleteFunc: func(obj interface{}) {
+				controller.enqueueCloudshellForPod(obj)
+			},
+		},
+	)
+	if err != nil {
+		klog.ErrorS(err, "error when adding pod event handler to informer")
+	}
+
 	return controller
 }
 
 func (c *Controller) enqueue(obj interface{}) {
 	cloudshell := obj.(*cloudshellv1alpha1.CloudShell)
 	key, _ := cache.MetaNamespaceKeyFunc(cloudshell)
+	c.queue.Add(key)
+}
+
+func (c *Controller) enqueueCloudshellForPod(obj interface{}) {
+	pod, ok := obj.(*corev1.Pod)
+	if !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return
+		}
+		pod, ok = tombstone.Obj.(*corev1.Pod)
+		if !ok {
+			return
+		}
+	}
+
+	if pod.Labels == nil {
+		return
+	}
+	owner := pod.Labels[constants.WorkerOwnerLabelKey]
+	if owner == "" {
+		return
+	}
+
+	key := fmt.Sprintf("%s/%s", pod.Namespace, owner)
 	c.queue.Add(key)
 }
 
@@ -265,6 +307,19 @@ func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv
 	worker, err := c.GetBindingWorkerFor(cloudshell)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get binding worker for cloudshell, err: %v", err)
+	}
+	if worker != nil && !util.IsPodReady(worker) {
+		klog.InfoS("bound worker is not ready, reassigning", "cloudshell", klog.KObj(cloudshell), "worker", worker.Name)
+		if err := c.workerPool.Back(worker); err != nil {
+			klog.ErrorS(err, "failed to back worker for reassignment", "cloudshell", klog.KObj(cloudshell), "worker", worker.Name)
+		}
+		if cloudshell.Labels != nil {
+			delete(cloudshell.Labels, constants.CloudshellPodLabelKey)
+		}
+		if err := c.Update(ctx, cloudshell); err != nil {
+			return nil, err
+		}
+		worker = nil
 	}
 
 	// TODO: when cloudshell image be changed, the image of binding worker is different with the spce.image
