@@ -2,6 +2,21 @@ apiVersion: v1
 entries:
   cloudtty:
   - apiVersion: v2
+    appVersion: 0.8.9
+    created: "2026-01-27T09:48:02.876482581Z"
+    description: A Helm chart for cloudshell
+    digest: 456bd1f1ba8412cf12df9471fed725cd320df273e9ffd32d6f706d46974cf9d8
+    maintainers:
+    - name: cloudtty
+      url: https://github.com/cloudtty/cloudtty
+    name: cloudtty
+    sources:
+    - https://github.com/cloudtty/cloudtty
+    type: application
+    urls:
+    - https://github.com/cloudtty/cloudtty/releases/download/cloudtty-0.8.9/cloudtty-0.8.9.tgz
+    version: 0.8.9
+  - apiVersion: v2
     appVersion: 0.8.8
     created: "2025-11-17T08:09:41.068863309Z"
     description: A Helm chart for cloudshell
@@ -531,4 +546,4 @@ entries:
     urls:
     - https://github.com/cloudtty/cloudtty/releases/download/cloudtty-0.2.0/cloudtty-0.2.0.tgz
     version: 0.2.0
-generated: "2025-11-17T08:09:41.069109743Z"
+generated: "2026-01-27T09:48:02.876781888Z"
