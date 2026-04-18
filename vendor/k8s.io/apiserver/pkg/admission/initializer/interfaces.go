@@ -18,6 +18,7 @@ package initializer
 
 import (
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/cel/openapi/resolver"
@@ -25,6 +26,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/component-base/compatibility"
 	"k8s.io/component-base/featuregate"
 )
 
@@ -72,6 +74,12 @@ type WantsFeatures interface {
 	admission.InitializationValidator
 }
 
+// WantsEffectiveVersion defines a function which passes the effective version for inspection by an admission plugin.
+type WantsEffectiveVersion interface {
+	InspectEffectiveVersion(compatibility.EffectiveVersion)
+	admission.InitializationValidator
+}
+
 type WantsDynamicClient interface {
 	SetDynamicClient(dynamic.Interface)
 	admission.InitializationValidator
@@ -87,5 +95,12 @@ type WantsRESTMapper interface {
 // an admission plugin that needs it.
 type WantsSchemaResolver interface {
 	SetSchemaResolver(resolver resolver.SchemaResolver)
+	admission.InitializationValidator
+}
+
+// WantsExcludedAdmissionResources defines a function which sets the ExcludedAdmissionResources
+// for an admission plugin that needs it.
+type WantsExcludedAdmissionResources interface {
+	SetExcludedAdmissionResources(excludedAdmissionResources []schema.GroupResource)
 	admission.InitializationValidator
 }
