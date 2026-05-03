@@ -63,7 +63,7 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test $$(go list ./... | grep -v /test/e2e) -coverprofile cover.out
 
 ##@ Build
 
@@ -87,6 +87,31 @@ docker-build: test ## Build docker image with the manager.
 docker-push: ## Push docker image with the manager.
 	docker push ${OPERATOR_IMG}
 	docker push ${TTY_IMG}
+##@ E2E Testing
+
+.PHONY: test-e2e
+test-e2e: ## Run e2e tests against an existing kind cluster.
+	@command -v kind >/dev/null 2>&1 || { echo "kind is not installed. Please install kind first: https://kind.sigs.k8s.io/"; exit 1; }
+	@command -v helm >/dev/null 2>&1 || { echo "helm is not installed. Please install helm first: https://helm.sh/"; exit 1; }
+	go test ./test/e2e/ -v -ginkgo.v -timeout 30m
+
+.PHONY: kind-create
+kind-create: ## Create a kind cluster for e2e testing.
+	kind create cluster --name kind --config test/e2e/kind-config.yaml || true
+
+.PHONY: kind-delete
+kind-delete: ## Delete the kind cluster.
+	kind delete cluster --name kind
+
+.PHONY: kind-load
+kind-load: docker-build ## Build and load images into kind.
+	kind load docker-image ${OPERATOR_IMG} --name kind
+	kind load docker-image ${TTY_IMG} --name kind
+
+# Local one-shot e2e: create cluster -> build & load images -> run tests
+.PHONY: local-e2e-test
+local-e2e-test: kind-create kind-load test-e2e ## Run full e2e flow locally.
+
 ##@ Deployment
 
 ifndef ignore-not-found
