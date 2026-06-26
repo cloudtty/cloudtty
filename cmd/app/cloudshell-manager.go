@@ -44,7 +44,7 @@ func NewCloudShellManagerCommand(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cloudshell-manager",
 		Short: `Run this command in order to run cloudshell controller manager`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			verflag.PrintAndExitIfRequested()
 
 			// Activate logging as soon as possible, after that

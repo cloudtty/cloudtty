@@ -76,7 +76,7 @@ type Controller struct {
 	Scheme     *runtime.Scheme
 	workerPool *worerkpool.WorkerPool
 
-	queue              workqueue.RateLimitingInterface
+	queue              workqueue.TypedRateLimitingInterface[string]
 	cloudshellInformer cache.SharedIndexInformer
 	lister             cloudshellisters.CloudShellLister
 	podInformer        cache.SharedIndexInformer
@@ -100,8 +100,8 @@ func New(client client.Client, kubeClient kubernetes.Interface, config *rest.Con
 		config:     config,
 		Scheme:     gclient.NewSchema(),
 		workerPool: wp,
-		queue: workqueue.NewRateLimitingQueue(
-			workqueue.NewItemExponentialFailureRateLimiter(DefaultCloudShellBackOff, MaxCloudShellBackOff),
+		queue: workqueue.NewTypedRateLimitingQueue(
+			workqueue.NewTypedItemExponentialFailureRateLimiter[string](DefaultCloudShellBackOff, MaxCloudShellBackOff),
 		),
 
 		cloudshellInformer: cloudshellInformer.Informer(),
@@ -193,7 +193,7 @@ func (c *Controller) processNextItem() bool {
 	defer c.queue.Done(key)
 
 	// main reconcile logic
-	requeueAfter, err := c.syncHandler(context.TODO(), key.(string))
+	requeueAfter, err := c.syncHandler(context.TODO(), key)
 	switch {
 	case err != nil:
 		utilruntime.HandleError(fmt.Errorf("sync %q failed with %v", key, err))
@@ -201,6 +201,8 @@ func (c *Controller) processNextItem() bool {
 	case requeueAfter != nil:
 		c.queue.Forget(key)
 		c.queue.AddAfter(key, *requeueAfter)
+	default:
+		c.queue.Forget(key)
 	}
 
 	return true

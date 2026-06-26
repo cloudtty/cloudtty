@@ -154,13 +154,8 @@ func (f *factoryImpl) Validator(validationDirective string) (validation.Schema, 
 		return validation.NullSchema{}, nil
 	}
 
-	resources, err := f.OpenAPISchema()
-	if err != nil {
-		return nil, err
-	}
-
 	schema := validation.ConjunctiveSchema{
-		validation.NewSchemaValidation(resources),
+		validation.NewSchemaValidation(f),
 		validation.NoDoubleKeySchema{},
 	}
 
@@ -177,7 +172,7 @@ func (f *factoryImpl) Validator(validationDirective string) (validation.Schema, 
 	// the discovery client.
 	oapiV3Client := cached.NewClient(discoveryClient.OpenAPIV3())
 	queryParam := resource.QueryParamFieldValidation
-	primary := resource.NewQueryParamVerifierV3(dynamicClient, oapiV3Client, queryParam)
+	primary := newCachingVerifier(resource.NewQueryParamVerifierV3(dynamicClient, oapiV3Client, queryParam))
 	secondary := resource.NewQueryParamVerifier(dynamicClient, f.openAPIGetter(), queryParam)
 	fallback := resource.NewFallbackQueryParamVerifier(primary, secondary)
 	return validation.NewParamVerifyingSchema(schema, fallback, string(validationDirective)), nil
@@ -219,5 +214,5 @@ func (f *factoryImpl) OpenAPIV3Client() (openapiclient.Client, error) {
 		return nil, err
 	}
 
-	return discovery.OpenAPIV3(), nil
+	return cached.NewClient(discovery.OpenAPIV3()), nil
 }

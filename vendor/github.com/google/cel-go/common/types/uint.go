@@ -19,9 +19,9 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/google/cel-go/common/types/ref"
-	"github.com/google/cel-go/common/types/traits"
 
 	anypb "google.golang.org/protobuf/types/known/anypb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -32,15 +32,6 @@ import (
 type Uint uint64
 
 var (
-	// UintType singleton.
-	UintType = NewTypeValue("uint",
-		traits.AdderType,
-		traits.ComparerType,
-		traits.DividerType,
-		traits.ModderType,
-		traits.MultiplierType,
-		traits.SubtractorType)
-
 	uint32WrapperType = reflect.TypeOf(&wrapperspb.UInt32Value{})
 
 	uint64WrapperType = reflect.TypeOf(&wrapperspb.UInt64Value{})
@@ -86,6 +77,18 @@ func (i Uint) ConvertToNative(typeDesc reflect.Type) (any, error) {
 	switch typeDesc.Kind() {
 	case reflect.Uint, reflect.Uint32:
 		v, err := uint64ToUint32Checked(uint64(i))
+		if err != nil {
+			return 0, err
+		}
+		return reflect.ValueOf(v).Convert(typeDesc).Interface(), nil
+	case reflect.Uint8:
+		v, err := uint64ToUint8Checked(uint64(i))
+		if err != nil {
+			return 0, err
+		}
+		return reflect.ValueOf(v).Convert(typeDesc).Interface(), nil
+	case reflect.Uint16:
+		v, err := uint64ToUint16Checked(uint64(i))
 		if err != nil {
 			return 0, err
 		}
@@ -246,6 +249,11 @@ func (i Uint) Type() ref.Type {
 // Value implements ref.Val.Value.
 func (i Uint) Value() any {
 	return uint64(i)
+}
+
+func (i Uint) format(sb *strings.Builder) {
+	sb.WriteString(strconv.FormatUint(uint64(i), 10))
+	sb.WriteString("u")
 }
 
 // isJSONSafe indicates whether the uint is safely representable as a floating point value in JSON.

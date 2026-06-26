@@ -35,9 +35,6 @@ run:
   modules-download-mode: readonly
 
 linters-settings:
-  depguard:
-    list-type: blacklist
-    include-go-root: false
   dupl:
     threshold: 800
   errcheck:
@@ -139,9 +136,7 @@ linters:
     - wsl                      # Whitespace Linter
   enable:
     - asciicheck               # Simple linter to check that your code does not contain non-ASCII identifiers
-    - depguard                 # Go linter that checks if package imports are in a list of acceptable packages
     - durationcheck            # check for two durations multiplied together
-    - exportloopref            # checks for pointers to enclosing loop variables
     - gofmt                    # Gofmt checks whether code was gofmt-ed. By default this tool runs with -s option to check for code simplification
     - gofumpt                  # Gofumpt checks whether code was gofumpt-ed.
     - goheader                 # Checks is file header matches to pattern

@@ -18,10 +18,12 @@ package storage
 
 import (
 	"fmt"
+	"strings"
 	"sync/atomic"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/validation/path"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -35,11 +37,10 @@ func SimpleUpdate(fn SimpleUpdateFunc) UpdateFunc {
 	}
 }
 
-func EverythingFunc(runtime.Object) bool {
-	return true
-}
-
 func NamespaceKeyFunc(prefix string, obj runtime.Object) (string, error) {
+	if !strings.HasSuffix(prefix, "/") {
+		return "", fmt.Errorf("prefix should have '/' suffix")
+	}
 	meta, err := meta.Accessor(obj)
 	if err != nil {
 		return "", err
@@ -48,10 +49,13 @@ func NamespaceKeyFunc(prefix string, obj runtime.Object) (string, error) {
 	if msgs := path.IsValidPathSegmentName(name); len(msgs) != 0 {
 		return "", fmt.Errorf("invalid name: %v", msgs)
 	}
-	return prefix + "/" + meta.GetNamespace() + "/" + name, nil
+	return prefix + meta.GetNamespace() + "/" + name, nil
 }
 
 func NoNamespaceKeyFunc(prefix string, obj runtime.Object) (string, error) {
+	if !strings.HasSuffix(prefix, "/") {
+		return "", fmt.Errorf("prefix should have '/' suffix")
+	}
 	meta, err := meta.Accessor(obj)
 	if err != nil {
 		return "", err
@@ -60,7 +64,7 @@ func NoNamespaceKeyFunc(prefix string, obj runtime.Object) (string, error) {
 	if msgs := path.IsValidPathSegmentName(name); len(msgs) != 0 {
 		return "", fmt.Errorf("invalid name: %v", msgs)
 	}
-	return prefix + "/" + name, nil
+	return prefix + name, nil
 }
 
 // HighWaterMark is a thread-safe object for tracking the maximum value seen
@@ -78,4 +82,34 @@ func (hwm *HighWaterMark) Update(current int64) bool {
 			return true
 		}
 	}
+}
+
+// AnnotateInitialEventsEndBookmark adds a special annotation to the given object
+// which indicates that the initial events have been sent.
+//
+// Note that this function assumes that the obj's annotation
+// field is a reference type (i.e. a map).
+func AnnotateInitialEventsEndBookmark(obj runtime.Object) error {
+	objMeta, err := meta.Accessor(obj)
+	if err != nil {
+		return err
+	}
+	objAnnotations := objMeta.GetAnnotations()
+	if objAnnotations == nil {
+		objAnnotations = map[string]string{}
+	}
+	objAnnotations[metav1.InitialEventsAnnotationKey] = "true"
+	objMeta.SetAnnotations(objAnnotations)
+	return nil
+}
+
+// HasInitialEventsEndBookmarkAnnotation checks the presence of the
+// special annotation which marks that the initial events have been sent.
+func HasInitialEventsEndBookmarkAnnotation(obj runtime.Object) (bool, error) {
+	objMeta, err := meta.Accessor(obj)
+	if err != nil {
+		return false, err
+	}
+	objAnnotations := objMeta.GetAnnotations()
+	return objAnnotations[metav1.InitialEventsAnnotationKey] == "true", nil
 }

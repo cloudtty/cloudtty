@@ -55,7 +55,7 @@ type WorkerPool struct {
 
 	scaleInQueueDuration time.Duration
 
-	queue       workqueue.RateLimitingInterface
+	queue       workqueue.TypedRateLimitingInterface[string]
 	podInformer cache.SharedIndexInformer
 	podLister   listerscorev1.PodLister
 }
@@ -69,7 +69,7 @@ type Request struct {
 	Image           string
 	NodeSelector    string
 	Resources       *cloudshellv1alpha1.ResourceSetting
-	CloudShellQueue workqueue.RateLimitingInterface
+	CloudShellQueue workqueue.TypedRateLimitingInterface[string]
 }
 
 func New(client client.Client, coreWorkerLimit, maxWorkerLimit int, podInformer informercorev1.PodInformer) *WorkerPool {
@@ -83,8 +83,8 @@ func New(client client.Client, coreWorkerLimit, maxWorkerLimit int, podInformer 
 		scheme:               gclient.NewSchema(),
 		scaleInQueueDuration: DefaultScaleInWorkerQueueDuration,
 
-		queue: workqueue.NewRateLimitingQueue(
-			workqueue.NewItemExponentialFailureRateLimiter(2*time.Second, 5*time.Second),
+		queue: workqueue.NewTypedRateLimitingQueue(
+			workqueue.NewTypedItemExponentialFailureRateLimiter[string](2*time.Second, 5*time.Second),
 		),
 		podInformer: podInformer.Informer(),
 		podLister:   podInformer.Lister(),
@@ -159,27 +159,26 @@ func (w *WorkerPool) worker(stopCh <-chan struct{}) {
 	}
 }
 
-func (w *WorkerPool) processNextCluster() (continued bool) {
+func (w *WorkerPool) processNextCluster() bool {
 	key, shutdown := w.queue.Get()
 	if shutdown {
 		return false
 	}
 	defer w.queue.Done(key)
-	continued = true
 
-	namespace, name, err := cache.SplitMetaNamespaceKey(key.(string))
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		klog.ErrorS(err, "failed to split pod key", "key", key)
-		return
+		return true
 	}
 
 	pod, err := w.podLister.Pods(namespace).Get(name)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			klog.ErrorS(err, "failed to get pod from lister", "policy", name)
-			return
+			return true
 		}
-		return
+		return true
 	}
 
 	pod = pod.DeepCopy()
