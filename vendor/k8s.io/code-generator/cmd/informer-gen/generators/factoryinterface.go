@@ -19,9 +19,9 @@ package generators
 import (
 	"io"
 
-	"k8s.io/gengo/generator"
-	"k8s.io/gengo/namer"
-	"k8s.io/gengo/types"
+	"k8s.io/gengo/v2/generator"
+	"k8s.io/gengo/v2/namer"
+	"k8s.io/gengo/v2/types"
 
 	"k8s.io/klog/v2"
 )
@@ -29,7 +29,7 @@ import (
 // factoryInterfaceGenerator produces a file of interfaces used to break a dependency cycle for
 // informer registration
 type factoryInterfaceGenerator struct {
-	generator.DefaultGen
+	generator.GoGenerator
 	outputPackage    string
 	imports          namer.ImportTracker
 	clientSetPackage string
@@ -63,6 +63,8 @@ func (g *factoryInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 	klog.V(5).Infof("processing type %v", t)
 
 	m := map[string]interface{}{
+		"cacheIndexers":            c.Universe.Type(cacheIndexers),
+		"cacheInformerName":        c.Universe.Type(cacheInformerName),
 		"cacheSharedIndexInformer": c.Universe.Type(cacheSharedIndexInformer),
 		"clientSetPackage":         c.Universe.Type(types.Name{Package: g.clientSetPackage, Name: "Interface"}),
 		"runtimeObject":            c.Universe.Type(runtimeObject),
@@ -83,8 +85,27 @@ type NewInformerFunc func({{.clientSetPackage|raw}}, {{.timeDuration|raw}}) cach
 type SharedInformerFactory interface {
 	Start(stopCh <-chan struct{})
 	InformerFor(obj {{.runtimeObject|raw}}, newFunc NewInformerFunc) {{.cacheSharedIndexInformer|raw}}
+	InformerName() *{{.cacheInformerName|raw}}
 }
 
 // TweakListOptionsFunc is a function that transforms a {{.v1ListOptions|raw}}.
 type TweakListOptionsFunc func(*{{.v1ListOptions|raw}})
+
+// InformerOptions holds the options for creating an informer.
+type InformerOptions struct {
+	// ResyncPeriod is the resync period for this informer.
+	// If not set, defaults to 0 (no resync).
+	ResyncPeriod {{.timeDuration|raw}}
+
+	// Indexers are the indexers for this informer.
+	Indexers {{.cacheIndexers|raw}}
+
+	// InformerName is used to uniquely identify this informer for metrics.
+	// If not set, metrics will not be published for this informer.
+	// Use cache.NewInformerName() to create an InformerName at startup.
+	InformerName *{{.cacheInformerName|raw}}
+
+	// TweakListOptions is an optional function to modify the list options.
+	TweakListOptions TweakListOptionsFunc
+}
 `
