@@ -85,6 +85,14 @@ livenessProbe:
 readinessProbe:
   enabled: false
 
+## @param pprof.enabled Enable the Go pprof profiling HTTP server on the controller manager
+## @param pprof.bindAddress Address (host:port) the pprof server binds to
+## @param pprof.port Container port to expose for pprof
+pprof:
+  enabled: false
+  bindAddress: ":6060"
+  port: 6060
+
 
 cloudshell:
   ## @param image.registry cloudshell image registry

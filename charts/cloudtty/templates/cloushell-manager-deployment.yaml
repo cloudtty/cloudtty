@@ -55,6 +55,16 @@ spec:
           {{- with (include "cloudtty.operator.featureGates" .) }}
           - {{ . }}
           {{- end }}
+          {{- if .Values.pprof.enabled }}
+          - --enable-pprof
+          - --profiling-bind-address={{ .Values.pprof.bindAddress }}
+          {{- end }}
+          {{- if .Values.pprof.enabled }}
+          ports:
+          - name: pprof
+            containerPort: {{ .Values.pprof.port }}
+            protocol: TCP
+          {{- end }}
           {{- if .Values.resources }}
           resources: {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
