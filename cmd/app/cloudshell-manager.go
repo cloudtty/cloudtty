@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"net/http"
+	nhpprof "net/http/pprof"
 	"os"
 
 	"github.com/cloudtty/cloudtty/pkg/constants"
@@ -92,6 +94,13 @@ func Run(ctx context.Context, config *config.Config) error {
 	klog.Infof("cloudshell-controller-manager version: %s", version.Get())
 	klog.InfoS("Golang settings", "GOGC", os.Getenv("GOGC"), "GOMAXPROCS", os.Getenv("GOMAXPROCS"), "GOTRACEBACK", os.Getenv("GOTRACEBACK"))
 
+	// Start the pprof server before leader election so it stays reachable even
+	// when this instance is not (or fails to become) the leader, which is exactly
+	// the situation we want to be able to profile.
+	if config.EnablePprof {
+		go serveProfiling(ctx, config.ProfilingBindAddress)
+	}
+
 	if !config.LeaderElection.LeaderElect {
 		return StartControllers(config, ctx.Done())
 	}
@@ -167,4 +176,28 @@ func StartControllers(c *config.Config, stopCh <-chan struct{}) error {
 
 	<-stopCh
 	return nil
+}
+
+// serveProfiling runs an HTTP server exposing the net/http/pprof debugging
+// endpoints. It registers the handlers on a dedicated mux (rather than the
+// global DefaultServeMux) so pprof is only ever reachable through this server.
+// The server is shut down when ctx is cancelled.
+func serveProfiling(ctx context.Context, addr string) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", nhpprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", nhpprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", nhpprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", nhpprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", nhpprof.Trace)
+
+	srv := &http.Server{Addr: addr, Handler: mux}
+	go func() {
+		<-ctx.Done()
+		_ = srv.Close()
+	}()
+
+	klog.Infof("Starting pprof server on %s", addr)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		klog.Errorf("pprof server error: %v", err)
+	}
 }
