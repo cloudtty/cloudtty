@@ -420,7 +420,7 @@ func (c *Controller) StartupWorkerFor(ctx context.Context, cloudshell *cloudshel
 		}
 
 		if err := ctrlutil.SetControllerReference(cloudshell, secret, c.Scheme); err != nil {
-			klog.ErrorS(err, "Failed to set owner reference for configmap", "cloudshell", klog.KObj(cloudshell))
+			klog.ErrorS(err, "Failed to set owner reference for secret", "cloudshell", klog.KObj(cloudshell))
 			return err
 		}
 		if err := c.Client.Create(ctx, secret); err != nil {
