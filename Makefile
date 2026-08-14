@@ -7,6 +7,9 @@ OPERATOR_IMG ?= ghcr.io/cloudtty/cloudshell-operator:$(REVISION)
 TTY_IMG ?= ghcr.io/cloudtty/cloudshell:$(REVISION)
 #NOTE: job.yaml.tmpl image should align with above
 
+# Kylin-based cloudshell image (see docker/cloudshell/Dockerfile.kylin)
+KYLIN_TTY_IMG ?= ghcr.io/cloudtty/cloudshell-kylin:$(REVISION)
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
@@ -83,10 +86,18 @@ docker-build: test ## Build docker image with the manager.
 	docker build -t ${OPERATOR_IMG} . -f docker/operator/Dockerfile
 	docker build -t ${TTY_IMG} . -f docker/cloudshell/Dockerfile
 
+.PHONY: docker-build-kylin
+docker-build-kylin: ## Build the Kylin-based cloudshell docker image.
+	docker build -t ${KYLIN_TTY_IMG} . -f docker/cloudshell/Dockerfile.kylin
+
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${OPERATOR_IMG}
 	docker push ${TTY_IMG}
+
+.PHONY: docker-push-kylin
+docker-push-kylin: ## Push the Kylin-based cloudshell docker image.
+	docker push ${KYLIN_TTY_IMG}
 ##@ E2E Testing
 
 .PHONY: test-e2e

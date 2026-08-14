@@ -132,6 +132,34 @@ CloudTTY 的入门比较简单，请参照以下步骤进行安装和使用。
 
 > 如果你已经安装了 CloudTTY，还可以修改 `JobTemplate` 的 ConfigMap 来设置 cloudshell 的镜像。
 
+### 使用基于麒麟(Kylin)操作系统的 cloudshell 镜像
+
+对于需要国产化（麒麟）操作系统运行环境的使用场景，仓库提供了基于 [麒麟服务器操作系统 V10 SP3](https://www.kylinos.cn/) 构建的官方镜像，对应 Dockerfile 为 [docker/cloudshell/Dockerfile.kylin](docker/cloudshell/Dockerfile.kylin)。该镜像保留了完整的 CloudShell 工具链（helm、kubectl、yq、ttyd、rz/sz、git、SSH、jq、bash 补全），并且 `rz`/`sz` 仅依赖麒麟自带的 glibc，不会引入 Alpine 库。
+
+- 镜像由 [Build & Release Kylin Image](.github/workflows/build-kylin-image.yaml) 流水线自动构建并发布，支持 `linux/amd64` 和 `linux/arm64` 两种架构：
+  - 推送 `main` 分支 → `ghcr.io/cloudtty/cloudshell-kylin:latest`
+  - 打版本标签（`v*`）→ `ghcr.io/cloudtty/cloudshell-kylin:<tag>`
+  - 涉及麒麟 Dockerfile 的 PR → 只构建校验，不推送
+  - 也可以通过 **Actions → Build & Release Kylin Image → Run workflow** 手动触发
+- 本地构建：
+
+  ```shell
+  make docker-build-kylin KYLIN_TTY_IMG=<IMAGE>
+  # 或者
+  docker build -t <IMAGE> . -f docker/cloudshell/Dockerfile.kylin
+  ```
+
+- 使用方式和自定义镜像一致，例如通过 `spec.image` 指定：
+
+  ```yaml
+  apiVersion: cloudshell.cloudtty.io/v1alpha1
+  kind: CloudShell
+  metadata:
+    name: cloudshell-sample
+  spec:
+    image: ghcr.io/cloudtty/cloudshell-kylin:latest
+  ```
+
 ## 进阶用法
 
 ### 进阶 1：用 CloudTTY 访问其他集群
