@@ -1,0 +1,81 @@
+ARG KYLIN_IMAGE=cr.kylinos.cn/kylin/kylin-server-minimal:v10sp3
+ARG HELM_KUBECTL_IMAGE=ghcr.m.daocloud.io/dtzar/helm-kubectl:3.19.1
+
+FROM docker.m.daocloud.io/node:18.16.0 AS frontend-builder
+
+WORKDIR /app
+COPY html/package.json /app/
+COPY html/yarn.lock /app/
+RUN yarn config set network-timeout 100000
+RUN yarn install
+COPY html/ /app/
+RUN yarn run build
+
+# Build lrzsz against Kylin so the binaries are compatible with the final image.
+FROM ${KYLIN_IMAGE} AS lrzsz-builder
+
+ENV CFLAGS="-std=gnu89 -Wno-implicit-int"
+WORKDIR /tmp
+RUN microdnf install -y curl gcc gcc-c++ make tar gzip \
+    && curl -fsSLo lrzsz.tar.gz https://ohse.de/uwe/releases/lrzsz-0.12.20.tar.gz \
+    && tar -xf lrzsz.tar.gz \
+    && cd lrzsz-0.12.20 \
+    && ./configure --prefix=/usr/local \
+    && make \
+    && make install DESTDIR=/out \
+    && microdnf clean all
+
+# Use the upstream utility image only as a source for portable CLI binaries.
+FROM ${HELM_KUBECTL_IMAGE} AS helm-kubectl
+
+# Run CloudShell on Kylin instead of the Alpine-based helm-kubectl image.
+FROM ${KYLIN_IMAGE}
+
+ARG TTYD_VERSION=1.7.8
+
+SHELL ["/bin/bash", "-c"]
+
+# Install the Kylin equivalents of the packages provided by the original Alpine image.
+RUN microdnf install -y bash bash-completion bind-utils ca-certificates findutils gettext git jq openssh-clients procps-ng \
+    && microdnf clean all
+
+# Copy the CLI tools from their builder stages into the Kylin runtime image.
+COPY --from=lrzsz-builder /out/usr/local/bin/lrz /usr/local/bin/lrz
+COPY --from=lrzsz-builder /out/usr/local/bin/lsz /usr/local/bin/lsz
+COPY --from=helm-kubectl /usr/local/bin/helm /usr/local/bin/helm
+COPY --from=helm-kubectl /usr/local/bin/kubectl /usr/local/bin/kubectl
+COPY --from=helm-kubectl /usr/local/bin/yq /usr/local/bin/yq
+
+# Download the ttyd binary matching the Kylin build architecture.
+RUN ln -s /usr/local/bin/lrz /usr/bin/rz \
+    && ln -s /usr/local/bin/lsz /usr/bin/sz \
+    && ttyd_arch="$(uname -m)" \
+    && curl -fsSLo /usr/local/bin/ttyd "https://github.com/cloudtty/ttyd/releases/download/${TTYD_VERSION}/ttyd.${ttyd_arch}" \
+    && chmod +x /usr/local/bin/ttyd \
+    && ttyd --version
+
+COPY --from=frontend-builder /app/dist/inline.html /usr/lib/ttyd/index.html
+COPY ./docker/cloudshell/script/reset.sh /usr/lib/ttyd/
+COPY ./docker/cloudshell/script/startup.sh /usr/lib/ttyd/
+
+# Prepare the paths and executable scripts expected by the CloudTTY controller.
+RUN mkdir -p /root/.kube \
+    && chmod +x /usr/lib/ttyd/*.sh
+
+# procps on Kylin prints USER in column 1 and PID in column 2.
+RUN sed -i "s/awk '{print \$1}'/awk '{print \$2}'/" /usr/lib/ttyd/reset.sh
+
+# Avoid sourcing Kylin's /etc/bashrc under startup.sh's nounset mode.
+# Completion scripts and aliases are loaded only for interactive CloudShell sessions.
+RUN sed -i '1i [ -f /root/.env ] && source /root/.env\ncase $- in *i*) ;; *) return ;; esac' /root/.bashrc \
+    && printf '%s\n' \
+        'source /usr/share/bash-completion/bash_completion' \
+        'source <(kubectl completion bash)' \
+        'source <(helm completion bash)' \
+        'source <(yq shell-completion bash)' \
+        'alias k=kubectl' \
+        'complete -o default -F __start_kubectl k' >> /root/.bashrc \
+    && : > /root/.env
+
+USER root
+WORKDIR /root
