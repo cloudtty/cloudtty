@@ -58,8 +58,6 @@ spec:
           {{- if .Values.pprof.enabled }}
           - --enable-pprof
           - --profiling-bind-address={{ .Values.pprof.bindAddress }}
-          {{- end }}
-          {{- if .Values.pprof.enabled }}
           ports:
           - name: pprof
             containerPort: {{ .Values.pprof.port }}
