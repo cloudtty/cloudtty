@@ -16,6 +16,8 @@ limitations under the License.
 package options
 
 import (
+	"net"
+
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
@@ -30,6 +32,12 @@ func (o *Options) Validate() field.ErrorList {
 
 	if o.MaxWorkerLimit < 0 {
 		errs = append(errs, field.Invalid(newPath.Child("MaxWorkerLimit"), o.MaxWorkerLimit, "max-worker-limit must be greater than or equals 0"))
+	}
+
+	if o.EnablePprof {
+		if _, _, err := net.SplitHostPort(o.ProfilingBindAddress); err != nil {
+			errs = append(errs, field.Invalid(newPath.Child("ProfilingBindAddress"), o.ProfilingBindAddress, "profiling-bind-address must be a valid host:port when --enable-pprof is set"))
+		}
 	}
 
 	return errs

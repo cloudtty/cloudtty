@@ -22,6 +22,9 @@ type Config struct {
 	NodeSelector     map[string]string
 	Resources        *cloudshellv1alpha1.ResourceSetting
 
+	EnablePprof          bool
+	ProfilingBindAddress string
+
 	LeaderElection componentbaseconfig.LeaderElectionConfiguration
 }
 

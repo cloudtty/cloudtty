@@ -59,6 +59,11 @@ type Options struct {
 	NodeSelector    map[string]string
 	Resources       cloudshellv1alpha1.ResourceSetting
 	Logs            *logs.Options
+
+	// EnablePprof enables the pprof profiling HTTP server for debugging.
+	EnablePprof bool
+	// ProfilingBindAddress is the TCP address the pprof server binds to.
+	ProfilingBindAddress string
 }
 
 func NewOptions() (*Options, error) {
@@ -102,6 +107,10 @@ func (o *Options) Flags() cliflag.NamedFlagSets {
 	genericfs.StringVar(&o.ClouShellImage, "cloudshell-image", "", "The cloudshell image.")
 	genericfs.StringToStringVar(&o.NodeSelector, "cloudshell-node-selector", o.NodeSelector, "The cloudshell node selector.")
 	genericfs.Var(&o.Resources, "cloudshell-resources", "The cloudshell resources.")
+
+	pproffs := nfs.FlagSet("pprof")
+	pproffs.BoolVar(&o.EnablePprof, "enable-pprof", false, "Enable the pprof profiling HTTP server for debugging.")
+	pproffs.StringVar(&o.ProfilingBindAddress, "profiling-bind-address", ":6060", "The TCP address that the pprof server binds to (host:port). Only used when --enable-pprof is set.")
 
 	fs := nfs.FlagSet("misc")
 	fs.StringVar(&o.Master, "master", o.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig).")
@@ -167,6 +176,9 @@ func (o *Options) Config() (*config.Config, error) {
 		CloudShellImage:  o.ClouShellImage,
 		NodeSelector:     o.NodeSelector,
 		Resources:        &o.Resources,
+
+		EnablePprof:          o.EnablePprof,
+		ProfilingBindAddress: o.ProfilingBindAddress,
 
 		LeaderElection: o.LeaderElection,
 	}, nil
