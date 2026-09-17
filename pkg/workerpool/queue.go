@@ -63,8 +63,8 @@ func (q *Type) Len() int {
 }
 
 func (q *Type) Get() interface{} {
-	q.RWMutex.RLock()
-	defer q.RWMutex.RUnlock()
+	q.RWMutex.Lock()
+	defer q.RWMutex.Unlock()
 
 	if len(q.queue) == 0 {
 		return nil
@@ -112,7 +112,10 @@ func (q *Type) All() []interface{} {
 	q.RWMutex.RLock()
 	defer q.RWMutex.RUnlock()
 
-	items := make([]interface{}, 0, q.Len())
+	// Must not call q.Len() here: it takes RLock again, and Go's RWMutex is
+	// write-preferring, so a concurrent Add() blocked on Lock() would deadlock
+	// this goroutine against itself.
+	items := make([]interface{}, 0, len(q.queue))
 	for _, item := range q.queue {
 		items = append(items, item)
 	}
