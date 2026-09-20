@@ -1,0 +1,9 @@
+apiVersion: cloudshell.cloudtty.io/v1alpha1
+kind: CloudShell
+metadata:
+  name: gatewayapi-demo
+  namespace: application-team
+spec:
+  commandAction: "bash"
+  exposureMode: "GatewayAPI"
+  # The Gateway and listener are configured on the operator, not on this CR.

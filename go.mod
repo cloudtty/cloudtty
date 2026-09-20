@@ -19,6 +19,7 @@ require (
 	k8s.io/klog/v2 v2.100.1
 	k8s.io/kubectl v0.28.2
 	sigs.k8s.io/controller-runtime v0.14.6
+	sigs.k8s.io/gateway-api v0.7.1
 )
 
 require (

@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	cliflag "k8s.io/component-base/cli/flag"
@@ -33,6 +34,7 @@ import (
 	"github.com/cloudtty/cloudtty/pkg/utils/feature"
 	"github.com/cloudtty/cloudtty/pkg/version"
 	worerkpool "github.com/cloudtty/cloudtty/pkg/workerpool"
+	gatewayinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 )
 
 func init() {
@@ -166,10 +168,20 @@ func StartControllers(c *config.Config, stopCh <-chan struct{}) error {
 
 	informerFactory := externalversions.NewSharedInformerFactory(c.CloudShellClient, 0)
 	informer := informerFactory.Cloudshell().V1alpha1().CloudShells()
-	controller := controllers.New(c.Client, c.KubeClient, c.Kubeconfig, pool, c.CloudShellImage, c.NodeSelector, c.Resources, informer, podInformer)
+	var gatewayInformerFactory gatewayinformers.SharedInformerFactory
+	var gatewayRouteInformer cache.SharedIndexInformer
+	if c.GatewayAPIGatewayName != "" && c.GatewayAPIGatewayNamespace != "" {
+		gatewayInformerFactory = gatewayinformers.NewSharedInformerFactory(c.GatewayAPIClient, 0)
+		gatewayRouteInformer = gatewayInformerFactory.Gateway().V1beta1().HTTPRoutes().Informer()
+	}
+	controller := controllers.New(c.Client, c.KubeClient, c.CloudShellClient, c.Kubeconfig, pool, c.CloudShellImage, c.NodeSelector, c.Resources, informer, podInformer,
+		gatewayRouteInformer, c.GatewayAPIGatewayName, c.GatewayAPIGatewayNamespace, c.GatewayAPISectionName)
 
 	factory.Start(stopCh)
 	informerFactory.Start(stopCh)
+	if gatewayInformerFactory != nil {
+		gatewayInformerFactory.Start(stopCh)
+	}
 
 	go pool.Run(stopCh)
 	go controller.Run(1, stopCh)
