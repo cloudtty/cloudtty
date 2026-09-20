@@ -37,9 +37,11 @@ import (
 	"k8s.io/kubectl/pkg/cmd/exec"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
 	"github.com/cloudtty/cloudtty/pkg/constants"
+	cloudshellclientset "github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned"
 	cloudshellinformers "github.com/cloudtty/cloudtty/pkg/generated/informers/externalversions/cloudshell/v1alpha1"
 	cloudshellisters "github.com/cloudtty/cloudtty/pkg/generated/listers/cloudshell/v1alpha1"
 	"github.com/cloudtty/cloudtty/pkg/manifests"
@@ -71,16 +73,18 @@ const (
 // Controller reconciles a CloudShell object
 type Controller struct {
 	client.Client
-	kubeClient kubernetes.Interface
-	config     *rest.Config
-	Scheme     *runtime.Scheme
-	workerPool *worerkpool.WorkerPool
+	kubeClient       kubernetes.Interface
+	cloudshellClient cloudshellclientset.Interface
+	config           *rest.Config
+	Scheme           *runtime.Scheme
+	workerPool       *worerkpool.WorkerPool
 
-	queue              workqueue.RateLimitingInterface
-	cloudshellInformer cache.SharedIndexInformer
-	lister             cloudshellisters.CloudShellLister
-	podInformer        cache.SharedIndexInformer
-	podLister          listerscorev1.PodLister
+	queue                workqueue.RateLimitingInterface
+	cloudshellInformer   cache.SharedIndexInformer
+	lister               cloudshellisters.CloudShellLister
+	podInformer          cache.SharedIndexInformer
+	podLister            listerscorev1.PodLister
+	gatewayRouteInformer cache.SharedIndexInformer
 
 	ttydServiceBufferSize string
 	ttydPingInterval      string
@@ -88,29 +92,40 @@ type Controller struct {
 	cloudshellImage string
 	nodeSelector    map[string]string
 	resources       *cloudshellv1alpha1.ResourceSetting
+
+	gatewayAPIGatewayName      string
+	gatewayAPIGatewayNamespace string
+	gatewayAPISectionName      string
 }
 
-func New(client client.Client, kubeClient kubernetes.Interface, config *rest.Config, wp *worerkpool.WorkerPool, cloudshellImage string,
+func New(client client.Client, kubeClient kubernetes.Interface, cloudshellClient cloudshellclientset.Interface, config *rest.Config, wp *worerkpool.WorkerPool, cloudshellImage string,
 	nodeSelector map[string]string, resources *cloudshellv1alpha1.ResourceSetting,
 	cloudshellInformer cloudshellinformers.CloudShellInformer, podInformer informercorev1.PodInformer,
+	gatewayRouteInformer cache.SharedIndexInformer,
+	gatewayAPIGatewayName, gatewayAPIGatewayNamespace, gatewayAPISectionName string,
 ) *Controller {
 	controller := &Controller{
-		Client:     client,
-		kubeClient: kubeClient,
-		config:     config,
-		Scheme:     gclient.NewSchema(),
-		workerPool: wp,
+		Client:           client,
+		kubeClient:       kubeClient,
+		cloudshellClient: cloudshellClient,
+		config:           config,
+		Scheme:           gclient.NewSchema(),
+		workerPool:       wp,
 		queue: workqueue.NewRateLimitingQueue(
 			workqueue.NewItemExponentialFailureRateLimiter(DefaultCloudShellBackOff, MaxCloudShellBackOff),
 		),
 
-		cloudshellInformer: cloudshellInformer.Informer(),
-		lister:             cloudshellInformer.Lister(),
-		podInformer:        podInformer.Informer(),
-		podLister:          podInformer.Lister(),
-		cloudshellImage:    cloudshellImage,
-		nodeSelector:       nodeSelector,
-		resources:          resources,
+		cloudshellInformer:         cloudshellInformer.Informer(),
+		lister:                     cloudshellInformer.Lister(),
+		podInformer:                podInformer.Informer(),
+		podLister:                  podInformer.Lister(),
+		gatewayRouteInformer:       gatewayRouteInformer,
+		cloudshellImage:            cloudshellImage,
+		nodeSelector:               nodeSelector,
+		resources:                  resources,
+		gatewayAPIGatewayName:      gatewayAPIGatewayName,
+		gatewayAPIGatewayNamespace: gatewayAPIGatewayNamespace,
+		gatewayAPISectionName:      gatewayAPISectionName,
 	}
 
 	_, err := cloudshellInformer.Informer().AddEventHandler(
@@ -151,6 +166,25 @@ func New(client client.Client, kubeClient kubernetes.Interface, config *rest.Con
 		klog.ErrorS(err, "error when adding pod event handler to informer")
 	}
 
+	if gatewayRouteInformer != nil {
+		_, err = gatewayRouteInformer.AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					controller.enqueueCloudshellForGatewayRoute(obj)
+				},
+				UpdateFunc: func(_, newObj interface{}) {
+					controller.enqueueCloudshellForGatewayRoute(newObj)
+				},
+				DeleteFunc: func(obj interface{}) {
+					controller.enqueueCloudshellForGatewayRoute(obj)
+				},
+			},
+		)
+		if err != nil {
+			klog.ErrorS(err, "error when adding HTTPRoute event handler to informer")
+		}
+	}
+
 	return controller
 }
 
@@ -183,6 +217,26 @@ func (c *Controller) enqueueCloudshellForPod(obj interface{}) {
 
 	key := fmt.Sprintf("%s/%s", pod.Namespace, owner)
 	c.queue.Add(key)
+}
+
+func (c *Controller) enqueueCloudshellForGatewayRoute(obj interface{}) {
+	route, ok := obj.(*gatewayv1beta1.HTTPRoute)
+	if !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			return
+		}
+		route, ok = tombstone.Obj.(*gatewayv1beta1.HTTPRoute)
+		if !ok {
+			return
+		}
+	}
+
+	owner := metav1.GetControllerOf(route)
+	if owner == nil || owner.Kind != "CloudShell" {
+		return
+	}
+	c.queue.Add(fmt.Sprintf("%s/%s", route.Namespace, owner.Name))
 }
 
 func (c *Controller) processNextItem() bool {
@@ -228,6 +282,9 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 	}
 	if !cache.WaitForCacheSync(stopCh, c.podInformer.HasSynced) {
 		klog.Errorf("cloudshell manager: wait for pod informer factory failed")
+	}
+	if c.gatewayRouteInformer != nil && !cache.WaitForCacheSync(stopCh, c.gatewayRouteInformer.HasSynced) {
+		klog.Errorf("cloudshell manager: wait for HTTPRoute informer factory failed")
 	}
 	currentNS := util.GetCurrentNSOrDefault()
 	configs, err := c.kubeClient.CoreV1().ConfigMaps(currentNS).List(context.TODO(), metav1.ListOptions{LabelSelector: CloudshellConfigMapLabel})
@@ -291,6 +348,9 @@ func (c *Controller) syncHandler(ctx context.Context, key string) (*time.Duratio
 
 func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) (*time.Duration, error) {
 	t := nextRequeueTimeDuration(cloudshell)
+	if cloudshell.Spec.ExposeMode == cloudshellv1alpha1.ExposureGatewayAPI && !c.gatewayAPIConfigured() {
+		return nil, fmt.Errorf("GatewayAPI exposure requires --gateway-api-gateway-name and --gateway-api-gateway-namespace")
+	}
 
 	// remove cloudshell while ttl is timeout.
 	if t != nil && *t < 0 {
@@ -366,8 +426,18 @@ func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv
 		return nil, err
 	}
 
+	// Gateway API controllers publish HTTPRoute status asynchronously. Keep
+	// reconciling until the route is accepted and its backend references are
+	// resolved; a created HTTPRoute is not yet a usable endpoint.
+	if cloudshell.Spec.ExposeMode == cloudshellv1alpha1.ExposureGatewayAPI && url == "" && gatewayRouteIsPending(cloudshell) {
+		requeue := gatewayAPIRouteRequeuePeriod
+		if t == nil || requeue < *t {
+			t = &requeue
+		}
+	}
+
 	// url add ttl param, if ttl was set
-	if cloudshell.Spec.TTLSecondsAfterStarted != nil {
+	if url != "" && cloudshell.Spec.TTLSecondsAfterStarted != nil {
 		accessURLFmtStr := "%s?ttl=%d"
 		url = fmt.Sprintf(accessURLFmtStr, url, *cloudshell.Spec.TTLSecondsAfterStarted)
 	}
@@ -574,6 +644,16 @@ func (c *Controller) CreateRouteRule(ctx context.Context, cloudshell *cloudshell
 		}
 
 		accessURL = SetRouteRulePath(cloudshell)
+	case cloudshellv1alpha1.ExposureGatewayAPI:
+		ready, condition, err := c.ensureGatewayAPIRoute(ctx, cloudshell, worker.GetName())
+		if err != nil {
+			return "", err
+		}
+		condition.ObservedGeneration = cloudshell.Generation
+		setGatewayRouteCondition(cloudshell, condition)
+		if ready {
+			accessURL = SetGatewayAPIRoutePath(cloudshell)
+		}
 	}
 
 	return accessURL, nil
@@ -874,31 +954,42 @@ func (c *Controller) CreateVirtualServiceForCloudshell(ctx context.Context, serv
 
 // UpdateCloudshellStatus update the clodushell status.
 func (c *Controller) UpdateCloudshellStatus(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell, phase string) error {
-	firstTry := true
-	cloudshell.Status.Phase = phase
 	status := cloudshell.Status
+	status.Phase = phase
+	key := client.ObjectKeyFromObject(cloudshell)
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
-		if !firstTry {
-			var getErr error
-			cloudshell, getErr = c.lister.CloudShells(cloudshell.Namespace).Get(cloudshell.Name)
-			if getErr != nil {
-				if apierrors.IsNotFound(err) {
-					return nil
-				}
-				return getErr
+		current := &cloudshellv1alpha1.CloudShell{}
+		if c.cloudshellClient != nil {
+			current, err = c.cloudshellClient.CloudshellV1alpha1().CloudShells(key.Namespace).Get(ctx, key.Name, metav1.GetOptions{})
+		} else {
+			err = c.Get(ctx, key, current)
+		}
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return nil
 			}
+			return err
 		}
 
-		cloudshell.Status = status
-		cc := cloudshell.DeepCopy()
-
-		err = c.Status().Update(ctx, cc)
-		firstTry = false
-		return
+		current.Status = status
+		if c.cloudshellClient != nil {
+			_, err = c.cloudshellClient.CloudshellV1alpha1().CloudShells(key.Namespace).UpdateStatus(ctx, current, metav1.UpdateOptions{})
+			return err
+		}
+		return c.Status().Update(ctx, current)
 	})
 }
 
 func (c *Controller) removeCloudshell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) error {
+	// Remove the Gateway API route before returning the worker to the pool. If
+	// the old route remains attached while the worker is reused, a later request
+	// can be delivered to a different CloudShell.
+	if cloudshell.Spec.ExposeMode == cloudshellv1alpha1.ExposureGatewayAPI {
+		if err := c.deleteGatewayAPIRoute(ctx, cloudshell); err != nil {
+			return err
+		}
+	}
+
 	worker, err := c.GetBindingWorkerFor(cloudshell)
 	if err != nil {
 		return err
@@ -918,11 +1009,19 @@ func (c *Controller) removeCloudshell(ctx context.Context, cloudshell *cloudshel
 	}
 
 	klog.V(4).InfoS("Delete cloudshell", "cloudshell", klog.KObj(cloudshell))
-	if err := c.removeCloudshellRoute(ctx, cloudshell); err != nil {
-		return err
+	if cloudshell.Spec.ExposeMode != cloudshellv1alpha1.ExposureGatewayAPI {
+		if err := c.removeCloudshellRoute(ctx, cloudshell); err != nil {
+			return err
+		}
 	}
 
-	return c.removeFinalizer(cloudshell)
+	if err := c.removeFinalizer(cloudshell); err != nil {
+		return err
+	}
+	if cloudshell.Spec.ExposeMode == cloudshellv1alpha1.ExposureGatewayAPI {
+		clearGatewayRouteStatus(cloudshell)
+	}
+	return nil
 }
 
 // ResetWorker cleanup the kubeConfig and kill ttyd
@@ -997,6 +1096,8 @@ func (c *Controller) removeCloudshellRoute(ctx context.Context, cloudshell *clou
 
 		virtualService.Spec.Http = newHTTPRoute
 		return c.Update(ctx, virtualService)
+	case cloudshellv1alpha1.ExposureGatewayAPI:
+		return c.deleteGatewayAPIRoute(ctx, cloudshell)
 	}
 	return nil
 }

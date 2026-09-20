@@ -67,7 +67,18 @@ After the cloudtty is intergated to your own UI, it would look like:
   ```
 
   By default, it will create a cloudtty pod and expose the `NodePort` service.
-  Alternatively, `ClusterIP`, `Ingress`, and `VirtualService`(for Istio) are all supported as `exposureMode`, please refer to `config/samples/` for more examples.
+  Alternatively, `ClusterIP`, `Ingress`, `VirtualService` (for Istio), and `GatewayAPI` are supported as `exposureMode`, please refer to `config/samples/` for more examples.
+
+  `GatewayAPI` uses an administrator-managed Gateway. Configure the existing Gateway when installing the operator, for example:
+
+  ```shell
+  helm install cloudtty-operator cloudtty/cloudtty \
+    --set gatewayAPI.gatewayName=cloudtty-gateway \
+    --set gatewayAPI.gatewayNamespace=gateway-system \
+    --set gatewayAPI.sectionName=http
+  ```
+
+  The Gateway listener must allow HTTPRoutes from the namespaces where CloudShell resources are created. A CloudShell using `exposureMode: GatewayAPI` creates an HTTPRoute in its own namespace and only gets a URL after the Gateway reports the route as accepted with resolved backend references.
 
 - Step 3: Observe CR status to obtain its web access url, such as:
 
