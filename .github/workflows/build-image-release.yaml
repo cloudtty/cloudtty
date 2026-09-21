@@ -12,15 +12,29 @@ env:
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docker/**'
+      - 'html/**'
+      - '.github/workflows/build-image-release.yaml'
   push:
     branches:
       - main
+    paths:
+      - 'docker/**'
+      - 'html/**'
+      - '.github/workflows/build-image-release.yaml'
     tags:
       - v*
 
 jobs:
   docker-build:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
     steps:
       - name: Get the version
         id: get_version
@@ -46,6 +60,7 @@ jobs:
           fetch-depth: 0
 
       - name: Login registry
+        if: github.event_name != 'pull_request'
         run: |
           echo "${{ env.REGISTER_PASSWORD }}" | docker login ${{ env.REGISTER }} -u ${{ env.REGISTER_USER }} --password-stdin
 
@@ -54,8 +69,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: image=moby/buildkit:master
 
       - name: Build & Pushing operator image
         uses: docker/build-push-action@v5.1.0
@@ -63,13 +76,13 @@ jobs:
           context: .
           file: ${{ env.IMAGE_ROOT_PATH }}/operator/Dockerfile
           labels: |-
-            org.opencontainers.image.source=https://github.com/${{ env.IMAGE_REPO }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           platforms: ${{ env.BUILD_PLATFORM }}
           build-args: |
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: ${{ env.REGISTER }}/${{ env.IMAGE_REPO }}/cloudshell-operator:${{ steps.get_version.outputs.VERSION }}
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           provenance: false
           github-token: ${{ env.REGISTER_PASSWORD }}
 
@@ -79,12 +92,28 @@ jobs:
           context: .
           file: ${{ env.IMAGE_ROOT_PATH }}/cloudshell/Dockerfile
           labels: |-
-            org.opencontainers.image.source=https://github.com/${{ env.IMAGE_REPO }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           platforms: ${{ env.BUILD_PLATFORM }}
           build-args: |
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: ${{ env.REGISTER }}/${{ env.IMAGE_REPO }}/cloudshell:${{ steps.get_version.outputs.VERSION }}
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
+          provenance: false
+          github-token: ${{ env.REGISTER_PASSWORD }}
+
+      - name: Build & Pushing cloudshell kylin image
+        uses: docker/build-push-action@v5.1.0
+        with:
+          context: .
+          file: ${{ env.IMAGE_ROOT_PATH }}/cloudshell/Dockerfile.kylin
+          labels: |-
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          platforms: ${{ env.BUILD_PLATFORM }}
+          build-args: |
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+          tags: ${{ env.REGISTER }}/${{ env.IMAGE_REPO }}/cloudshell-kylin:${{ steps.get_version.outputs.VERSION }}
+          push: ${{ github.event_name != 'pull_request' }}
           provenance: false
           github-token: ${{ env.REGISTER_PASSWORD }}

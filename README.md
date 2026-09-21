@@ -140,7 +140,7 @@ There are two ways to set the customized cloudshell image:
 
 For environments that require a domestic (Kylin) OS runtime, the repository ships an official image built on [Kylin Server Minimal V10 SP3](https://www.kylinos.cn/) — see [docker/cloudshell/Dockerfile.kylin](docker/cloudshell/Dockerfile.kylin). It keeps the full CloudShell toolchain (helm, kubectl, yq, ttyd, rz/sz, git, SSH, jq, bash completion) and links `rz`/`sz` only against Kylin glibc.
 
-- The image is built automatically for `linux/amd64` and `linux/arm64` by the [Build & Release Kylin Image](.github/workflows/build-kylin-image.yaml) pipeline:
+- The image is built automatically for `linux/amd64` and `linux/arm64` by the [Build & Release Image](.github/workflows/build-image-release.yaml) pipeline:
   - push to `main` → `ghcr.io/cloudtty/cloudshell-kylin:latest`
   - version tag (`v*`) → `ghcr.io/cloudtty/cloudshell-kylin:<tag>`
   - pull requests touching the Kylin Dockerfile → build-only validation

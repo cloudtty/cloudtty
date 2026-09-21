@@ -136,7 +136,7 @@ CloudTTY 的入门比较简单，请参照以下步骤进行安装和使用。
 
 对于需要国产化（麒麟）操作系统运行环境的使用场景，仓库提供了基于 [麒麟服务器操作系统 V10 SP3](https://www.kylinos.cn/) 构建的官方镜像，对应 Dockerfile 为 [docker/cloudshell/Dockerfile.kylin](docker/cloudshell/Dockerfile.kylin)。该镜像保留了完整的 CloudShell 工具链（helm、kubectl、yq、ttyd、rz/sz、git、SSH、jq、bash 补全），并且 `rz`/`sz` 仅依赖麒麟自带的 glibc，不会引入 Alpine 库。
 
-- 镜像由 [Build & Release Kylin Image](.github/workflows/build-kylin-image.yaml) 流水线自动构建并发布，支持 `linux/amd64` 和 `linux/arm64` 两种架构：
+- 镜像由 [Build & Release Image](.github/workflows/build-image-release.yaml) 流水线自动构建并发布，支持 `linux/amd64` 和 `linux/arm64` 两种架构：
   - 推送 `main` 分支 → `ghcr.io/cloudtty/cloudshell-kylin:latest`
   - 打版本标签（`v*`）→ `ghcr.io/cloudtty/cloudshell-kylin:<tag>`
   - 涉及麒麟 Dockerfile 的 PR → 只构建校验，不推送
