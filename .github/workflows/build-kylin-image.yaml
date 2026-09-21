@@ -25,10 +25,17 @@ on:
       - main
     paths:
       - 'docker/cloudshell/Dockerfile.kylin'
+      - 'docker/cloudshell/script/**'
+      - 'html/**'
       - '.github/workflows/build-kylin-image.yaml'
   push:
     branches:
       - main
+    paths:
+      - 'docker/cloudshell/Dockerfile.kylin'
+      - 'docker/cloudshell/script/**'
+      - 'html/**'
+      - '.github/workflows/build-kylin-image.yaml'
     tags:
       - v*
 
@@ -72,8 +79,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: image=moby/buildkit:master
 
       - name: Build & Push Kylin cloudshell image
         uses: docker/build-push-action@v5.1.0
