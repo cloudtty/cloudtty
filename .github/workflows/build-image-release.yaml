@@ -76,7 +76,7 @@ jobs:
           context: .
           file: ${{ env.IMAGE_ROOT_PATH }}/operator/Dockerfile
           labels: |-
-            org.opencontainers.image.source=https://github.com/${{ env.IMAGE_REPO }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           platforms: ${{ env.BUILD_PLATFORM }}
           build-args: |
@@ -92,7 +92,7 @@ jobs:
           context: .
           file: ${{ env.IMAGE_ROOT_PATH }}/cloudshell/Dockerfile
           labels: |-
-            org.opencontainers.image.source=https://github.com/${{ env.IMAGE_REPO }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           platforms: ${{ env.BUILD_PLATFORM }}
           build-args: |
@@ -108,7 +108,7 @@ jobs:
           context: .
           file: ${{ env.IMAGE_ROOT_PATH }}/cloudshell/Dockerfile.kylin
           labels: |-
-            org.opencontainers.image.source=https://github.com/${{ env.IMAGE_REPO }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           platforms: ${{ env.BUILD_PLATFORM }}
           build-args: |
