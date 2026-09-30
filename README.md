@@ -298,6 +298,12 @@ More will be coming Soon. Welcome to [open an issue](https://github.com/cloudtty
 
 Made with [contrib.rocks](https://contrib.rocks).
 
+## Origin
+
+Originally created by [DaoCloud](https://www.daocloud.io/); see the public
+repository history at [cloudtty/cloudtty](https://github.com/cloudtty/cloudtty)
+for provenance.
+
 <p align="center">
 <img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
 <br/><br/>
