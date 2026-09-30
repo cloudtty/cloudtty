@@ -374,6 +374,11 @@ CloudTTY 还将提供更多的功能，此处列出一些已经排上日程的�
 
 Made with [contrib.rocks](https://contrib.rocks).
 
+## 来源 (Origin)
+
+最初由 [DaoCloud](https://www.daocloud.io/) 创建；更多信息请查看
+[cloudtty/cloudtty](https://github.com/cloudtty/cloudtty) 的公开仓库历史记录。
+
 <p align="center">
 <img src="https://landscape.cncf.io/images/left-logo.svg" width="300"/>&nbsp;&nbsp;<img src="https://landscape.cncf.io/images/right-logo.svg" width="350"/>
 <br/><br/>
