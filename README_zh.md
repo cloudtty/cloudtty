@@ -104,7 +104,7 @@ CloudTTY 的入门比较简单，请参照以下步骤进行安装和使用。
 * 重新构建带有 karmadactl 工具的新镜像：
 
   ```shell
-  docker build -t <IMAGE> . -f docker/Dockerfile-webtty
+  docker build -t <IMAGE> . -f docker/Dockerfile.example
   ```
 
 ### 使用自定义的 cloudshell 镜像
