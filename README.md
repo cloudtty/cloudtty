@@ -108,7 +108,7 @@ Most users need more than just the basic `kubectl` tools to manage their cluster
 - Rebuild new image with `karmadactl` tool：
 
   ```shell
-  docker build -t <IMAGE> . -f docker/Dockerfile-webtty
+  docker build -t <IMAGE> . -f docker/Dockerfile.example
   ```
 
 ### Use customize cloudshell image
