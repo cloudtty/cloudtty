@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ExposeMode describes how to access ttyd service, either ClusterIP, NodePort, Ingress or VirtualService.
+// ExposeMode describes how to access the ttyd service.
 // +enum
 type ExposureMode string
 
@@ -33,10 +33,15 @@ const (
 	ExposureServiceNodePort  ExposureMode = "NodePort"
 	ExposureIngress          ExposureMode = "Ingress"
 	ExposureVirtualService   ExposureMode = "VirtualService"
+	ExposureGatewayAPI       ExposureMode = "GatewayAPI"
 
 	PhaseReady     = "Ready"
 	PhaseCompleted = "Complete"
 	PhaseFailed    = "Failed"
+
+	// GatewayRouteReadyCondition reports whether the Gateway API route has been
+	// accepted by the configured Gateway and its backend references are valid.
+	GatewayRouteReadyCondition = "cloudtty.io/GatewayRouteReady"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -75,7 +80,7 @@ type CloudShellSpec struct {
 	// +optional
 	Cleanup bool `json:"cleanup,omitempty"`
 
-	// +kubebuilder:validation:Enum=ClusterIP;NodePort;Ingress;VirtualService
+	// +kubebuilder:validation:Enum=ClusterIP;NodePort;Ingress;VirtualService;GatewayAPI
 	// + optional
 	ExposeMode ExposureMode `json:"exposureMode,omitempty"`
 
@@ -204,6 +209,10 @@ type CloudShellStatus struct {
 	// Information when was the last time the pod was successfully scheduled.
 	// +optional
 	LastScheduleTime *metav1.Time `json:"lastScheduleTime,omitempty"`
+
+	// Conditions reports the observed state of externally managed resources.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +genclient

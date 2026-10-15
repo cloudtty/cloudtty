@@ -114,3 +114,14 @@ cloudshell:
   #   memory: 128Mi
   ## @param nodeSelector cloudshell node labels for pod assignment
   nodeSelector: {}
+
+## @section Gateway API configuration
+## These values configure the administrator-owned Gateway used when a
+## CloudShell sets spec.exposureMode to GatewayAPI.
+gatewayAPI:
+  ## @param gatewayAPI.gatewayName Name of the existing Gateway
+  gatewayName: ""
+  ## @param gatewayAPI.gatewayNamespace Namespace of the existing Gateway
+  gatewayNamespace: ""
+  ## @param gatewayAPI.sectionName Optional listener name on the Gateway
+  sectionName: ""

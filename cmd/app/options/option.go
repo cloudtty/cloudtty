@@ -38,6 +38,7 @@ import (
 	cloudshellv1alpha1 "github.com/cloudtty/cloudtty/pkg/apis/cloudshell/v1alpha1"
 	"github.com/cloudtty/cloudtty/pkg/generated/clientset/versioned"
 	"github.com/cloudtty/cloudtty/pkg/utils/gclient"
+	gatewayclientset "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
 const (
@@ -51,14 +52,17 @@ type Options struct {
 	LeaderElection   componentbaseconfig.LeaderElectionConfiguration
 	ClientConnection componentbaseconfig.ClientConnectionConfiguration
 
-	Master          string
-	Kubeconfig      string
-	CoreWorkerLimit int
-	MaxWorkerLimit  int
-	ClouShellImage  string
-	NodeSelector    map[string]string
-	Resources       cloudshellv1alpha1.ResourceSetting
-	Logs            *logs.Options
+	Master                     string
+	Kubeconfig                 string
+	CoreWorkerLimit            int
+	MaxWorkerLimit             int
+	ClouShellImage             string
+	NodeSelector               map[string]string
+	Resources                  cloudshellv1alpha1.ResourceSetting
+	GatewayAPIGatewayName      string
+	GatewayAPIGatewayNamespace string
+	GatewayAPISectionName      string
+	Logs                       *logs.Options
 
 	// EnablePprof enables the pprof profiling HTTP server for debugging.
 	EnablePprof bool
@@ -107,6 +111,9 @@ func (o *Options) Flags() cliflag.NamedFlagSets {
 	genericfs.StringVar(&o.ClouShellImage, "cloudshell-image", "", "The cloudshell image.")
 	genericfs.StringToStringVar(&o.NodeSelector, "cloudshell-node-selector", o.NodeSelector, "The cloudshell node selector.")
 	genericfs.Var(&o.Resources, "cloudshell-resources", "The cloudshell resources.")
+	genericfs.StringVar(&o.GatewayAPIGatewayName, "gateway-api-gateway-name", "", "Name of the Gateway used by CloudShells with GatewayAPI exposure.")
+	genericfs.StringVar(&o.GatewayAPIGatewayNamespace, "gateway-api-gateway-namespace", "", "Namespace of the Gateway used by CloudShells with GatewayAPI exposure.")
+	genericfs.StringVar(&o.GatewayAPISectionName, "gateway-api-section-name", "", "Optional listener name on the Gateway used by CloudShells with GatewayAPI exposure.")
 
 	pproffs := nfs.FlagSet("pprof")
 	pproffs.BoolVar(&o.EnablePprof, "enable-pprof", false, "Enable the pprof profiling HTTP server for debugging.")
@@ -165,17 +172,26 @@ func (o *Options) Config() (*config.Config, error) {
 		return nil, err
 	}
 
+	gatewayAPIClient, err := gatewayclientset.NewForConfig(kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
 	return &config.Config{
-		KubeClient:       client,
-		CloudShellClient: cloudshellClient,
-		Client:           runtimeClient,
-		Kubeconfig:       kubeconfig,
-		EventRecorder:    eventRecorder,
-		CoreWorkerLimit:  o.CoreWorkerLimit,
-		MaxWorkerLimit:   o.MaxWorkerLimit,
-		CloudShellImage:  o.ClouShellImage,
-		NodeSelector:     o.NodeSelector,
-		Resources:        &o.Resources,
+		KubeClient:                 client,
+		CloudShellClient:           cloudshellClient,
+		GatewayAPIClient:           gatewayAPIClient,
+		Client:                     runtimeClient,
+		Kubeconfig:                 kubeconfig,
+		EventRecorder:              eventRecorder,
+		CoreWorkerLimit:            o.CoreWorkerLimit,
+		MaxWorkerLimit:             o.MaxWorkerLimit,
+		CloudShellImage:            o.ClouShellImage,
+		NodeSelector:               o.NodeSelector,
+		Resources:                  &o.Resources,
+		GatewayAPIGatewayName:      o.GatewayAPIGatewayName,
+		GatewayAPIGatewayNamespace: o.GatewayAPIGatewayNamespace,
+		GatewayAPISectionName:      o.GatewayAPISectionName,
 
 		EnablePprof:          o.EnablePprof,
 		ProfilingBindAddress: o.ProfilingBindAddress,

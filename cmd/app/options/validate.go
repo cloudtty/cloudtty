@@ -40,5 +40,11 @@ func (o *Options) Validate() field.ErrorList {
 		}
 	}
 
+	if (o.GatewayAPIGatewayName == "") != (o.GatewayAPIGatewayNamespace == "") ||
+		(o.GatewayAPISectionName != "" && (o.GatewayAPIGatewayName == "" || o.GatewayAPIGatewayNamespace == "")) {
+		errs = append(errs, field.Invalid(newPath.Child("GatewayAPI"), "",
+			"gateway-api-gateway-name and gateway-api-gateway-namespace must be provided together"))
+	}
+
 	return errs
 }
