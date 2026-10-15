@@ -87,7 +87,7 @@ CloudTTY 的入门比较简单，请参照以下步骤进行安装和使用。
 
 大多数用户除了使用基本的 `kubectl` 工具来管理集群外，还需要更多丰富的工具来管理集群。可以基于 cloudshell 的基础镜像来自定义，下面是一个添加 `karmadactl` 工具的一个案例：
 
-* 修改 [Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
+* 使用已包含 `karmadactl` 工具的 [Dockerfile.example](https://github.com/cloudtty/cloudtty/blob/main/docker/Dockerfile.example) 文件。
 
   ```shell
   FROM ghcr.io/cloudtty/cloudshell:v0.6.0
@@ -104,7 +104,7 @@ CloudTTY 的入门比较简单，请参照以下步骤进行安装和使用。
 * 重新构建带有 karmadactl 工具的新镜像：
 
   ```shell
-  docker build -t <IMAGE> . -f docker/Dockerfile-webtty
+  docker build -t <IMAGE> . -f docker/Dockerfile.example
   ```
 
 ### 使用自定义的 cloudshell 镜像
