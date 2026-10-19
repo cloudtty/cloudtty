@@ -1,6 +1,20 @@
 ARG KYLIN_IMAGE=cr.kylinos.cn/kylin/kylin-server-minimal:v10sp3
 ARG HELM_KUBECTL_IMAGE=dtzar/helm-kubectl:3.19.1
 
+# Keep the Helm major version stable while replacing the vulnerable bundled binary.
+FROM alpine:3.22 AS helm
+ARG TARGETARCH
+ARG HELM_VERSION=3.21.0
+RUN apk add --no-cache curl \
+    && arch="${TARGETARCH:-$(apk --print-arch)}" \
+    && case "$arch" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; esac \
+    && archive="helm-v${HELM_VERSION}-linux-${arch}.tar.gz" \
+    && curl -fsSLo "$archive" "https://get.helm.sh/$archive" \
+    && curl -fsSLo "$archive.sha256sum" "https://get.helm.sh/$archive.sha256sum" \
+    && sha256sum -c "$archive.sha256sum" \
+    && tar -xzf "$archive" \
+    && install -m 0755 "linux-${arch}/helm" /usr/local/bin/helm
+
 FROM node:18.16.0 AS frontend-builder
 
 WORKDIR /app
@@ -42,7 +56,7 @@ RUN microdnf install -y bash bash-completion bind-utils ca-certificates findutil
 # Copy the CLI tools from their builder stages into the Kylin runtime image.
 COPY --from=lrzsz-builder /out/usr/local/bin/lrz /usr/local/bin/lrz
 COPY --from=lrzsz-builder /out/usr/local/bin/lsz /usr/local/bin/lsz
-COPY --from=helm-kubectl /usr/local/bin/helm /usr/local/bin/helm
+COPY --from=helm /usr/local/bin/helm /usr/local/bin/helm
 COPY --from=helm-kubectl /usr/local/bin/kubectl /usr/local/bin/kubectl
 COPY --from=helm-kubectl /usr/local/bin/yq /usr/local/bin/yq
 

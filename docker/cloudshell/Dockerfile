@@ -1,3 +1,17 @@
+# Keep the Helm major version stable while replacing the vulnerable bundled binary.
+FROM alpine:3.22 AS helm
+ARG TARGETARCH
+ARG HELM_VERSION=3.21.0
+RUN apk add --no-cache curl \
+    && arch="${TARGETARCH:-$(apk --print-arch)}" \
+    && case "$arch" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; esac \
+    && archive="helm-v${HELM_VERSION}-linux-${arch}.tar.gz" \
+    && curl -fsSLo "$archive" "https://get.helm.sh/$archive" \
+    && curl -fsSLo "$archive.sha256sum" "https://get.helm.sh/$archive.sha256sum" \
+    && sha256sum -c "$archive.sha256sum" \
+    && tar -xzf "$archive" \
+    && install -m 0755 "linux-${arch}/helm" /usr/local/bin/helm
+
 FROM node:18.16.0 as builder
 
 # Build frontend code which added upload/download button
@@ -10,16 +24,22 @@ COPY html/ /app/
 RUN yarn run build
 
 FROM ghcr.io/dtzar/helm-kubectl:3.19.1
+COPY --from=helm /usr/local/bin/helm /usr/local/bin/helm
 SHELL [ "/bin/bash", "-c" ]
 
 ARG TTYD_VERSION=1.7.8
 
 ENV CFLAGS="-std=gnu89 -Wno-implicit-int"
 
-RUN echo "https://mirrors.aliyun.com/alpine/v3.20/main/" >> /etc/apk/repositories \
+# Upgrade against the rootfs branch; mixing in v3.20 leaves newer packages unpatched.
+RUN ALPINE_BRANCH="v$(cut -d. -f1,2 /etc/alpine-release)" \
+    && printf '%s\n' \
+        "https://dl-cdn.alpinelinux.org/alpine/${ALPINE_BRANCH}/main" \
+        "https://dl-cdn.alpinelinux.org/alpine/${ALPINE_BRANCH}/community" \
+        > /etc/apk/repositories \
     && apk update \
     && apk add wget gcc g++ make bind-tools \
-    && apk upgrade libexpat \
+    && apk upgrade --no-cache \
     && wget https://ohse.de/uwe/releases/lrzsz-0.12.20.tar.gz \
     && tar -xf lrzsz-0.12.20.tar.gz \
     && cd lrzsz-0.12.20 \

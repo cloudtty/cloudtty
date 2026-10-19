@@ -170,16 +170,16 @@ func (w *WorkerPool) processNextCluster() (continued bool) {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key.(string))
 	if err != nil {
 		klog.ErrorS(err, "failed to split pod key", "key", key)
-		return
+		return continued
 	}
 
 	pod, err := w.podLister.Pods(namespace).Get(name)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			klog.ErrorS(err, "failed to get pod from lister", "policy", name)
-			return
+			return continued
 		}
-		return
+		return continued
 	}
 
 	pod = pod.DeepCopy()

@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.21.11 as builder
+FROM golang:1.24.13 as builder
 
 ENV CGO_ENABLED 0
 ENV GOOS linux
@@ -20,9 +20,10 @@ COPY pkg/ pkg/
 # Build
 RUN go build -ldflags="-s -w" -a -o manager cmd/main.go && echo "Building GOARCH of $GOARCH.."
 
+# The CGO-disabled manager needs no shared libraries, including OpenSSL.
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/base:nonroot
+FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager /bin/manager
 USER 65532:65532

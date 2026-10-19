@@ -36,8 +36,27 @@ run:
 
 linters-settings:
   depguard:
-    list-type: blacklist
-    include-go-root: false
+    rules:
+      main:
+        list-mode: strict
+        allow:
+          - $gostd
+          - github.com/cloudtty/cloudtty/
+          - github.com/onsi/ginkgo/v2
+          - github.com/onsi/gomega
+          - github.com/pkg/errors
+          - github.com/spf13/cobra
+          - istio.io/api/
+          - istio.io/client-go/
+          - k8s.io/api/
+          - k8s.io/apimachinery/
+          - k8s.io/apiserver/
+          - k8s.io/cli-runtime/
+          - k8s.io/client-go/
+          - k8s.io/component-base/
+          - k8s.io/klog/v2
+          - k8s.io/kubectl/
+          - sigs.k8s.io/controller-runtime/
   dupl:
     threshold: 800
   errcheck:
@@ -141,7 +160,6 @@ linters:
     - asciicheck               # Simple linter to check that your code does not contain non-ASCII identifiers
     - depguard                 # Go linter that checks if package imports are in a list of acceptable packages
     - durationcheck            # check for two durations multiplied together
-    - exportloopref            # checks for pointers to enclosing loop variables
     - gofmt                    # Gofmt checks whether code was gofmt-ed. By default this tool runs with -s option to check for code simplification
     - gofumpt                  # Gofumpt checks whether code was gofumpt-ed.
     - goheader                 # Checks is file header matches to pattern
