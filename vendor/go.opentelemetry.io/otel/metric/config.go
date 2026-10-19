@@ -1,28 +1,34 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metric // import "go.opentelemetry.io/otel/metric"
+
+import (
+	"slices"
+
+	"go.opentelemetry.io/otel/attribute"
+)
 
 // MeterConfig contains options for Meters.
 type MeterConfig struct {
 	instrumentationVersion string
 	schemaURL              string
+	attrs                  attribute.Set
+
+	// Ensure forward compatibility by explicitly making this not comparable.
+	noCmp [0]func() //nolint: unused  // This is indeed used.
 }
 
-// InstrumentationVersion is the version of the library providing instrumentation.
+// InstrumentationVersion returns the version of the library providing
+// instrumentation.
 func (cfg MeterConfig) InstrumentationVersion() string {
 	return cfg.instrumentationVersion
+}
+
+// InstrumentationAttributes returns the attributes associated with the library
+// providing instrumentation.
+func (cfg MeterConfig) InstrumentationAttributes() attribute.Set {
+	return cfg.attrs
 }
 
 // SchemaURL is the schema_url of the library providing instrumentation.
@@ -56,6 +62,42 @@ func (fn meterOptionFunc) applyMeter(cfg MeterConfig) MeterConfig {
 func WithInstrumentationVersion(version string) MeterOption {
 	return meterOptionFunc(func(config MeterConfig) MeterConfig {
 		config.instrumentationVersion = version
+		return config
+	})
+}
+
+// WithInstrumentationAttributes adds the instrumentation attributes.
+//
+// This is equivalent to calling [WithInstrumentationAttributeSet] with an
+// [attribute.Set] created from a clone of the passed attributes.
+// [WithInstrumentationAttributeSet] is recommended for more control.
+//
+// If multiple [WithInstrumentationAttributes] or [WithInstrumentationAttributeSet]
+// options are passed, the attributes will be merged together in the order
+// they are passed. Attributes with duplicate keys will use the last value passed.
+func WithInstrumentationAttributes(attr ...attribute.KeyValue) MeterOption {
+	set := attribute.NewSet(slices.Clone(attr)...)
+	return WithInstrumentationAttributeSet(set)
+}
+
+// WithInstrumentationAttributeSet adds the instrumentation attributes.
+//
+// If multiple [WithInstrumentationAttributes] or [WithInstrumentationAttributeSet]
+// options are passed, the attributes will be merged together in the order
+// they are passed. Attributes with duplicate keys will use the last value passed.
+func WithInstrumentationAttributeSet(set attribute.Set) MeterOption {
+	if set.Len() == 0 {
+		return meterOptionFunc(func(config MeterConfig) MeterConfig {
+			return config
+		})
+	}
+
+	return meterOptionFunc(func(config MeterConfig) MeterConfig {
+		if config.attrs.Len() == 0 {
+			config.attrs = set
+		} else {
+			config.attrs = mergeSets(config.attrs, set)
+		}
 		return config
 	})
 }
