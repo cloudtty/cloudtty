@@ -233,7 +233,7 @@ func (c *Controller) enqueueCloudshellForGatewayRoute(obj interface{}) {
 	}
 
 	owner := metav1.GetControllerOf(route)
-	if owner == nil || owner.Kind != "CloudShell" {
+	if owner == nil || owner.Kind != "CloudShell" || owner.APIVersion != cloudshellv1alpha1.SchemeGroupVersion.String() {
 		return
 	}
 	c.queue.Add(fmt.Sprintf("%s/%s", route.Namespace, owner.Name))

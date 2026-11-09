@@ -25,7 +25,6 @@ const (
 	gatewayAPIRouteRequeuePeriod = 2 * time.Second
 
 	gatewayAPIRouteNamePrefix = "cloudshell-"
-	gatewayAPIRouteLabel      = "cloudtty.io/cloudshell"
 )
 
 // ensureGatewayAPIRoute creates or updates the HTTPRoute owned by a CloudShell
@@ -120,9 +119,6 @@ func desiredGatewayAPIRoute(cloudshell *cloudshellv1alpha1.CloudShell, workerNam
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      gatewayAPIRouteName(cloudshell),
 			Namespace: cloudshell.Namespace,
-			Labels: map[string]string{
-				gatewayAPIRouteLabel: cloudshell.Name,
-			},
 		},
 		Spec: gatewayv1beta1.HTTPRouteSpec{
 			CommonRouteSpec: gatewayv1beta1.CommonRouteSpec{
