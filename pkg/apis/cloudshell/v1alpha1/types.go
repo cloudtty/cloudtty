@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ExposeMode describes how to access ttyd service, either ClusterIP, NodePort, Ingress or VirtualService.
+// ExposeMode describes how to access the ttyd service.
 // +enum
 type ExposureMode string
 
@@ -33,10 +33,15 @@ const (
 	ExposureServiceNodePort  ExposureMode = "NodePort"
 	ExposureIngress          ExposureMode = "Ingress"
 	ExposureVirtualService   ExposureMode = "VirtualService"
+	ExposureGatewayAPI       ExposureMode = "GatewayAPI"
 
 	PhaseReady     = "Ready"
 	PhaseCompleted = "Complete"
 	PhaseFailed    = "Failed"
+
+	// GatewayRouteReadyCondition reports whether the Gateway API route has been
+	// accepted by the configured Gateway and its backend references are valid.
+	GatewayRouteReadyCondition = "cloudtty.io/GatewayRouteReady"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -75,7 +80,7 @@ type CloudShellSpec struct {
 	// +optional
 	Cleanup bool `json:"cleanup,omitempty"`
 
-	// +kubebuilder:validation:Enum=ClusterIP;NodePort;Ingress;VirtualService
+	// +kubebuilder:validation:Enum=ClusterIP;NodePort;Ingress;VirtualService;GatewayAPI
 	// + optional
 	ExposeMode ExposureMode `json:"exposureMode,omitempty"`
 
@@ -89,6 +94,12 @@ type CloudShellSpec struct {
 	// VirtualServiceConfig specifies some of the parameters necessary to create the virtaulService.
 	// +optional
 	VirtualServiceConfig *VirtualServiceConfig `json:"virtualServiceConfig,omitempty"`
+
+	// GatewayConfig specifies the Gateway and listener the HTTPRoute attaches to.
+	// It is only used when exposeMode is GatewayAPI, and unset fields fall back
+	// to the --gateway-api-* flags of the operator.
+	// +optional
+	GatewayConfig *GatewayConfig `json:"gatewayConfig,omitempty"`
 
 	// PathPrefix specified a path prefix to access url, if not, the default path is used.
 	// +optional
@@ -162,6 +173,23 @@ type VirtualServiceConfig struct {
 	Gateway string `json:"gateway,omitempty"`
 }
 
+// GatewayConfig specifies the Gateway a CloudShell attaches its HTTPRoute to.
+// Every field is optional and falls back to the operator flag of the same name,
+// so an administrator can still configure a cluster-wide default.
+type GatewayConfig struct {
+	// Name specifies the Gateway to attach to, if it's empty, the
+	// --gateway-api-gateway-name flag is used.
+	Name string `json:"name,omitempty"`
+
+	// Namespace specifies the namespace of the Gateway, if it's empty, the
+	// --gateway-api-gateway-namespace flag is used.
+	Namespace string `json:"namespace,omitempty"`
+
+	// SectionName specifies a listener on the Gateway, if it's empty, the
+	// --gateway-api-section-name flag is used.
+	SectionName string `json:"sectionName,omitempty"`
+}
+
 // IngressConfig specifies some of the parameters necessary to create the ingress.
 type IngressConfig struct {
 	// IngressName specifies a name to ingress, if it's empty, default "cloudshell-ingress".
@@ -204,6 +232,10 @@ type CloudShellStatus struct {
 	// Information when was the last time the pod was successfully scheduled.
 	// +optional
 	LastScheduleTime *metav1.Time `json:"lastScheduleTime,omitempty"`
+
+	// Conditions reports the observed state of externally managed resources.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +genclient

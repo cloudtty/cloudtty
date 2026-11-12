@@ -8,19 +8,24 @@ import (
 	"k8s.io/client-go/tools/record"
 	componentbaseconfig "k8s.io/component-base/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayclientset "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
 type Config struct {
-	KubeClient       *clientset.Clientset
-	CloudShellClient *versioned.Clientset
-	Client           client.Client
-	Kubeconfig       *rest.Config
-	EventRecorder    record.EventRecorder
-	CoreWorkerLimit  int
-	MaxWorkerLimit   int
-	CloudShellImage  string
-	NodeSelector     map[string]string
-	Resources        *cloudshellv1alpha1.ResourceSetting
+	KubeClient                 *clientset.Clientset
+	CloudShellClient           *versioned.Clientset
+	GatewayAPIClient           gatewayclientset.Interface
+	Client                     client.Client
+	Kubeconfig                 *rest.Config
+	EventRecorder              record.EventRecorder
+	CoreWorkerLimit            int
+	MaxWorkerLimit             int
+	CloudShellImage            string
+	NodeSelector               map[string]string
+	Resources                  *cloudshellv1alpha1.ResourceSetting
+	GatewayAPIGatewayName      string
+	GatewayAPIGatewayNamespace string
+	GatewayAPISectionName      string
 
 	EnablePprof          bool
 	ProfilingBindAddress string
