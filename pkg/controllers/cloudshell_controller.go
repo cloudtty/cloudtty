@@ -348,8 +348,14 @@ func (c *Controller) syncHandler(ctx context.Context, key string) (*time.Duratio
 
 func (c *Controller) syncCloudShell(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell) (*time.Duration, error) {
 	t := nextRequeueTimeDuration(cloudshell)
-	if cloudshell.Spec.ExposeMode == cloudshellv1alpha1.ExposureGatewayAPI && !c.gatewayAPIConfigured() {
-		return nil, fmt.Errorf("GatewayAPI exposure requires --gateway-api-gateway-name and --gateway-api-gateway-namespace")
+	if cloudshell.Spec.ExposeMode == cloudshellv1alpha1.ExposureGatewayAPI {
+		if _, ok := c.gatewayAPITarget(cloudshell); !ok {
+			// A GatewayAPI CloudShell without a target Gateway cannot start its
+			// worker, so report the reason on the CloudShell instead of failing
+			// the reconcile with an error nobody can see in kubectl output.
+			setGatewayRouteCondition(cloudshell, gatewayRouteCondition(cloudshell, metav1.ConditionFalse, "GatewayNotConfigured", gatewayNotConfiguredMessage))
+			return nil, c.UpdateCloudshellStatus(ctx, cloudshell, cloudshellv1alpha1.PhaseFailed)
+		}
 	}
 
 	// remove cloudshell while ttl is timeout.

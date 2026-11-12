@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -176,5 +177,85 @@ func TestClearGatewayRouteStatus(t *testing.T) {
 	condition := cloudshell.Status.Conditions[0]
 	if condition.Status != metav1.ConditionFalse || condition.Reason != "RouteRemoved" {
 		t.Fatalf("expected removed route condition, got %+v", condition)
+	}
+}
+
+func TestGatewayAPITarget(t *testing.T) {
+	flags := &Controller{
+		gatewayAPIGatewayName:      "shared",
+		gatewayAPIGatewayNamespace: "gateway-system",
+		gatewayAPISectionName:      "http",
+	}
+
+	cases := []struct {
+		name   string
+		ctrl   *Controller
+		config *cloudshellv1alpha1.GatewayConfig
+		want   gatewayTarget
+		wantOK bool
+	}{
+		{
+			name:   "flags only",
+			ctrl:   flags,
+			want:   gatewayTarget{name: "shared", namespace: "gateway-system", sectionName: "http"},
+			wantOK: true,
+		},
+		{
+			name:   "CloudShell overrides every field",
+			ctrl:   flags,
+			config: &cloudshellv1alpha1.GatewayConfig{Name: "team-gateway", Namespace: "team-a-infra", SectionName: "https"},
+			want:   gatewayTarget{name: "team-gateway", namespace: "team-a-infra", sectionName: "https"},
+			wantOK: true,
+		},
+		{
+			name:   "unset CloudShell fields fall back to flags",
+			ctrl:   flags,
+			config: &cloudshellv1alpha1.GatewayConfig{Namespace: "team-a-infra"},
+			want:   gatewayTarget{name: "shared", namespace: "team-a-infra", sectionName: "http"},
+			wantOK: true,
+		},
+		{
+			name:   "CloudShell only, no flags",
+			ctrl:   &Controller{},
+			config: &cloudshellv1alpha1.GatewayConfig{Name: "team-gateway", Namespace: "team-a-infra"},
+			want:   gatewayTarget{name: "team-gateway", namespace: "team-a-infra"},
+			wantOK: true,
+		},
+		{
+			name:   "name without namespace is not usable",
+			ctrl:   &Controller{gatewayAPIGatewayName: "shared"},
+			config: &cloudshellv1alpha1.GatewayConfig{Name: "team-gateway"},
+			want:   gatewayTarget{name: "team-gateway"},
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cloudshell := &cloudshellv1alpha1.CloudShell{
+				Spec: cloudshellv1alpha1.CloudShellSpec{GatewayConfig: tc.config},
+			}
+			got, ok := tc.ctrl.gatewayAPITarget(cloudshell)
+			if got != tc.want || ok != tc.wantOK {
+				t.Fatalf("unexpected target: got (%+v, %t), want (%+v, %t)", got, ok, tc.want, tc.wantOK)
+			}
+		})
+	}
+}
+
+func TestEnsureGatewayAPIRouteReportsMissingTarget(t *testing.T) {
+	cloudshell := &cloudshellv1alpha1.CloudShell{
+		ObjectMeta: metav1.ObjectMeta{Name: "demo", Namespace: "team-a"},
+	}
+
+	ready, condition, err := (&Controller{}).ensureGatewayAPIRoute(context.Background(), cloudshell, "worker-1")
+	if err != nil {
+		t.Fatalf("an unconfigured Gateway should be reported as a condition, not an error: %v", err)
+	}
+	if ready {
+		t.Fatal("a route without a resolved Gateway cannot be ready")
+	}
+	if condition.Status != metav1.ConditionFalse || condition.Reason != "GatewayNotConfigured" {
+		t.Fatalf("unexpected condition: %+v", condition)
 	}
 }

@@ -6,4 +6,9 @@ metadata:
 spec:
   commandAction: "bash"
   exposureMode: "GatewayAPI"
-  # The Gateway and listener are configured on the operator, not on this CR.
+  # The Gateway defaults to the --gateway-api-* operator flags. Override it per
+  # CloudShell, for example to spread shells across several Gateways:
+  # gatewayConfig:
+  #   name: cloudtty-gateway
+  #   namespace: gateway-system
+  #   sectionName: http

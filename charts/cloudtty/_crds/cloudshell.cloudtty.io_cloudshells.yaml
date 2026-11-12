@@ -191,6 +191,28 @@ spec:
                 - VirtualService
                 - GatewayAPI
                 type: string
+              gatewayConfig:
+                description: |-
+                  GatewayConfig specifies the Gateway and listener the HTTPRoute attaches to.
+                  It is only used when exposeMode is GatewayAPI, and unset fields fall back
+                  to the --gateway-api-* flags of the operator.
+                properties:
+                  name:
+                    description: |-
+                      Name specifies the Gateway to attach to, if it's empty, the
+                      --gateway-api-gateway-name flag is used.
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of the Gateway, if it's empty, the
+                      --gateway-api-gateway-namespace flag is used.
+                    type: string
+                  sectionName:
+                    description: |-
+                      SectionName specifies a listener on the Gateway, if it's empty, the
+                      --gateway-api-section-name flag is used.
+                    type: string
+                type: object
               image:
                 description: |-
                   Image defines the image to cloudshell, we can customize an image.

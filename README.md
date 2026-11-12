@@ -78,6 +78,18 @@ After the cloudtty is intergated to your own UI, it would look like:
     --set gatewayAPI.sectionName=http
   ```
 
+  These flags are the cluster-wide default; a CloudShell can point at another Gateway or listener:
+
+  ```yaml
+  spec:
+    exposureMode: GatewayAPI
+    gatewayConfig:
+      name: cloudtty-gateway
+      namespace: gateway-system
+      sectionName: http
+  ```
+
+  Unset fields fall back to the flags above.
   The Gateway listener must allow HTTPRoutes from the namespaces where CloudShell resources are created. A CloudShell using `exposureMode: GatewayAPI` creates an HTTPRoute in its own namespace and only gets a URL after the Gateway reports the route as accepted with resolved backend references.
 
 - Step 3: Observe CR status to obtain its web access url, such as:

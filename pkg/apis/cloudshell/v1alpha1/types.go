@@ -95,6 +95,12 @@ type CloudShellSpec struct {
 	// +optional
 	VirtualServiceConfig *VirtualServiceConfig `json:"virtualServiceConfig,omitempty"`
 
+	// GatewayConfig specifies the Gateway and listener the HTTPRoute attaches to.
+	// It is only used when exposeMode is GatewayAPI, and unset fields fall back
+	// to the --gateway-api-* flags of the operator.
+	// +optional
+	GatewayConfig *GatewayConfig `json:"gatewayConfig,omitempty"`
+
 	// PathPrefix specified a path prefix to access url, if not, the default path is used.
 	// +optional
 	PathPrefix string `json:"pathPrefix,omitempty"`
@@ -165,6 +171,23 @@ type VirtualServiceConfig struct {
 
 	// Gateway must be specified and the gateway already exists in the cluster.
 	Gateway string `json:"gateway,omitempty"`
+}
+
+// GatewayConfig specifies the Gateway a CloudShell attaches its HTTPRoute to.
+// Every field is optional and falls back to the operator flag of the same name,
+// so an administrator can still configure a cluster-wide default.
+type GatewayConfig struct {
+	// Name specifies the Gateway to attach to, if it's empty, the
+	// --gateway-api-gateway-name flag is used.
+	Name string `json:"name,omitempty"`
+
+	// Namespace specifies the namespace of the Gateway, if it's empty, the
+	// --gateway-api-gateway-namespace flag is used.
+	Namespace string `json:"namespace,omitempty"`
+
+	// SectionName specifies a listener on the Gateway, if it's empty, the
+	// --gateway-api-section-name flag is used.
+	SectionName string `json:"sectionName,omitempty"`
 }
 
 // IngressConfig specifies some of the parameters necessary to create the ingress.

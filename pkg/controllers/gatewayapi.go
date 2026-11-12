@@ -25,16 +25,21 @@ const (
 	gatewayAPIRouteRequeuePeriod = 2 * time.Second
 
 	gatewayAPIRouteNamePrefix = "cloudshell-"
+
+	// gatewayNotConfiguredMessage is reported on the CloudShell when neither the
+	// CloudShell nor the operator flags name a Gateway to attach to.
+	gatewayNotConfiguredMessage = "GatewayAPI exposure requires spec.gatewayConfig.name and namespace, or the --gateway-api-gateway-name and --gateway-api-gateway-namespace flags"
 )
 
 // ensureGatewayAPIRoute creates or updates the HTTPRoute owned by a CloudShell
 // and then reads the latest route status. The Gateway itself is never changed.
 func (c *Controller) ensureGatewayAPIRoute(ctx context.Context, cloudshell *cloudshellv1alpha1.CloudShell, workerName string) (bool, metav1.Condition, error) {
-	if !c.gatewayAPIConfigured() {
-		return false, metav1.Condition{}, fmt.Errorf("GatewayAPI exposure requires --gateway-api-gateway-name and --gateway-api-gateway-namespace")
+	gateway, ok := c.gatewayAPITarget(cloudshell)
+	if !ok {
+		return false, gatewayRouteCondition(cloudshell, metav1.ConditionFalse, "GatewayNotConfigured", gatewayNotConfiguredMessage), nil
 	}
 
-	desired := desiredGatewayAPIRoute(cloudshell, workerName, c.gatewayAPIGatewayNamespace, c.gatewayAPIGatewayName, c.gatewayAPISectionName)
+	desired := desiredGatewayAPIRoute(cloudshell, workerName, gateway.namespace, gateway.name, gateway.sectionName)
 	route := &gatewayv1beta1.HTTPRoute{}
 	err := c.Get(ctx, client.ObjectKeyFromObject(desired), route)
 	if apierrors.IsNotFound(err) {
@@ -73,7 +78,7 @@ func (c *Controller) ensureGatewayAPIRoute(ctx context.Context, cloudshell *clou
 		return false, metav1.Condition{}, err
 	}
 
-	return gatewayRouteReadiness(route, cloudshell.Namespace, c.gatewayAPIGatewayNamespace, c.gatewayAPIGatewayName, c.gatewayAPISectionName)
+	return gatewayRouteReadiness(route, cloudshell.Namespace, gateway.namespace, gateway.name, gateway.sectionName)
 }
 
 // deleteGatewayAPIRoute removes only the route owned by the target CloudShell.
@@ -95,8 +100,34 @@ func (c *Controller) deleteGatewayAPIRoute(ctx context.Context, cloudshell *clou
 	return c.Delete(ctx, route)
 }
 
-func (c *Controller) gatewayAPIConfigured() bool {
-	return c.gatewayAPIGatewayName != "" && c.gatewayAPIGatewayNamespace != ""
+// gatewayTarget is the resolved Gateway that a CloudShell attaches its
+// HTTPRoute to.
+type gatewayTarget struct {
+	name        string
+	namespace   string
+	sectionName string
+}
+
+// gatewayAPITarget resolves the target Gateway for a CloudShell. Values set on
+// the CloudShell win, unset ones fall back to the operator flags.
+func (c *Controller) gatewayAPITarget(cloudshell *cloudshellv1alpha1.CloudShell) (gatewayTarget, bool) {
+	target := gatewayTarget{
+		name:        c.gatewayAPIGatewayName,
+		namespace:   c.gatewayAPIGatewayNamespace,
+		sectionName: c.gatewayAPISectionName,
+	}
+	if config := cloudshell.Spec.GatewayConfig; config != nil {
+		if config.Name != "" {
+			target.name = config.Name
+		}
+		if config.Namespace != "" {
+			target.namespace = config.Namespace
+		}
+		if config.SectionName != "" {
+			target.sectionName = config.SectionName
+		}
+	}
+	return target, target.name != "" && target.namespace != ""
 }
 
 func desiredGatewayAPIRoute(cloudshell *cloudshellv1alpha1.CloudShell, workerName, gatewayNamespace, gatewayName, sectionName string) *gatewayv1beta1.HTTPRoute {
@@ -189,7 +220,7 @@ func gatewayRouteReadiness(route *gatewayv1beta1.HTTPRoute, routeNamespace, gate
 		return true, gatewayRouteConditionFromRoute(route, accepted), nil
 	}
 
-	return false, pendingGatewayRouteCondition(route, "HTTPRoute is waiting for the configured Gateway"), nil
+	return false, pendingGatewayRouteCondition(route, fmt.Sprintf("HTTPRoute is waiting for Gateway %s/%s to accept it", gatewayNamespace, gatewayName)), nil
 }
 
 func gatewayParentMatches(parent gatewayv1beta1.ParentReference, routeNamespace, gatewayNamespace, gatewayName, sectionName string) bool {

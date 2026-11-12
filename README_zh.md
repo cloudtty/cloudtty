@@ -247,7 +247,14 @@ CloudTTY 提供了以下 5 种服务暴露模式以满足不同的使用场景�
   ```yaml
   spec:
     exposureMode: GatewayAPI
+    # 可选：覆盖安装时的默认 Gateway，未设置的字段回落到 --gateway-api-* 参数
+    gatewayConfig:
+      name: cloudtty-gateway
+      namespace: gateway-system
+      sectionName: http
   ```
+
+  安装参数只是集群级默认值，每个 CloudShell 都可以通过 `spec.gatewayConfig` 指定自己的 Gateway 和监听器。
 
   Gateway 本身由集群管理员维护，监听器通过 `allowedRoutes` 控制哪些命名空间可以挂载 `HTTPRoute`。Operator 只有在 `HTTPRoute` 被 Gateway 接受且后端引用解析成功后，才会将访问地址写入 CloudShell 的 `status.accessUrl`。
 
