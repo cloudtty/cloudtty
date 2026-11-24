@@ -51,6 +51,15 @@ spec:
           {{- if .Values.cloudshell.resources }}
           - --cloudshell-resources={{- toJson .Values.cloudshell.resources }}
           {{- end }}
+          {{- if .Values.gatewayAPI.gatewayName }}
+          - --gateway-api-gateway-name={{ .Values.gatewayAPI.gatewayName }}
+          {{- end }}
+          {{- if .Values.gatewayAPI.gatewayNamespace }}
+          - --gateway-api-gateway-namespace={{ .Values.gatewayAPI.gatewayNamespace }}
+          {{- end }}
+          {{- if .Values.gatewayAPI.sectionName }}
+          - --gateway-api-section-name={{ .Values.gatewayAPI.sectionName }}
+          {{- end }}
           - --v=2
           {{- with (include "cloudtty.operator.featureGates" .) }}
           - {{ . }}

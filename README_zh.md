@@ -218,7 +218,7 @@ spec:
 
 ### 进阶 3：修改服务暴露方式
 
-CloudTTY 提供了以下 4 种服务暴露模式以满足不同的使用场景：
+CloudTTY 提供了以下 5 种服务暴露模式以满足不同的使用场景：
 
 * `ClusterIP`：在集群中创建 ClusterIP 类型的 [Service](https://kubernetes.io/zh-cn/docs/concepts/services-networking/service/) 资源。
   适用于第三方集成 CloudTTY 服务，用户可以选择更加灵活的方式来暴露自己的服务。
@@ -231,6 +231,32 @@ CloudTTY 提供了以下 4 种服务暴露模式以满足不同的使用场景�
 
 * `VirtualService (istio)`：在集群中创建 ClusterIP 类型的 Service 资源，并创建 VirtaulService 资源。
   适合在集群中使用 [Istio](https://github.com/istio/istio) 进行流量负载的情况。
+
+* `GatewayAPI`：使用管理员预先创建的 [Gateway API Gateway](https://gateway-api.sigs.k8s.io/)，并在 CloudShell 所在的命名空间创建对应的 `HTTPRoute`。
+  安装 Operator 时通过 Helm 配置 Gateway：
+
+  ```shell
+  helm install cloudtty-operator cloudtty/cloudtty \
+    --set gatewayAPI.gatewayName=cloudtty-gateway \
+    --set gatewayAPI.gatewayNamespace=gateway-system \
+    --set gatewayAPI.sectionName=http
+  ```
+
+  然后在 CloudShell CR 中指定：
+
+  ```yaml
+  spec:
+    exposureMode: GatewayAPI
+    # 可选：覆盖安装时的默认 Gateway，未设置的字段回落到 --gateway-api-* 参数
+    gatewayConfig:
+      name: cloudtty-gateway
+      namespace: gateway-system
+      sectionName: http
+  ```
+
+  安装参数只是集群级默认值，每个 CloudShell 都可以通过 `spec.gatewayConfig` 指定自己的 Gateway 和监听器。
+
+  Gateway 本身由集群管理员维护，监听器通过 `allowedRoutes` 控制哪些命名空间可以挂载 `HTTPRoute`。Operator 只有在 `HTTPRoute` 被 Gateway 接受且后端引用解析成功后，才会将访问地址写入 CloudShell 的 `status.accessUrl`。
 
 ### featureGate
 
