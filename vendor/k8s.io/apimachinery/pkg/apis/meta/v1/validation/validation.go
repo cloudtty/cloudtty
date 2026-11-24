@@ -17,21 +17,29 @@ limitations under the License.
 package validation
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"unicode"
 
+	"k8s.io/apimachinery/pkg/api/operation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	"k8s.io/utils/ptr"
 )
 
 // LabelSelectorValidationOptions is a struct that can be passed to ValidateLabelSelector to record the validate options
 type LabelSelectorValidationOptions struct {
 	// Allow invalid label value in selector
 	AllowInvalidLabelValueInSelector bool
+
+	// Allows an operator that is not interpretable to pass validation.  This is useful for cases where a broader check
+	// can be performed, as in a *SubjectAccessReview
+	AllowUnknownOperatorInRequirement bool
 }
 
 // LabelSelectorHasInvalidLabelValue returns true if the given selector contains an invalid label value in a match expression.
@@ -79,7 +87,9 @@ func ValidateLabelSelectorRequirement(sr metav1.LabelSelectorRequirement, opts L
 			allErrs = append(allErrs, field.Forbidden(fldPath.Child("values"), "may not be specified when `operator` is 'Exists' or 'DoesNotExist'"))
 		}
 	default:
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("operator"), sr.Operator, "not a valid selector operator"))
+		if !opts.AllowUnknownOperatorInRequirement {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("operator"), sr.Operator, "not a valid selector operator"))
+		}
 	}
 	allErrs = append(allErrs, ValidateLabelName(sr.Key, fldPath.Child("key"))...)
 	if !opts.AllowInvalidLabelValueInSelector {
@@ -96,7 +106,7 @@ func ValidateLabelSelectorRequirement(sr metav1.LabelSelectorRequirement, opts L
 func ValidateLabelName(labelName string, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	for _, msg := range validation.IsQualifiedName(labelName) {
-		allErrs = append(allErrs, field.Invalid(fldPath, labelName, msg))
+		allErrs = append(allErrs, field.Invalid(fldPath, labelName, msg).WithOrigin("format=k8s-label-key"))
 	}
 	return allErrs
 }
@@ -107,9 +117,42 @@ func ValidateLabels(labels map[string]string, fldPath *field.Path) field.ErrorLi
 	for k, v := range labels {
 		allErrs = append(allErrs, ValidateLabelName(k, fldPath)...)
 		for _, msg := range validation.IsValidLabelValue(v) {
-			allErrs = append(allErrs, field.Invalid(fldPath, v, msg))
+			allErrs = append(allErrs, field.Invalid(fldPath, v, msg).WithOrigin("format=k8s-label-value"))
 		}
 	}
+	return allErrs
+}
+
+// FieldSelectorValidationOptions is a struct that can be passed to ValidateFieldSelectorRequirement to record the validate options
+type FieldSelectorValidationOptions struct {
+	// Allows an operator that is not interpretable to pass validation.  This is useful for cases where a broader check
+	// can be performed, as in a *SubjectAccessReview
+	AllowUnknownOperatorInRequirement bool
+}
+
+// ValidateLabelSelectorRequirement validates the requirement according to the opts and returns any validation errors.
+func ValidateFieldSelectorRequirement(requirement metav1.FieldSelectorRequirement, opts FieldSelectorValidationOptions, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if len(requirement.Key) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("key"), "must be specified"))
+	}
+
+	switch requirement.Operator {
+	case metav1.FieldSelectorOpIn, metav1.FieldSelectorOpNotIn:
+		if len(requirement.Values) == 0 {
+			allErrs = append(allErrs, field.Required(fldPath.Child("values"), "must be specified when `operator` is 'In' or 'NotIn'"))
+		}
+	case metav1.FieldSelectorOpExists, metav1.FieldSelectorOpDoesNotExist:
+		if len(requirement.Values) > 0 {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("values"), "may not be specified when `operator` is 'Exists' or 'DoesNotExist'"))
+		}
+	default:
+		if !opts.AllowUnknownOperatorInRequirement {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("operator"), requirement.Operator, "not a valid selector operator"))
+		}
+	}
+
 	return allErrs
 }
 
@@ -126,6 +169,7 @@ func ValidateDeleteOptions(options *metav1.DeleteOptions) field.ErrorList {
 		allErrs = append(allErrs, field.NotSupported(field.NewPath("propagationPolicy"), options.PropagationPolicy, []string{string(metav1.DeletePropagationForeground), string(metav1.DeletePropagationBackground), string(metav1.DeletePropagationOrphan), "nil"}))
 	}
 	allErrs = append(allErrs, ValidateDryRun(field.NewPath("dryRun"), options.DryRun)...)
+	allErrs = append(allErrs, ValidateIgnoreStoreReadError(field.NewPath("ignoreStoreReadErrorWithClusterBreakingPotential"), options)...)
 	return allErrs
 }
 
@@ -147,14 +191,15 @@ func ValidateUpdateOptions(options *metav1.UpdateOptions) field.ErrorList {
 
 func ValidatePatchOptions(options *metav1.PatchOptions, patchType types.PatchType) field.ErrorList {
 	allErrs := field.ErrorList{}
-	if patchType != types.ApplyPatchType {
-		if options.Force != nil {
-			allErrs = append(allErrs, field.Forbidden(field.NewPath("force"), "may not be specified for non-apply patch"))
-		}
-	} else {
+	switch patchType {
+	case types.ApplyYAMLPatchType, types.ApplyCBORPatchType:
 		if options.FieldManager == "" {
 			// This field is defaulted to "kubectl" by kubectl, but HAS TO be explicitly set by controllers.
 			allErrs = append(allErrs, field.Required(field.NewPath("fieldManager"), "is required for apply patch"))
+		}
+	default:
+		if options.Force != nil {
+			allErrs = append(allErrs, field.Forbidden(field.NewPath("force"), "may not be specified for non-apply patch"))
 		}
 	}
 	allErrs = append(allErrs, ValidateFieldManager(options.FieldManager, field.NewPath("fieldManager"))...)
@@ -173,7 +218,7 @@ func ValidateFieldManager(fieldManager string, fldPath *field.Path) field.ErrorL
 	// considered as not set and is defaulted by the rest of the process
 	// (unless apply is used, in which case it is required).
 	if len(fieldManager) > FieldManagerMaxLength {
-		allErrs = append(allErrs, field.TooLong(fldPath, fieldManager, FieldManagerMaxLength))
+		allErrs = append(allErrs, field.TooLong(fldPath, "" /*unused*/, FieldManagerMaxLength))
 	}
 	// Verify that all characters are printable.
 	for i, r := range fieldManager {
@@ -223,14 +268,39 @@ func ValidateTableOptions(opts *metav1.TableOptions) field.ErrorList {
 
 const MaxSubresourceNameLength = 256
 
-func ValidateManagedFields(fieldsList []metav1.ManagedFieldsEntry, fldPath *field.Path) field.ErrorList {
+// ManagedFieldsValidationOption specifies options for validating managed fields.
+type ManagedFieldsValidationOption int
+
+const (
+	// CoveredByDeclarative indicates whether errors should be marked as covered by declarative validation.
+	CoveredByDeclarative ManagedFieldsValidationOption = iota + 1
+)
+
+// ValidateManagedFields validates a list of managed fields.
+func ValidateManagedFields(fieldsList []metav1.ManagedFieldsEntry, fldPath *field.Path, opts ...ManagedFieldsValidationOption) field.ErrorList {
+	coveredByDeclarative := false
+	for _, opt := range opts {
+		if opt == CoveredByDeclarative {
+			coveredByDeclarative = true
+		}
+	}
 	var allErrs field.ErrorList
 	for i, fields := range fieldsList {
 		fldPath := fldPath.Index(i)
 		switch fields.Operation {
+		case "":
+			err := field.Required(fldPath.Child("operation"), "must not be empty")
+			if coveredByDeclarative {
+				err = err.MarkCoveredByDeclarative()
+			}
+			allErrs = append(allErrs, err)
 		case metav1.ManagedFieldsOperationApply, metav1.ManagedFieldsOperationUpdate:
 		default:
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("operation"), fields.Operation, "must be `Apply` or `Update`"))
+			err := field.NotSupported(fldPath.Child("operation"), fields.Operation, []metav1.ManagedFieldsOperationType{metav1.ManagedFieldsOperationApply, metav1.ManagedFieldsOperationUpdate})
+			if coveredByDeclarative {
+				err = err.MarkCoveredByDeclarative()
+			}
+			allErrs = append(allErrs, err)
 		}
 		if len(fields.FieldsType) > 0 && fields.FieldsType != "FieldsV1" {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("fieldsType"), fields.FieldsType, "must be `FieldsV1`"))
@@ -238,7 +308,7 @@ func ValidateManagedFields(fieldsList []metav1.ManagedFieldsEntry, fldPath *fiel
 		allErrs = append(allErrs, ValidateFieldManager(fields.Manager, fldPath.Child("manager"))...)
 
 		if len(fields.Subresource) > MaxSubresourceNameLength {
-			allErrs = append(allErrs, field.TooLong(fldPath.Child("subresource"), fields.Subresource, MaxSubresourceNameLength))
+			allErrs = append(allErrs, field.TooLong(fldPath.Child("subresource"), "" /*unused*/, MaxSubresourceNameLength))
 		}
 	}
 	return allErrs
@@ -250,7 +320,7 @@ func ValidateConditions(conditions []metav1.Condition, fldPath *field.Path) fiel
 	conditionTypeToFirstIndex := map[string]int{}
 	for i, condition := range conditions {
 		if _, ok := conditionTypeToFirstIndex[condition.Type]; ok {
-			allErrs = append(allErrs, field.Duplicate(fldPath.Index(i).Child("type"), condition.Type))
+			allErrs = append(allErrs, field.Duplicate(fldPath.Index(i), condition.Type).MarkCoveredByDeclarative())
 		} else {
 			conditionTypeToFirstIndex[condition.Type] = i
 		}
@@ -273,34 +343,40 @@ func ValidateCondition(condition metav1.Condition, fldPath *field.Path) field.Er
 	var allErrs field.ErrorList
 
 	// type is set and is a valid format
-	allErrs = append(allErrs, ValidateLabelName(condition.Type, fldPath.Child("type"))...)
+	if len(condition.Type) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("type"), "is required").MarkCoveredByDeclarative())
+	} else {
+		allErrs = append(allErrs, ValidateLabelName(condition.Type, fldPath.Child("type"))...)
+	}
 
 	// status is set and is an accepted value
-	if !validConditionStatuses.Has(string(condition.Status)) {
-		allErrs = append(allErrs, field.NotSupported(fldPath.Child("status"), condition.Status, validConditionStatuses.List()))
+	if len(condition.Status) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("status"), "").MarkCoveredByDeclarative())
+	} else if !validConditionStatuses.Has(string(condition.Status)) {
+		allErrs = append(allErrs, field.NotSupported(fldPath.Child("status"), condition.Status, validConditionStatuses.List()).MarkCoveredByDeclarative())
 	}
 
 	if condition.ObservedGeneration < 0 {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("observedGeneration"), condition.ObservedGeneration, "must be greater than or equal to zero"))
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("observedGeneration"), condition.ObservedGeneration, "must be greater than or equal to zero").WithOrigin("minimum").MarkCoveredByDeclarative())
 	}
 
 	if condition.LastTransitionTime.IsZero() {
-		allErrs = append(allErrs, field.Required(fldPath.Child("lastTransitionTime"), "must be set"))
+		allErrs = append(allErrs, field.Required(fldPath.Child("lastTransitionTime"), "").MarkCoveredByDeclarative())
 	}
 
 	if len(condition.Reason) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("reason"), "must be set"))
+		allErrs = append(allErrs, field.Required(fldPath.Child("reason"), "").MarkCoveredByDeclarative())
 	} else {
-		for _, currErr := range isValidConditionReason(condition.Reason) {
+		for _, currErr := range IsValidConditionReason(condition.Reason) {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("reason"), condition.Reason, currErr))
 		}
 		if len(condition.Reason) > maxReasonLen {
-			allErrs = append(allErrs, field.TooLong(fldPath.Child("reason"), condition.Reason, maxReasonLen))
+			allErrs = append(allErrs, field.TooLong(fldPath.Child("reason"), "" /*unused*/, maxReasonLen).WithOrigin("maxBytes").MarkCoveredByDeclarative())
 		}
 	}
 
 	if len(condition.Message) > maxMessageLen {
-		allErrs = append(allErrs, field.TooLong(fldPath.Child("message"), condition.Message, maxMessageLen))
+		allErrs = append(allErrs, field.TooLong(fldPath.Child("message"), "" /*unused*/, maxMessageLen))
 	}
 
 	return allErrs
@@ -311,10 +387,47 @@ const conditionReasonErrMsg string = "a condition reason must start with alphabe
 
 var conditionReasonRegexp = regexp.MustCompile("^" + conditionReasonFmt + "$")
 
-// isValidConditionReason tests for a string that conforms to rules for condition reasons. This checks the format, but not the length.
-func isValidConditionReason(value string) []string {
+// IsValidConditionReason tests for a string that conforms to rules for condition
+// reasons. This checks the format, but not the length.
+func IsValidConditionReason(value string) []string {
 	if !conditionReasonRegexp.MatchString(value) {
 		return []string{validation.RegexError(conditionReasonErrMsg, conditionReasonFmt, "my_name", "MY_NAME", "MyName", "ReasonA,ReasonB", "ReasonA:ReasonB")}
+	}
+	return nil
+}
+
+// ValidateIgnoreStoreReadError validates that delete options are valid when
+// ignoreStoreReadErrorWithClusterBreakingPotential is enabled
+func ValidateIgnoreStoreReadError(fldPath *field.Path, options *metav1.DeleteOptions) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if enabled := ptr.Deref[bool](options.IgnoreStoreReadErrorWithClusterBreakingPotential, false); !enabled {
+		return allErrs
+	}
+
+	if options.PropagationPolicy != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, true, "cannot be set together with .propagationPolicy"))
+	}
+	//nolint:staticcheck // Keep validation for deprecated OrphanDependents option until it's being removed
+	if options.OrphanDependents != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, true, "cannot be set together with .orphanDependents"))
+	}
+	if options.GracePeriodSeconds != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, true, "cannot be set together with .gracePeriodSeconds"))
+	}
+	if options.Preconditions != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, true, "cannot be set together with .preconditions"))
+	}
+
+	return allErrs
+}
+
+// ValidateCustom_Condition_LastTransitionTime is wired into the generated
+// declarative validation by +k8s:customValidation on Condition.LastTransitionTime.
+// It enforces that the field is set, mirroring the handwritten check in
+// ValidateCondition.
+func ValidateCustom_Condition_LastTransitionTime(ctx context.Context, op operation.Operation, fldPath *field.Path, value, oldValue *metav1.Time) field.ErrorList {
+	if value.IsZero() {
+		return field.ErrorList{field.Required(fldPath, "")}
 	}
 	return nil
 }

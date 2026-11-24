@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package wsstream contains utilities for streaming content over WebSockets.
-// The Conn type allows callers to multiplex multiple read/write channels over
-// a single websocket. The Reader type allows an io.Reader to be copied over
-// a websocket channel as binary content.
-package wsstream // import "k8s.io/apimachinery/pkg/util/httpstream/wsstream"
+// Package wsstream contains compatibility wrappers for websocket streaming.
+//
+// Deprecated: use k8s.io/streaming/pkg/httpstream/wsstream directly.
+package wsstream
