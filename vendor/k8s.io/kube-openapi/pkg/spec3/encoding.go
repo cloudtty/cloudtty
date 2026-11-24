@@ -22,6 +22,7 @@ import (
 	"github.com/go-openapi/swag"
 	"k8s.io/kube-openapi/pkg/internal"
 	jsonv2 "k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json"
+	"k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json/jsontext"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
@@ -32,6 +33,9 @@ type Encoding struct {
 
 // MarshalJSON is a custom marshal function that knows how to encode Encoding as JSON
 func (e *Encoding) MarshalJSON() ([]byte, error) {
+	if internal.UseOptimizedJSONMarshalingV3 {
+		return internal.DeterministicMarshal(e)
+	}
 	b1, err := json.Marshal(e.EncodingProps)
 	if err != nil {
 		return nil, err
@@ -41,6 +45,16 @@ func (e *Encoding) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return swag.ConcatJSON(b1, b2), nil
+}
+
+func (e *Encoding) MarshalJSONTo(enc *jsontext.Encoder) error {
+	var x struct {
+		EncodingProps encodingPropsOmitZero `json:",inline"`
+		Extensions    spec.Extensions       `json:",inline"`
+	}
+	x.Extensions = internal.SanitizeExtensions(e.Extensions)
+	x.EncodingProps = encodingPropsOmitZero(e.EncodingProps)
+	return jsonv2.MarshalEncode(enc, x)
 }
 
 func (e *Encoding) UnmarshalJSON(data []byte) error {
@@ -56,12 +70,12 @@ func (e *Encoding) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e *Encoding) UnmarshalNextJSON(opts jsonv2.UnmarshalOptions, dec *jsonv2.Decoder) error {
+func (e *Encoding) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
 	var x struct {
-		spec.Extensions
+		Extensions spec.Extensions `json:",inline"`
 		EncodingProps
 	}
-	if err := opts.UnmarshalNext(dec, &x); err != nil {
+	if err := jsonv2.UnmarshalDecode(dec, &x); err != nil {
 		return err
 	}
 
@@ -81,4 +95,12 @@ type EncodingProps struct {
 	Explode bool `json:"explode,omitempty"`
 	// AllowReserved determines whether the parameter value SHOULD allow reserved characters, as defined by RFC3986
 	AllowReserved bool `json:"allowReserved,omitempty"`
+}
+
+type encodingPropsOmitZero struct {
+	ContentType   string             `json:"contentType,omitempty"`
+	Headers       map[string]*Header `json:"headers,omitempty"`
+	Style         string             `json:"style,omitempty"`
+	Explode       bool               `json:"explode,omitzero"`
+	AllowReserved bool               `json:"allowReserved,omitzero"`
 }
